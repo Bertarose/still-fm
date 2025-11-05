@@ -1,3 +1,5 @@
+import MixcloudPlayer from './components/MixcloudPlayer';
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-black text-white font-mono">
@@ -77,21 +79,24 @@ export default function Home() {
           </a>
         </div>
 
-        {/* Now Playing Bar */}
-        <div className="border border-white p-4 flex items-center justify-between mb-12">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 border border-white flex items-center justify-center">
+        {/* Now Playing Bar with Mixcloud Player */}
+        <div className="border border-white p-4 mb-12">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 border border-white flex items-center justify-center flex-shrink-0">
               <div className="w-0 h-0 border-t-4 border-t-transparent border-l-8 border-l-white border-b-4 border-b-transparent ml-1"></div>
             </div>
-            <div>
+            <div className="flex-1">
               <p className="text-[10px] uppercase tracking-wider mb-1">Now Playing</p>
-              <p className="text-xs uppercase tracking-wide">The Still FM Afternoon Show</p>
+              <p className="text-xs uppercase tracking-wide">Latest Show from Still FM</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-white animate-pulse"></div>
+              <span className="text-[10px] uppercase tracking-wider">Live</span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-white animate-pulse"></div>
-            <span className="text-[10px] uppercase tracking-wider">Live</span>
-          </div>
+          
+          {/* Mixcloud Player */}
+          <MixcloudPlayer mixcloudUrl="https://www.mixcloud.com/StillFM/" />
         </div>
 
         {/* LATEST SHOWS Section */}
@@ -407,7 +412,7 @@ export default function Home() {
                 <li><a href="#" className="text-[10px] text-gray-400 hover:text-white">Instagram</a></li>
                 <li><a href="#" className="text-[10px] text-gray-400 hover:text-white">Twitter</a></li>
                 <li><a href="#" className="text-[10px] text-gray-400 hover:text-white">Facebook</a></li>
-                <li><a href="#" className="text-[10px] text-gray-400 hover:text-white">Mixcloud</a></li>
+                <li><a href="https://www.mixcloud.com/StillFM/" target="_blank" rel="noopener noreferrer" className="text-[10px] text-gray-400 hover:text-white">Mixcloud</a></li>
               </ul>
             </div>
             <div>

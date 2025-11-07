@@ -26,7 +26,7 @@ export default function Home() {
       {/* Hero Section - 2 Large Cards */}
       <main className="max-w-full px-4 py-4">
         <div className="grid md:grid-cols-2 gap-4 mb-4">
-          {/* Card 1 */}
+          {/* Card 1 - Photo */}
           <a href="#" className="group relative overflow-hidden bg-black hover:opacity-80 transition-opacity">
             <div className="aspect-[4/5] relative">
               <img 
@@ -52,31 +52,40 @@ export default function Home() {
             </div>
           </a>
 
-          {/* Card 2 */}
-          <a href="#" className="group relative overflow-hidden bg-black hover:opacity-80 transition-opacity">
+          {/* Card 2 - TWITCH LIVE STREAM */}
+          <div className="group relative overflow-hidden bg-black">
             <div className="aspect-[4/5] relative">
-              <img 
-                src="https://images.unsplash.com/photo-1571330735066-03aaa9429d89?w=800&h=1000&fit=crop" 
-                alt="DJ Studio"
-                className="w-full h-full object-cover grayscale"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+              {/* Twitch Embed */}
+              <iframe 
+                src="https://player.twitch.tv/?channel=bertarose&parent=still-fm.vercel.app&parent=localhost"
+                className="w-full h-full"
+                frameBorder="0"
+                allowFullScreen
+                allow="autoplay; fullscreen"
+              ></iframe>
               
-              <div className="absolute bottom-0 left-0 right-0 p-6">
+              {/* Badge LIVE (par-dessus) */}
+              <div className="absolute top-6 left-6 bg-white text-black px-3 py-1 text-[10px] font-bold tracking-wider flex items-center gap-2 z-10 pointer-events-none">
+                <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span>
+                LIVE STUDIO
+              </div>
+              
+              {/* Overlay info en bas (optionnel - peut bloquer le chat) */}
+              <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-transparent to-transparent pointer-events-none">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-[10px] font-normal tracking-wider uppercase border border-white px-2 py-1">
-                    TUE 04/11
+                    LIVE NOW
                   </span>
                   <span className="text-[10px] font-normal tracking-wider uppercase border border-white px-2 py-1">
-                    ELECTRONIC
+                    TWITCH
                   </span>
                 </div>
                 <h2 className="text-lg font-normal uppercase tracking-wide leading-tight">
-                  RADIO THERAPY: NICK WILLIAMS (PHONICA)
+                  STILL FM LIVE STREAM
                 </h2>
               </div>
             </div>
-          </a>
+          </div>
         </div>
 
         {/* Now Playing Bar with Mixcloud Player */}

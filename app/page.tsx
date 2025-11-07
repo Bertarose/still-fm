@@ -56,13 +56,13 @@ export default function Home() {
           <div className="group relative overflow-hidden bg-black">
             <div className="aspect-[4/5] relative">
               {/* Twitch Embed */}
-              <iframe 
-                src="https://player.twitch.tv/?channel=bertarose&parent=still-fm.vercel.app&parent=localhost"
-                className="w-full h-full"
-                frameBorder="0"
-                allowFullScreen
-                allow="autoplay; fullscreen"
-              ></iframe>
+              <iframe
+  src="https://player.twitch.tv/?channel=bertarose&parent=still-fm.vercel.app"
+  className="w-full h-full"
+  frameBorder="0"
+  allowFullScreen
+  allow="autoplay; fullscreen"
+></iframe>
               
               {/* Badge LIVE (par-dessus) */}
               <div className="absolute top-6 left-6 bg-white text-black px-3 py-1 text-[10px] font-bold tracking-wider flex items-center gap-2 z-10 pointer-events-none">

@@ -10,12 +10,12 @@ export default function Home() {
             <h1 className="text-xs font-normal tracking-widest uppercase">
               STILL FM
             </h1>
-            <nav className="hidden md:flex gap-6">
-              <a href="#" className="text-xs uppercase tracking-wider hover:opacity-50 transition-opacity">Shows</a>
-              <a href="#" className="text-xs uppercase tracking-wider hover:opacity-50 transition-opacity">Schedule</a>
-              <a href="#" className="text-xs uppercase tracking-wider hover:opacity-50 transition-opacity">Residents</a>
-              <a href="#" className="text-xs uppercase tracking-wider hover:opacity-50 transition-opacity">About</a>
-            </nav>
+        <nav className="hidden md:flex gap-6">
+  <a href="/shows" className="text-xs uppercase tracking-wider hover:opacity-50 transition-opacity">Shows</a>
+  <a href="/schedule" className="text-xs uppercase tracking-wider hover:opacity-50 transition-opacity">Schedule</a>
+  <a href="/residents" className="text-xs uppercase tracking-wider hover:opacity-50 transition-opacity">Residents</a>
+  <a href="/about" className="text-xs uppercase tracking-wider hover:opacity-50 transition-opacity">About</a>
+</nav>
           </div>
           <button className="border border-white px-4 py-1 text-xs uppercase tracking-wider hover:bg-white hover:text-black transition-all">
             Listen Live

@@ -1,8 +1,8 @@
 // L'URL de l'API Mixcloud pour récupérer les shows (cloudcasts) de l'utilisateur "StillFM".
 const LATEST_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?limit=24';
 
-// NOUVELLE URL: Les 6 shows les plus populaires (Triés par écoutes et limités à 6)
-const TRENDING_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?ordering=-listens&limit=6';
+// CORRECTION : Utilisation de ordering=hot pour obtenir les shows Trending
+const TRENDING_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?ordering=hot&limit=6';
 
 // Fonction pour mélanger un tableau (à garder pour la grille principale)
 function shuffleArray(array: any[]) {
@@ -38,7 +38,7 @@ const formatMixcloudShow = (mix: any) => {
         img: mix.pictures?.extra_large, 
         tags: tags,
         date: formattedDate,
-        listens: mix.listen_count // Ajout des écoutes pour l'affichage Trending
+        listens: mix.listen_count // On le garde si jamais vous voulez l'utiliser ailleurs
     };
 };
 
@@ -59,7 +59,7 @@ async function getShowsData() {
         const mappedLatestShows = latestData.data.map(formatMixcloudShow);
         const shuffledLatestShows = shuffleArray(mappedLatestShows);
         
-        // Mappage pour la section Trending (populaire)
+        // Mappage pour la section Trending (hot)
         const trendingShows = trendingData.data.map(formatMixcloudShow);
 
         return { allShows: shuffledLatestShows, trendingShows };
@@ -99,12 +99,12 @@ export default async function ShowsPage() {
             <main className="max-w-full px-4 py-12">
                 
                 {/* ========================================
-                  SECTION 1: TRENDING NOW (6 shows les plus populaires)
+                  SECTION 1: TRENDING NOW (6 shows HOT)
                   ========================================
                 */}
                 <section className="mb-12 border-b border-white pb-12">
                     <h2 className="text-2xl font-bold uppercase tracking-wider mb-6 flex items-center gap-3">
-                         🔥 Trending Now (Populaire)
+                         🔥 Trending Now
                     </h2>
                     
                     {trendingShows.length > 0 ? (
@@ -117,9 +117,9 @@ export default async function ShowsPage() {
                                             alt={show.title}
                                             className="w-full h-full object-cover group-hover:opacity-80 transition"
                                         />
-                                         {/* Affichage du nombre d'écoutes */}
+                                         {/* Affichage d'un badge "HOT" ou du nombre d'écoutes si vous le souhaitez */}
                                         <div className="absolute top-2 left-2 text-[8px] font-bold uppercase tracking-wider bg-white text-black px-2 py-0.5">
-                                            {show.listens ? `${show.listens.toLocaleString('fr-FR')} écoutes` : 'Populaire'}
+                                            HOT
                                         </div>
                                     </div>
                                     <h3 className="text-xs uppercase tracking-wide mb-1">{show.title}</h3>

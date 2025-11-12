@@ -1,177 +1,398 @@
-// L'URL de l'API Mixcloud pour récupérer les shows (cloudcasts) de l'utilisateur "StillFM".
-const LATEST_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?limit=24';
+import MixcloudPlayer from './components/MixcloudPlayer';
+import Link from 'next/link';
 
-// CORRECTION : Utilisation de ordering=hot pour obtenir les shows Trending
-const TRENDING_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?ordering=hot&limit=6';
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
+export const revalidate = 3600; // Revalidate every hour
 
-// Fonction pour mélanger un tableau (à garder pour la grille principale)
-function shuffleArray(array: any[]) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-}
+// URL pour les derniers shows
+const LATEST_SHOWS_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?limit=10';
+
+// URL pour les shows les plus populaire
+const ARCHIVE_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?ordering=-play_count&limit=5';
 
 // Fonction utilitaire pour adapter les données
-const formatMixcloudShow = (mix: any) => {
-    // Date: 04 NOV 2025
+const formatMixcloudShow = (mix: any, isPopular: boolean = false) => {
+    // Formatage de la date à partir de mix.created_time
     const mixDate = new Date(mix.created_time).toLocaleDateString('fr-FR', {
         day: '2-digit', month: 'short', year: 'numeric' 
-    }).toUpperCase().replace(/\./g, '');
+    }).toUpperCase().replace(/\./g, ''); 
 
-    // Time: 08:00 [GMT]
-    const mixTime = new Date(mix.created_time).toLocaleTimeString('fr-FR', {
-        hour: '2-digit', minute: '2-digit', timeZone: 'GMT'
-    });
-    
-    // Simplification des tags
-    const tags = mix.tags && mix.tags.length > 0 
-        ? mix.tags.slice(0, 2).map((tag: any) => tag.name.toUpperCase()) 
-        : [];
-    
-    const formattedDate = `${mixDate} | ${mixTime} [GMT]`;
+    // Pour l'archive, on affiche le nombre d'écoutes si disponible, sinon la date
+    const dateOrStats = isPopular && mix.listen_count 
+        ? `${mix.listen_count.toLocaleString('fr-FR')} ÉCOUTES`
+        : `${mixDate}`;
 
     return {
         title: mix.name.toUpperCase(), 
         url: mix.url,
         img: mix.pictures?.extra_large, 
-        tags: tags,
-        date: formattedDate,
-        listens: mix.listen_count 
+        tags: [], 
+        date: dateOrStats,
     };
 };
 
-// Fonction asynchrone pour récupérer les deux ensembles de données
-async function getShowsData() {
+// Récupération des archives (5 plus populaires)
+async function getArchiveData() {
     try {
-        const [latestResponse, trendingResponse] = await Promise.all([
-            // La grille principale est revalidée toutes les heures (3600s)
-            fetch(LATEST_API_URL, { next: { revalidate: 3600 } }),
-            
-            // TENTATIVE DE DÉBOGAGE : Forcer la revalidation à chaque requête (revalidate: 0)
-            // Cela devrait garantir que le tri 'hot' n'est pas mis en cache
-            fetch(TRENDING_API_URL, { next: { revalidate: 0 } }) 
-        ]);
+        const response = await fetch(ARCHIVE_API_URL, { 
+            cache: 'no-store' // Use no-store instead of revalidate: 0
+        });
 
-        const [latestData, trendingData] = await Promise.all([
-            latestResponse.json(),
-            trendingResponse.json()
-        ]);
-        
-        // Mappage et mélange pour la grille principale
-        const mappedLatestShows = latestData.data.map(formatMixcloudShow);
-        const shuffledLatestShows = shuffleArray(mappedLatestShows);
-        
-        // Mappage pour la section Trending (hot)
-        const trendingShows = trendingData.data.map(formatMixcloudShow);
+        if (!response.ok) {
+            console.error(`Erreur HTTP: ${response.status} lors de la récupération des archives`);
+            return [];
+        }
 
-        return { allShows: shuffledLatestShows, trendingShows };
+        const data = await response.json();
+        return data.data.map((mix: any) => formatMixcloudShow(mix, true)); 
 
     } catch (error) {
-        console.error("Erreur de récupération Mixcloud:", error);
-        return { allShows: [], trendingShows: [] };
+        console.error("Erreur de récupération Archives Mixcloud:", error);
+        return [];
     }
 }
 
 
-// Le composant doit être une fonction asynchrone pour l'App Router de Next.js
-export default async function ShowsPage() {
+// Fonction de récupération principale
+async function getMixcloudData() {
+    const [latestShowsResponse, archiveShows] = await Promise.all([
+        fetch(LATEST_SHOWS_API_URL, { cache: 'no-store' }),
+        getArchiveData()
+    ]);
     
-    const { allShows, trendingShows } = await getShowsData();
+    let latestMix = null;
+    let latestShows = [];
+
+    try {
+        if (!latestShowsResponse.ok) {
+            throw new Error(`Erreur HTTP pour les derniers shows: ${latestShowsResponse.status}`);
+        }
+        
+        const data = await latestShowsResponse.json();
+        const allLatestShows = data.data.map((mix: any) => formatMixcloudShow(mix, false));
+        
+        // Dernier show pour le Hero
+        if (allLatestShows.length > 0) {
+            latestMix = {
+                ...allLatestShows[0],
+                tags: ["LAST SHOW", "ARCHIVE"], 
+                pictures: { extra_large: allLatestShows[0].img }
+            };
+        }
+
+        // 10 derniers shows pour la grille
+        latestShows = allLatestShows.slice(0, 10);
+        
+    } catch (error) {
+        console.error("Erreur de récupération des derniers shows:", error);
+    }
     
-    const loading = allShows.length === 0 && trendingShows.length === 0;
+    return { latestMix, latestShows, archiveShows };
+}
+
+
+// COMPOSANT HOME ASYNCHRONE (Serveur)
+export default async function Home() {
+    
+    const { latestMix, latestShows, archiveShows } = await getMixcloudData();
+    
+    const loading = !latestMix && latestShows.length === 0;
+    const featuredArchive = archiveShows[0]; 
+    const smallArchiveGrid = archiveShows.slice(1, 5); 
+
+    const heroCard1Content = latestMix ? (
+        <>
+            <img 
+                src={latestMix.pictures?.extra_large} 
+                alt={latestMix.title}
+                className="w-full h-full object-cover" 
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+            
+            <div className="absolute bottom-0 left-0 right-0 p-6">
+                <div className="flex items-center gap-2 mb-2">
+                    {latestMix.date && (
+                        <span className="text-[10px] font-normal tracking-wider uppercase border border-white px-2 py-1">
+                            {latestMix.date}
+                        </span>
+                    )}
+                    {latestMix.tags && latestMix.tags.map((tag: string) => (
+                        <span key={tag} className="text-[10px] font-normal tracking-wider uppercase border border-white px-2 py-1">
+                            {tag}
+                        </span>
+                    ))}
+                </div>
+                <h2 className="text-lg font-normal uppercase tracking-wide leading-tight">
+                    {latestMix.title}
+                </h2>
+            </div>
+        </>
+    ) : (
+        <div className="aspect-[4/5] relative flex items-center justify-center bg-gray-900">
+            <p className="text-sm uppercase tracking-wider text-gray-500">Chargement du dernier show...</p>
+        </div>
+    );
 
     return (
         <div className="min-h-screen bg-black text-white font-mono">
-            <header className="border-b border-white">
-                <div className="max-w-full px-4 py-4">
+            {/* Header: Ajout de 'relative' pour que le menu mobile absolu fonctionne */}
+            <header className="border-b border-white relative">
+                <div className="max-w-full px-4 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-8">
-                        <a href="/" className="text-xs font-normal tracking-widest uppercase hover:opacity-50">
+                        <h1 className="text-xs font-normal tracking-widest uppercase">
                             STILL FM
-                        </a>
+                        </h1>
+                        {/* Navigation de bureau classique */}
                         <nav className="hidden md:flex gap-6">
-                            <a href="/shows" className="text-xs uppercase tracking-wider opacity-50">Shows</a>
-                            <a href="/schedule" className="text-xs uppercase tracking-wider hover:opacity-50">Schedule</a>
-                            <a href="/residents" className="text-xs uppercase tracking-wider hover:opacity-50">Residents</a>
-                            <a href="/about" className="text-xs uppercase tracking-wider hover:opacity-50">About</a>
+                            <Link href="/shows" className="text-xs uppercase tracking-wider hover:opacity-50 transition-opacity">Shows</Link>
+                            <Link href="/schedule" className="text-xs uppercase tracking-wider hover:opacity-50 transition-opacity">Schedule</Link>
+                            <Link href="/residents" className="text-xs uppercase tracking-wider hover:opacity-50 transition-opacity">Residents</Link>
+                            <Link href="/about" className="text-xs uppercase tracking-wider hover:opacity-50 transition-opacity">About</Link>
                         </nav>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <a 
+                            href="https://www.twitch.tv/stillfmradio" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="hidden md:block text-xs uppercase tracking-wider border border-white px-4 py-1 hover:bg-white hover:text-black transition-all"
+                        >
+                            Listen Live
+                        </a>
+                        
+                        {/* Bouton hamburger */}
+                        <button 
+                            className="md:hidden flex flex-col justify-center items-center w-8 h-8 gap-1.5"
+                            aria-label="Menu"
+                        >
+                            <span className="block w-6 h-0.5 bg-white"></span>
+                            <span className="block w-6 h-0.5 bg-white"></span>
+                            <span className="block w-6 h-0.5 bg-white"></span>
+                        </button>
                     </div>
                 </div>
             </header>
 
-            <main className="max-w-full px-4 py-12">
+            {/* Main */}
+            <main className="max-w-full px-4 py-8">
                 
-                {/* ========================================
-                  SECTION 1: TRENDING NOW (6 shows HOT)
-                  ========================================
-                */}
-                <section className="mb-12 border-b border-white pb-12">
-                    <h2 className="text-2xl font-bold uppercase tracking-wider mb-6 flex items-center gap-3">
-                         🔥 Trending Now
-                    </h2>
-                    
-                    {trendingShows.length > 0 ? (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                            {trendingShows.map((show: any, index: number) => (
-                                <a href={show.url} key={index} target="_blank" rel="noopener noreferrer" className="group">
-                                    <div className="aspect-square relative mb-2 border border-white overflow-hidden">
-                                        <img 
-                                            src={show.img}
-                                            alt={show.title}
-                                            className="w-full h-full object-cover group-hover:opacity-80 transition"
-                                        />
-                                         {/* Affichage d'un badge "HOT" */}
-                                        <div className="absolute top-2 left-2 text-[8px] font-bold uppercase tracking-wider bg-white text-black px-2 py-0.5">
-                                            HOT
-                                        </div>
-                                    </div>
-                                    <h3 className="text-xs uppercase tracking-wide mb-1">{show.title}</h3>
-                                    <p className="text-[10px] text-gray-400">{show.date}</p>
-                                </a>
-                            ))}
+                {/* Hero Section - 2 cartes côte à côte */}
+                <section className="grid md:grid-cols-2 gap-4 mb-12">
+                    {/* Carte 1: Dernier show */}
+                    <Link href={latestMix?.url || "#"} target="_blank" rel="noopener noreferrer" className="group">
+                        <div className="aspect-[4/5] relative border border-white overflow-hidden">
+                            {heroCard1Content}
+                        </div>
+                    </Link>
+
+                    {/* Carte 2: Lecteur Twitch */}
+                    <div className="aspect-[4/5] relative border border-white overflow-hidden bg-gray-900">
+                        <iframe
+                            src="https://player.twitch.tv/?channel=stillfmradio&parent=localhost&parent=still-fm.vercel.app&parent=www.stillfm.com&parent=stillfm.com&muted=false&autoplay=true"
+                            className="absolute inset-0 w-full h-full"
+                            allowFullScreen
+                            style={{ border: 'none' }}
+                        />
+                    </div>
+                </section>
+
+                {/* Latest Shows Section */}
+                <section className="mb-12">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-2xl font-bold uppercase tracking-wider">Latest Shows</h2>
+                        <a href="https://www.mixcloud.com/StillFM/" target="_blank" rel="noopener noreferrer" className="text-xs uppercase tracking-wider border border-white px-4 py-1 hover:bg-white hover:text-black transition-all">
+                            See All
+                        </a>
+                    </div>
+
+                    {loading ? (
+                        <div className="flex items-center justify-center py-20">
+                            <p className="text-xs text-gray-500 uppercase tracking-wider">Chargement des shows...</p>
                         </div>
                     ) : (
-                         <p className="text-center text-gray-500 py-6">Aucun show populaire trouvé.</p>
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                            {latestShows.map((show: any, index: number) => (
+                                <Link href={show.url} key={index} target="_blank" rel="noopener noreferrer" className="group">
+                                    <div className="aspect-square relative mb-2 border border-white overflow-hidden">
+                                        <img 
+                                            src={show.img} 
+                                            alt={show.title}
+                                            className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                                        />
+                                    </div>
+                                    <h3 className="text-xs uppercase tracking-wide mb-1">{show.title}</h3>
+                                    <p className="text-[10px] text-gray-400 tracking-wider">{show.date}</p>
+                                </Link>
+                            ))}
+                        </div>
                     )}
                 </section>
 
-
-                {/* ========================================
-                  SECTION 2: ALL LATEST SHOWS (Grille de 24 shows aléatoires)
-                  ========================================
-                */}
-                <h1 className="text-4xl font-bold uppercase tracking-wider mb-8 mt-12">All Shows</h1>
-
-                {loading && (
-                    <p className="text-center text-gray-500 py-12">Chargement des shows...</p>
-                )}
-
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                    {allShows.map((show: any, index: number) => (
-                        <a href={show.url} key={index} target="_blank" rel="noopener noreferrer" className="group">
-                            <div className="aspect-square relative mb-2 border border-white overflow-hidden">
-                                <img 
-                                    src={show.img}
-                                    alt={show.title}
-                                    className="w-full h-full object-cover group-hover:opacity-80 transition"
-                                />
-                                {show.tags.length > 0 && (
-                                    <div className="absolute top-2 left-2 flex flex-col gap-1">
-                                        {show.tags.map((tag: string) => (
-                                            <span key={tag} className="text-[8px] font-bold uppercase tracking-wider bg-black text-white px-2 py-0.5 border border-white">
-                                                {tag}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                            <h3 className="text-xs uppercase tracking-wide mb-1">{show.title}</h3>
-                            <p className="text-[10px] text-gray-400">{show.date}</p>
+                {/* Archive Section */}
+                <section className="mb-12">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-2xl font-bold uppercase tracking-wider">From the Archive</h2>
+                        <a href="https://www.mixcloud.com/StillFM/" target="_blank" rel="noopener noreferrer" className="text-xs uppercase tracking-wider border border-white px-4 py-1 hover:bg-white hover:text-black transition-all">
+                            See All
                         </a>
-                    ))}
-                </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-4">
+                        {/* Grande carte d'archive à gauche */}
+                        {featuredArchive ? (
+                            <Link href={featuredArchive.url} target="_blank" rel="noopener noreferrer" className="group">
+                                <div className="md:col-span-1 aspect-[3/4] relative border border-white overflow-hidden">
+                                    <img 
+                                        src={featuredArchive.img} 
+                                        alt={featuredArchive.title}
+                                        className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                                    />
+                                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-transparent to-transparent">
+                                        <h3 className="text-xs uppercase tracking-wide mb-1 font-bold">{featuredArchive.title}</h3>
+                                        <p className="text-[10px] text-gray-400 tracking-wider">{featuredArchive.date}</p>
+                                    </div>
+                                </div>
+                            </Link>
+                        ) : (
+                             <div className="md:col-span-1 flex items-center justify-center aspect-[3/4] border border-white">
+                                <p className="text-xs text-gray-500">Chargement...</p>
+                             </div>
+                        )}
+
+                        {/* Petite Grille d'Archive (Les 4 shows suivants) */}
+                        <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                            {smallArchiveGrid.map((show: any, index: number) => (
+                                <Link href={show.url} key={index} target="_blank" rel="noopener noreferrer" className="group">
+                                    <div className="aspect-square relative mb-2 border border-white overflow-hidden">
+                                        <img 
+                                            src={show.img} 
+                                            alt={show.title}
+                                            className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                                        />
+                                    </div>
+                                    <h3 className="text-xs uppercase tracking-wide mb-1">{show.title}</h3>
+                                    <p className="text-[10px] text-gray-400 tracking-wider">{show.date}</p>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* SCHEDULE Preview Section */}
+                <section className="mb-12">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-2xl font-bold uppercase tracking-wider">This Week</h2>
+                        <Link href="/schedule" className="text-xs uppercase tracking-wider border border-white px-4 py-1 hover:bg-white hover:text-black transition-all">
+                            Full Schedule
+                        </Link>
+                    </div>
+
+                    <div className="border border-white">
+                        <div className="border-b border-white p-4 hover:bg-white hover:text-black transition-all cursor-pointer group">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <span className="text-xs tracking-wider">TUE 05 NOV</span>
+                                    <span className="text-xs tracking-wider">18:00 - 20:00</span>
+                                    <h3 className="text-sm uppercase tracking-wide">Evening Sounds with Marcus</h3>
+                                </div>
+                                <div className="flex gap-1">
+                                    <span className="text-[8px] border border-current px-2 py-1">JAZZ</span>
+                                    <span className="text-[8px] border border-current px-2 py-1">SOUL</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="border-b border-white p-4 hover:bg-white hover:text-black transition-all cursor-pointer group">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <span className="text-xs tracking-wider">WED 06 NOV</span>
+                                    <span className="text-xs tracking-wider">20:00 - 22:00</span>
+                                    <h3 className="text-sm uppercase tracking-wide">Techno Therapy</h3>
+                                </div>
+                                <div className="flex gap-1">
+                                    <span className="text-[8px] border border-current px-2 py-1">TECHNO</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="border-b border-white p-4 hover:bg-white hover:text-black transition-all cursor-pointer group">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <span className="text-xs tracking-wider">THU 07 NOV</span>
+                                    <span className="text-xs tracking-wider">14:00 - 16:00</span>
+                                    <h3 className="text-sm uppercase tracking-wide">Afternoon Delight</h3>
+                                </div>
+                                <div className="flex gap-1">
+                                    <span className="text-[8px] border border-current px-2 py-1">DISCO</span>
+                                    <span className="text-[8px] border border-current px-2 py-1">FUNK</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-4 hover:bg-white hover:text-black transition-all cursor-pointer group">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <span className="text-xs tracking-wider">FRI 08 NOV</span>
+                                    <span className="text-xs tracking-wider">22:00 - 00:00</span>
+                                    <h3 className="text-sm uppercase tracking-wide">Late Night Sessions</h3>
+                                </div>
+                                <div className="flex gap-1">
+                                    <span className="text-[8px] border border-current px-2 py-1">AMBIENT</span>
+                                    <span className="text-[8px] border border-current px-2 py-1">ELECTRONIC</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </main>
+
+            {/* Footer */}
+            <footer className="border-t border-white mt-20">
+                <div className="max-w-full px-4 py-12">
+                    <div className="grid md:grid-cols-4 gap-8 mb-8">
+                        <div>
+                            <h3 className="text-xs uppercase tracking-wider mb-4">About</h3>
+                            <p className="text-[10px] text-gray-400 leading-relaxed">
+                                Still FM is an independent radio station broadcasting from Montreal, showcasing the best in underground music and culture.
+                            </p>
+                        </div>
+                        <div>
+                            <h3 className="text-xs uppercase tracking-wider mb-4">Connect</h3>
+                            <ul className="space-y-2">
+                                <li><a href="#" className="text-[10px] text-gray-400 hover:text-white">Instagram</a></li>
+                                <li><a href="#" className="text-[10px] text-gray-400 hover:text-white">Twitter</a></li>
+                                <li><a href="#" className="text-[10px] text-gray-400 hover:text-white">Facebook</a></li>
+                                <li><a href="https://www.mixcloud.com/StillFM/" target="_blank" rel="noopener noreferrer" className="text-[10px] text-gray-400 hover:text-white">Mixcloud</a></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 className="text-xs uppercase tracking-wider mb-4">Support</h3>
+                            <ul className="space-y-2">
+                                <li><a href="#" className="text-[10px] text-gray-400 hover:text-white">Donate</a></li>
+                                <li><a href="#" className="text-[10px] text-gray-400 hover:text-white">Membership</a></li>
+                                <li><a href="#" className="text-[10px] text-gray-400 hover:text-white">Merchandise</a></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 className="text-xs uppercase tracking-wider mb-4">Newsletter</h3>
+                            <input 
+                                type="email" 
+                                placeholder="YOUR EMAIL" 
+                                className="w-full bg-transparent border border-white px-3 py-2 text-[10px] tracking-wider placeholder-gray-500"
+                            />
+                            <button className="w-full border border-white px-3 py-2 text-[10px] uppercase tracking-wider mt-2 hover:bg-white hover:text-black transition-all">
+                                Subscribe
+                            </button>
+                        </div>
+                    </div>
+                    <div className="border-t border-white pt-8 flex items-center justify-between">
+                        <p className="text-[10px] text-gray-400 tracking-wider">© 2025 STILL FM. ALL RIGHTS RESERVED.</p>
+                        <p className="text-[10px] text-gray-400 tracking-wider">MONTREAL, CANADA</p>
+                    </div>
+                </div>
+            </footer>
         </div>
     );
 }

@@ -121,7 +121,8 @@ export default async function Home() {
             <img 
                 src={latestMix.pictures?.extra_large} 
                 alt={latestMix.title}
-                className="w-full h-full object-cover grayscale"
+                // grayscale REMOVED here
+                className="w-full h-full object-cover" 
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
             
@@ -251,7 +252,8 @@ export default async function Home() {
                                     <img 
                                         src={show.img} 
                                         alt={show.title}
-                                        className="w-full h-full object-cover grayscale group-hover:opacity-80 transition-opacity"
+                                        // grayscale REMOVED here
+                                        className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
                                     />
                                 </div>
                                 <h3 className="text-xs uppercase tracking-wide mb-1">{show.title}</h3> 
@@ -286,7 +288,8 @@ export default async function Home() {
                                     <img 
                                         src={featuredArchive.img} 
                                         alt={featuredArchive.title}
-                                        className="w-full h-full object-cover grayscale group-hover:opacity-80 transition-opacity"
+                                        // grayscale REMOVED here
+                                        className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
                                     />
                                     {/* Overlay pour le titre sur la grande carte */}
                                     <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-transparent to-transparent">
@@ -309,7 +312,8 @@ export default async function Home() {
                                         <img 
                                             src={show.img} 
                                             alt={show.title}
-                                            className="w-full h-full object-cover grayscale group-hover:opacity-80 transition-opacity"
+                                            // grayscale REMOVED here
+                                            className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
                                         />
                                     </div>
                                     <h3 className="text-xs uppercase tracking-wide mb-1">{show.title}</h3>

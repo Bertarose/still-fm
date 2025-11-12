@@ -96,7 +96,8 @@ export default async function ShowsPage() {
                                 <img 
                                     src={show.img}
                                     alt={show.title}
-                                    className="w-full h-full object-cover grayscale group-hover:opacity-80 transition"
+                                    // CLASSE grayscale RETIRÉE ICI
+                                    className="w-full h-full object-cover group-hover:opacity-80 transition"
                                 />
                                 {/* Ajout des tags */}
                                 {show.tags.length > 0 && (

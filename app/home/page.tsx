@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import ShowCard from './components/ShowCard';
+import ShowCard from '../components/ShowCard';
 
 interface Show {
   key: string;

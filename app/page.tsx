@@ -1,80 +1,76 @@
 import MixcloudPlayer from './components/MixcloudPlayer';
 
 // L'URL de l'API Mixcloud pour récupérer les shows (cloudcasts) de l'utilisateur "StillFM"
-const MIXCLOUD_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?limit=10'; // Limiter à 10 éléments
+const MIXCLOUD_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?limit=10';
 
 // Fonction utilitaire pour adapter les données de l'API Mixcloud à la structure de votre composant
 const formatMixcloudShow = (mix) => {
-    // Vous pouvez enrichir la date ou les tags ici si vous implémentez une logique plus complexe
+    // Formatage de la date à partir de mix.created_time
     const mixDate = new Date(mix.created_time).toLocaleDateString('fr-FR', {
         day: '2-digit', month: 'short', year: 'numeric' 
-    }).toUpperCase().replace('.', ''); // Ex: 05 NOV. 2025 -> 05 NOV 2025
+    }).toUpperCase().replace(/\./g, ''); // Enlève tous les points après les abréviations de mois
 
     return {
         title: mix.name.toUpperCase(), 
         url: mix.url,
         img: mix.pictures?.extra_large, 
-        // L'API ne fournit pas directement les tags, on les ajoute manuellement ou via une autre API
-        tags: [], 
+        tags: [], // Tags laissés vides, à implémenter si l'API les fournit
         date: mixDate,
     };
 };
 
 // ------------------------------------------------------------------
-// --- 1. FONCTION DE RÉCUPÉRATION DE DONNÉES (CÔTÉ SERVEUR/BUILD) ---
+// --- NOUVELLE FONCTION ASYNCHRONE DE RÉCUPÉRATION DE DONNÉES (Remplaçant getStaticProps) ---
 // ------------------------------------------------------------------
 
-export async function getStaticProps() {
+async function getMixcloudData() {
     try {
-        const response = await fetch(MIXCLOUD_API_URL);
-        if (!response.ok) {
-            throw new Error(`Erreur HTTP: ${response.status}`);
-        }
-        const data = await response.json();
+        const response = await fetch(MIXCLOUD_API_URL, { 
+            // Ajouter une option de cache pour Next.js 
+            // Ici, nous forçons la récupération statique et la revalidation toutes les 3600s (1 heure)
+            next: { revalidate: 3600 } 
+        });
 
+        if (!response.ok) {
+            // Loguer l'erreur côté serveur
+            console.error(`Erreur HTTP: ${response.status} lors de la récupération de Mixcloud`);
+            // Retourner les valeurs par défaut
+            return { latestMix: null, latestShows: [] };
+        }
+
+        const data = await response.json();
         const allShows = data.data.map(formatMixcloudShow);
         
         // Le tout dernier show pour la carte Hero (index 0)
         const latestMix = {
             ...allShows[0],
-            // On ajoute des tags spécifiques pour le Hero Card si besoin
             tags: ["LAST SHOW", "ARCHIVE"], 
             pictures: { extra_large: allShows[0].img }
         };
 
         // Les 10 derniers shows pour la grille
         const latestShows = allShows.slice(0, 10);
-
-        return {
-            props: {
-                latestMix,
-                latestShows,
-            },
-            // Revalidation Incremental Static Regeneration (ISR):
-            // Next.js va re-générer cette page au maximum toutes les 3600 secondes (1 heure)
-            // Cela assure que vos nouveaux shows apparaissent régulièrement sans re-déploiement.
-            revalidate: 3600, 
-        };
+        
+        return { latestMix, latestShows };
 
     } catch (error) {
         console.error("Erreur de récupération Mixcloud:", error);
-        return {
-            props: {
-                latestMix: null,
-                latestShows: [],
-            },
-            revalidate: 60, // Réessayer plus tôt si la requête a échoué
-        };
+        return { latestMix: null, latestShows: [] };
     }
 }
 
 
 // ------------------------------------------------------------------
-// --- 2. COMPOSANT HOME (REÇOIT LES DONNÉES EN PROPS) ---
+// --- COMPOSANT HOME ASYNCHRONE (REÇOIT LES DONNÉES DE LA FONCTION) ---
 // ------------------------------------------------------------------
 
-// Le composant Home n'a plus besoin de 'useState' ou 'useEffect' pour les données Mixcloud
-export default function Home({ latestMix, latestShows }) {
+// Rendre le composant par défaut asynchrone pour attendre les données.
+export default async function Home() {
+    
+    // Appel de la fonction de récupération de données au moment du build/revalidation
+    const { latestMix, latestShows } = await getMixcloudData();
+    
+    // Next.js gère la mise en cache et le rendu statique pour vous.
     
     // Vérification de chargement/erreur simplifiée
     const loading = !latestMix && latestShows.length === 0;

@@ -4,10 +4,9 @@ import Link from 'next/link'; // Utiliser Link au lieu de <a> pour les navigatio
 // URL pour les derniers shows
 const LATEST_SHOWS_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?limit=10';
 
-// URL pour les shows les plus populaires
-const ARCHIVE_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?ordering=hot&limit=6';
+// URL pour les shows les plus populaire
 
-
+const ARCHIVE_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?ordering=-play_count&limit=5';
 // Fonction utilitaire pour adapter les données
 const formatMixcloudShow = (mix: any, isPopular: boolean = false) => {
     // Formatage de la date à partir de mix.created_time

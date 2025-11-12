@@ -1,296 +1,109 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import Image from 'next/image';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import ShowCard from './components/ShowCard';
 
-interface Show {
-  key: string;
-  name: string;
-  url: string;
-  pictures: {
-    large: string;
-  };
-  created_time: string;
-  play_count?: number;
-  favorite_count?: number;
-}
+export default function LandingPage() {
+  const [isLive, setIsLive] = useState(false);
+  const [showVideo, setShowVideo] = useState(true);
 
-interface Resident {
-  id: string;
-  name: string;
-  image: string;
-  mixcloudUser: string;
-  bio: string;
-}
-
-export default function Home() {
-  const [allShows, setAllShows] = useState<Show[]>([]);
-  const [latestShow, setLatestShow] = useState<Show | null>(null);
-  const [residents, setResidents] = useState<Resident[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Randomize shows for archive section
-  const randomArchiveShows = useMemo(() => {
-    if (allShows.length === 0) return [];
-    const shuffled = [...allShows].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 6);
-  }, [allShows]);
-
+  // Check if stream is live
   useEffect(() => {
-    const fetchData = async () => {
+    const checkLiveStatus = async () => {
       try {
-        // Fetch all shows from StillFM
-        const showsResponse = await fetch('/api/mixcloud?username=StillFM&limit=50');
-        if (showsResponse.ok) {
-          const showsData = await showsResponse.json();
-          const shows = showsData.data || [];
-          setAllShows(shows);
-          // Get the very latest show
-          if (shows.length > 0) {
-            setLatestShow(shows[0]);
+        const response = await fetch(
+          'https://api.twitch.tv/helix/streams?user_login=stillfmradio',
+          {
+            headers: {
+              'Client-ID': 'YOUR_TWITCH_CLIENT_ID', // Tu devras ajouter ton Client ID
+              'Authorization': 'Bearer YOUR_ACCESS_TOKEN' // Et ton token
+            }
           }
-        }
-
-        // Fetch residents
-        const residentsResponse = await fetch('/api/residents');
-        if (residentsResponse.ok) {
-          const residentsData = await residentsResponse.json();
-          setResidents(residentsData.slice(0, 3)); // Show only 3 residents
-        }
+        );
+        const data = await response.json();
+        setIsLive(data.data && data.data.length > 0);
       } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setIsLoading(false);
+        console.error('Error checking live status:', error);
+        setIsLive(false);
       }
     };
 
-    fetchData();
+    checkLiveStatus();
+    // Check every 60 seconds
+    const interval = setInterval(checkLiveStatus, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
-    <main className="flex-grow">
-      {/* Hero Section - Latest Show + Twitch Stream */}
-      <section className="w-full px-4 sm:px-6 lg:px-8 py-8 bg-black">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            {/* Latest Show */}
-            <div className="bg-gray-900 rounded-lg overflow-hidden">
-              <div className="p-4 sm:p-6">
-                <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">Latest Show</h2>
-                {isLoading ? (
-                  <div className="flex justify-center items-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
-                  </div>
-                ) : latestShow ? (
-                  <a 
-                    href={latestShow.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="block group"
-                  >
-                    <div className="relative w-full pt-[100%] mb-4">
-                      <Image
-                        src={latestShow.pictures.large}
-                        alt={latestShow.name}
-                        fill
-                        className="object-cover rounded group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                    <h3 className="text-white font-semibold text-lg group-hover:text-gray-300 transition-colors">
-                      {latestShow.name}
-                    </h3>
-                    <p className="text-gray-400 text-sm mt-2">
-                      {new Date(latestShow.created_time).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </p>
-                  </a>
-                ) : (
-                  <p className="text-gray-400">No shows available</p>
-                )}
-              </div>
-            </div>
-
-            {/* Twitch Stream */}
-            <div className="bg-black rounded-lg overflow-hidden">
-              <div className="p-4 sm:p-6">
-                <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">Live Now</h2>
-                <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
-                  <iframe
-                    src="https://player.twitch.tv/?channel=stillfmradio&parent=localhost&parent=still-fm.vercel.app&parent=www.stillfm.com&parent=stillfm.com&muted=true&autoplay=true"
-                    className="absolute top-0 left-0 w-full h-full rounded"
-                    allowFullScreen
-                    style={{ border: 'none' }}
-                  />
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* About Section */}
-      <section className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 bg-gray-50">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6">
-            Welcome to Still FM
-          </h2>
-          <p className="text-base sm:text-lg lg:text-xl text-gray-700 leading-relaxed mb-4 sm:mb-6">
-            Still FM is Montreal's underground radio station, broadcasting live shows and curated mixes 
-            from local and international artists. Tune in to discover new sounds and experience the pulse 
-            of underground music culture.
-          </p>
-          <Link 
-            href="/about" 
-            className="inline-block bg-black text-white px-6 sm:px-8 py-2 sm:py-3 rounded hover:bg-gray-800 transition-colors text-sm sm:text-base"
-          >
-            Learn More About Us
-          </Link>
-        </div>
-      </section>
-
-      {/* Latest Shows Section */}
-      <section className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">Latest Shows</h2>
-          
-          {isLoading ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
-            </div>
-          ) : allShows && allShows.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {allShows.slice(1, 7).map((show) => (
-                <ShowCard key={show.key} show={show} />
-              ))}
-            </div>
+    <div className="relative w-full h-screen overflow-hidden bg-black">
+      {/* Video Background */}
+      {showVideo && (
+        <div className="absolute inset-0 w-full h-full">
+          {isLive ? (
+            // Twitch Live Stream
+            <iframe
+              src="https://player.twitch.tv/?channel=stillfmradio&parent=localhost&parent=still-fm.vercel.app&parent=www.stillfm.com&parent=stillfm.com&muted=true&autoplay=true"
+              className="w-full h-full object-cover"
+              allowFullScreen
+              style={{ border: 'none' }}
+            />
           ) : (
-            <div className="text-center py-12">
-              <p className="text-gray-600 text-lg">No shows available at the moment.</p>
-            </div>
-          )}
-          
-          <div className="text-center mt-8 sm:mt-12">
-            <Link 
-              href="/shows" 
-              className="inline-block bg-black text-white px-6 sm:px-8 py-2 sm:py-3 rounded hover:bg-gray-800 transition-colors text-sm sm:text-base"
+            // Offline Video Loop (remplace avec ton URL de vidéo)
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-cover"
             >
-              View All Shows
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* From the Archive Section - Random Shows */}
-      <section className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">From the Archive</h2>
-          
-          {isLoading ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
-            </div>
-          ) : randomArchiveShows && randomArchiveShows.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {randomArchiveShows.map((show) => (
-                <ShowCard key={show.key} show={show} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-gray-600 text-lg">No archive shows available at the moment.</p>
-            </div>
+              <source src="/videos/offline-loop.mp4" type="video/mp4" />
+            </video>
           )}
-          
-          <div className="text-center mt-8 sm:mt-12">
-            <Link 
-              href="/shows" 
-              className="inline-block bg-black text-white px-6 sm:px-8 py-2 sm:py-3 rounded hover:bg-gray-800 transition-colors text-sm sm:text-base"
-            >
-              See All
-            </Link>
-          </div>
         </div>
-      </section>
+      )}
 
-      {/* Featured Residents Section */}
-      <section className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">Featured Residents</h2>
-          
-          {isLoading ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
-            </div>
-          ) : residents.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-              {residents.map((resident) => (
-                <Link 
-                  key={resident.id} 
-                  href={`/residents/${resident.id}`}
-                  className="group"
-                >
-                  <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow">
-                    <div className="relative w-full pt-[100%]">
-                      <Image
-                        src={resident.image}
-                        alt={resident.name}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                    <div className="p-4 sm:p-6">
-                      <h3 className="text-lg sm:text-xl font-bold mb-2 group-hover:text-gray-600 transition-colors">
-                        {resident.name}
-                      </h3>
-                      <p className="text-sm sm:text-base text-gray-600 line-clamp-3">
-                        {resident.bio}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-gray-600 text-lg">No residents available at the moment.</p>
-            </div>
-          )}
-          
-          <div className="text-center mt-8 sm:mt-12">
-            <Link 
-              href="/residents" 
-              className="inline-block bg-black text-white px-6 sm:px-8 py-2 sm:py-3 rounded hover:bg-gray-800 transition-colors text-sm sm:text-base"
-            >
-              Meet All Residents
-            </Link>
-          </div>
-        </div>
-      </section>
+      {/* Dark Overlay */}
+      <div className="absolute inset-0 bg-black/40" />
 
-      {/* Schedule Teaser */}
-      <section className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 bg-gray-50">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6">
-            Live Shows & Schedule
-          </h2>
-          <p className="text-base sm:text-lg text-gray-700 mb-6 sm:mb-8">
-            Check out our weekly schedule to catch your favorite residents live on air.
-          </p>
-          <Link 
-            href="/schedule" 
-            className="inline-block bg-black text-white px-6 sm:px-8 py-2 sm:py-3 rounded hover:bg-gray-800 transition-colors text-sm sm:text-base"
-          >
-            View Full Schedule
-          </Link>
+      {/* Content */}
+      <div className="relative z-10 flex flex-col items-center justify-center h-full text-white font-mono">
+        
+        {/* Live/Offline Indicator */}
+        <div className="mb-8 flex items-center gap-3">
+          <div className={`w-3 h-3 rounded-full ${isLive ? 'bg-red-500 animate-pulse' : 'bg-gray-500'}`} />
+          <span className="text-xs uppercase tracking-widest">
+            {isLive ? 'LIVE NOW' : 'OFFLINE'}
+          </span>
         </div>
-      </section>
-    </main>
+
+        {/* Logo/Title */}
+        <h1 className="text-6xl md:text-8xl font-bold uppercase tracking-widest mb-16">
+          STILL FM
+        </h1>
+
+        {/* Enter Button */}
+        <Link 
+          href="/home"
+          className="group relative"
+        >
+          <div className="border-2 border-white px-12 py-4 text-sm uppercase tracking-widest transition-all duration-300 hover:bg-white hover:text-black">
+            Enter Site
+          </div>
+        </Link>
+
+        {/* Subtitle */}
+        <p className="mt-8 text-xs uppercase tracking-wider text-gray-300">
+          Montreal Underground Radio
+        </p>
+      </div>
+
+      {/* Skip Video Button (optional) */}
+      <button
+        onClick={() => setShowVideo(false)}
+        className="absolute bottom-8 right-8 z-20 text-xs uppercase tracking-wider text-white/50 hover:text-white transition-colors"
+      >
+        Skip Video
+      </button>
+    </div>
   );
 }

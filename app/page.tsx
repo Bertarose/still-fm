@@ -8,31 +8,39 @@ export default function LandingPage() {
   const [showVideo, setShowVideo] = useState(true);
 
   // Check if stream is live
-  useEffect(() => {
-    const checkLiveStatus = async () => {
-      try {
-        const response = await fetch(
-          'https://api.twitch.tv/helix/streams?user_login=stillfmradio',
-          {
-            headers: {
-              'Client-ID': 'YOUR_TWITCH_CLIENT_ID', // Tu devras ajouter ton Client ID
-              'Authorization': 'Bearer YOUR_ACCESS_TOKEN' // Et ton token
-            }
+useEffect(() => {
+  // Only run on client side
+  if (typeof window === 'undefined') return;
+  
+  const checkLiveStatus = async () => {
+    try {
+      // Pour l'instant, on met toujours offline
+      // Tu pourras ajouter la vraie API plus tard
+      setIsLive(false);
+      
+      /* Commenté pour l'instant - nécessite Twitch API credentials
+      const response = await fetch(
+        'https://api.twitch.tv/helix/streams?user_login=stillfmradio',
+        {
+          headers: {
+            'Client-ID': 'YOUR_TWITCH_CLIENT_ID',
+            'Authorization': 'Bearer YOUR_ACCESS_TOKEN'
           }
-        );
-        const data = await response.json();
-        setIsLive(data.data && data.data.length > 0);
-      } catch (error) {
-        console.error('Error checking live status:', error);
-        setIsLive(false);
-      }
-    };
+        }
+      );
+      const data = await response.json();
+      setIsLive(data.data && data.data.length > 0);
+      */
+    } catch (error) {
+      console.error('Error checking live status:', error);
+      setIsLive(false);
+    }
+  };
 
-    checkLiveStatus();
-    // Check every 60 seconds
-    const interval = setInterval(checkLiveStatus, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  checkLiveStatus();
+  const interval = setInterval(checkLiveStatus, 60000);
+  return () => clearInterval(interval);
+}, []);
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">

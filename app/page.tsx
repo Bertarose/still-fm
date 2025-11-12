@@ -1,59 +1,101 @@
 import MixcloudPlayer from './components/MixcloudPlayer';
 
-// L'URL de l'API Mixcloud pour récupérer les shows (cloudcasts) de l'utilisateur "StillFM"
-const MIXCLOUD_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?limit=10';
+// URL pour les derniers shows (utilisé par getMixcloudData)
+const LATEST_SHOWS_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?limit=10';
+
+// URL pour les shows les plus populaires (utilisé par getArchiveData)
+// Trié par popularité (ordering=listens) et limité à 5
+const ARCHIVE_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?ordering=-listens&limit=5';
+
 
 // Fonction utilitaire pour adapter les données de l'API Mixcloud à la structure de votre composant
-const formatMixcloudShow = (mix: any) => {
+const formatMixcloudShow = (mix: any, isPopular: boolean = false) => {
     // Formatage de la date à partir de mix.created_time
     const mixDate = new Date(mix.created_time).toLocaleDateString('fr-FR', {
         day: '2-digit', month: 'short', year: 'numeric' 
-    }).toUpperCase().replace(/\./g, ''); // Enlève tous les points après les abréviations de mois
+    }).toUpperCase().replace(/\./g, ''); 
+
+    // Pour l'archive, on affiche le nombre d'écoutes si disponible, sinon la date
+    const dateOrStats = isPopular && mix.listen_count 
+        ? `${mix.listen_count.toLocaleString('fr-FR')} ÉCOUTES`
+        : `${mixDate}`;
 
     return {
         title: mix.name.toUpperCase(), 
         url: mix.url,
         img: mix.pictures?.extra_large, 
+        // L'API ne fournit pas directement les tags, on les laisse vides ou simule
         tags: [], 
-        date: mixDate,
+        date: dateOrStats,
     };
 };
 
 // ------------------------------------------------------------------
-// --- FONCTION ASYNCHRONE DE RÉCUPÉRATION DE DONNÉES ---
+// --- NOUVELLE FONCTION: RÉCUPÉRATION DES ARCHIVES (5 PLUS POPULAIRES) ---
 // ------------------------------------------------------------------
 
-async function getMixcloudData() {
+async function getArchiveData() {
     try {
-        const response = await fetch(MIXCLOUD_API_URL, { 
+        const response = await fetch(ARCHIVE_API_URL, { 
             // Caching pour Next.js : Revalidation toutes les 3600s (1 heure)
             next: { revalidate: 3600 } 
         });
 
         if (!response.ok) {
-            console.error(`Erreur HTTP: ${response.status} lors de la récupération de Mixcloud`);
-            return { latestMix: null, latestShows: [] };
+            console.error(`Erreur HTTP: ${response.status} lors de la récupération des archives`);
+            return [];
         }
 
         const data = await response.json();
-        const allShows = data.data.map(formatMixcloudShow);
-        
-        // Le tout dernier show pour la carte Hero (index 0)
-        const latestMix = {
-            ...allShows[0],
-            tags: ["LAST SHOW", "ARCHIVE"], 
-            pictures: { extra_large: allShows[0].img }
-        };
-
-        // Les 10 derniers shows pour la grille
-        const latestShows = allShows.slice(0, 10);
-        
-        return { latestMix, latestShows };
+        // Le second paramètre est true pour indiquer que ce sont des shows populaires
+        return data.data.map((mix: any) => formatMixcloudShow(mix, true)); 
 
     } catch (error) {
-        console.error("Erreur de récupération Mixcloud:", error);
-        return { latestMix: null, latestShows: [] };
+        console.error("Erreur de récupération Archives Mixcloud:", error);
+        return [];
     }
+}
+
+
+// ------------------------------------------------------------------
+// --- FONCTION DE RÉCUPÉRATION PRINCIPALE (MODIFIÉE) ---
+// ------------------------------------------------------------------
+
+async function getMixcloudData() {
+    // Exécute les deux appels API en parallèle pour de meilleures performances
+    const [latestShowsResponse, archiveShows] = await Promise.all([
+        fetch(LATEST_SHOWS_API_URL, { next: { revalidate: 3600 } }),
+        getArchiveData()
+    ]);
+    
+    let latestMix = null;
+    let latestShows = [];
+
+    try {
+        if (!latestShowsResponse.ok) {
+            throw new Error(`Erreur HTTP pour les derniers shows: ${latestShowsResponse.status}`);
+        }
+        
+        const data = await latestShowsResponse.json();
+        const allLatestShows = data.data.map((mix: any) => formatMixcloudShow(mix, false));
+        
+        // Dernier show pour le Hero
+        if (allLatestShows.length > 0) {
+            latestMix = {
+                ...allLatestShows[0],
+                tags: ["LAST SHOW", "ARCHIVE"], 
+                pictures: { extra_large: allLatestShows[0].img }
+            };
+        }
+
+        // 10 derniers shows pour la grille
+        latestShows = allLatestShows.slice(0, 10);
+        
+    } catch (error) {
+        console.error("Erreur de récupération des derniers shows:", error);
+    }
+    
+    return { latestMix, latestShows, archiveShows };
 }
 
 
@@ -63,11 +105,17 @@ async function getMixcloudData() {
 
 export default async function Home() {
     
-    const { latestMix, latestShows } = await getMixcloudData();
+    // Le composant reçoit les trois ensembles de données
+    const { latestMix, latestShows, archiveShows } = await getMixcloudData();
     
     const loading = !latestMix && latestShows.length === 0;
 
-    // Le contenu de la grande carte Hero (utilise latestMix)
+    // Déterminer la carte vedette de l'archive (le premier des 5 plus populaires)
+    const featuredArchive = archiveShows[0]; 
+    // Les autres archives (pour la grille de 4)
+    const smallArchiveGrid = archiveShows.slice(1, 5); 
+
+    // Rendu du Hero Card (inchangé, sauf l'utilisation de latestMix)
     const heroCard1Content = latestMix ? (
         <>
             <img 
@@ -84,7 +132,6 @@ export default async function Home() {
                             {latestMix.date}
                         </span>
                     )}
-                    {/* Typage des tags corrigé */}
                     {latestMix.tags && latestMix.tags.map((tag: string) => (
                         <span key={tag} className="text-[10px] font-normal tracking-wider uppercase border border-white px-2 py-1">
                             {tag}
@@ -189,7 +236,7 @@ export default async function Home() {
                 <section className="mb-12">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold uppercase tracking-wider">Latest Shows</h2>
-                        <a href="#" className="text-xs uppercase tracking-wider border border-white px-4 py-1 hover:bg-white hover:text-black transition-all">
+                        <a href="/shows" className="text-xs uppercase tracking-wider border border-white px-4 py-1 hover:bg-white hover:text-black transition-all">
                             See All
                         </a>
                     </div>
@@ -211,7 +258,6 @@ export default async function Home() {
                                 <p className="text-[10px] text-gray-400 tracking-wider">{show.date}</p>
                                 {show.tags.length > 0 && (
                                     <div className="flex gap-1 mt-1">
-                                        {/* Typage des tags corrigé */}
                                         {show.tags.map((tag: string) => (
                                             <span key={tag} className="text-[8px] border border-white px-1 py-0.5">{tag}</span>
                                         ))}
@@ -222,74 +268,54 @@ export default async function Home() {
                     </div>
                 </section>
                 
-                {/* FROM THE ARCHIVE Section (inchangé) */}
+                {/* FROM THE ARCHIVE Section (MAINTENANT DYNAMIQUE) */}
                 <section className="mb-12">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold uppercase tracking-wider">From The Archive</h2>
-                        <a href="#" className="text-xs uppercase tracking-wider border border-white px-4 py-1 hover:bg-white hover:text-black transition-all">
+                        <a href="/shows" className="text-xs uppercase tracking-wider border border-white px-4 py-1 hover:bg-white hover:text-black transition-all">
                             See All
                         </a>
                     </div>
                     
                     <div className="grid md:grid-cols-3 gap-4">
-                        <a href="#" className="md:col-span-1 group">
-                            <div className="aspect-[3/4] relative border border-white overflow-hidden">
-                                <img 
-                                    src="https://images.unsplash.com/photo-1574186893279-0e600b61a24d?w=600&h=800&fit=crop" 
-                                    alt="Archive Featured"
-                                    className="w-full h-full object-cover grayscale group-hover:opacity-80 transition-opacity"
-                                />
-                            </div>
-                        </a>
+                        
+                        {/* Grande Carte Vedette (Le show le plus populaire) */}
+                        {featuredArchive ? (
+                            <a href={featuredArchive.url} target="_blank" rel="noopener noreferrer" className="md:col-span-1 group relative">
+                                <div className="aspect-[3/4] relative border border-white overflow-hidden">
+                                    <img 
+                                        src={featuredArchive.img} 
+                                        alt={featuredArchive.title}
+                                        className="w-full h-full object-cover grayscale group-hover:opacity-80 transition-opacity"
+                                    />
+                                    {/* Overlay pour le titre sur la grande carte */}
+                                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-transparent to-transparent">
+                                        <h3 className="text-xs uppercase tracking-wide mb-1 font-bold">{featuredArchive.title}</h3>
+                                        <p className="text-[10px] text-gray-400 tracking-wider">{featuredArchive.date}</p>
+                                    </div>
+                                </div>
+                            </a>
+                        ) : (
+                             <div className="md:col-span-1 flex items-center justify-center aspect-[3/4] border border-white">
+                                <p className="text-xs text-gray-500">Chargement...</p>
+                             </div>
+                        )}
 
+                        {/* Petite Grille d'Archive (Les 4 shows suivants) */}
                         <div className="md:col-span-2 grid grid-cols-2 gap-4">
-                            <a href="#" className="group">
-                                <div className="aspect-square relative mb-2 border border-white overflow-hidden">
-                                    <img 
-                                        src="https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=400&h=400&fit=crop" 
-                                        alt="Archive"
-                                        className="w-full h-full object-cover grayscale group-hover:opacity-80 transition-opacity"
-                                    />
-                                </div>
-                                <h3 className="text-xs uppercase tracking-wide mb-1">MUZIKAWI CURATES: ZURET</h3>
-                                <p className="text-[10px] text-gray-400 tracking-wider">05 SEP 2025 | 11:00 [BST]</p>
-                            </a>
-
-                            <a href="#" className="group">
-                                <div className="aspect-square relative mb-2 border border-white overflow-hidden">
-                                    <img 
-                                        src="https://images.unsplash.com/photo-1556035511-3168381ea4d4?w=400&h=400&fit=crop" 
-                                        alt="Archive"
-                                        className="w-full h-full object-cover grayscale group-hover:opacity-80 transition-opacity"
-                                    />
-                                </div>
-                                <h3 className="text-xs uppercase tracking-wide mb-1">ETHIO GROOVES: HEWAN</h3>
-                                <p className="text-[10px] text-gray-400 tracking-wider">05 SEP 2025 | 08:00 [BST]</p>
-                            </a>
-
-                            <a href="#" className="group">
-                                <div className="aspect-square relative mb-2 border border-white overflow-hidden">
-                                    <img 
-                                        src="https://images.unsplash.com/photo-1524650359799-842906ca1c06?w=400&h=400&fit=crop" 
-                                        alt="Archive"
-                                        className="w-full h-full object-cover grayscale group-hover:opacity-80 transition-opacity"
-                                    />
-                                </div>
-                                <h3 className="text-xs uppercase tracking-wide mb-1">MIDNIGHT SESSIONS</h3>
-                                <p className="text-[10px] text-gray-400 tracking-wider">04 SEP 2025 | 00:00 [BST]</p>
-                            </a>
-
-                            <a href="#" className="group">
-                                <div className="aspect-square relative mb-2 border border-white overflow-hidden">
-                                    <img 
-                                        src="https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?w=400&h=400&fit=crop" 
-                                        alt="Archive"
-                                        className="w-full h-full object-cover grayscale group-hover:opacity-80 transition-opacity"
-                                    />
-                                </div>
-                                <h3 className="text-xs uppercase tracking-wide mb-1">CAVITY FEELING</h3>
-                                <p className="text-[10px] text-gray-400 tracking-wider">03 SEP 2025 | 15:00 [BST]</p>
-                            </a>
+                            {smallArchiveGrid.map((show: any, index: number) => (
+                                <a href={show.url} key={index} target="_blank" rel="noopener noreferrer" className="group">
+                                    <div className="aspect-square relative mb-2 border border-white overflow-hidden">
+                                        <img 
+                                            src={show.img} 
+                                            alt={show.title}
+                                            className="w-full h-full object-cover grayscale group-hover:opacity-80 transition-opacity"
+                                        />
+                                    </div>
+                                    <h3 className="text-xs uppercase tracking-wide mb-1">{show.title}</h3>
+                                    <p className="text-[10px] text-gray-400 tracking-wider">{show.date}</p>
+                                </a>
+                            ))}
                         </div>
                     </div>
                 </section>
@@ -298,7 +324,7 @@ export default async function Home() {
                 <section className="mb-12">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold uppercase tracking-wider">This Week</h2>
-                        <a href="#" className="text-xs uppercase tracking-wider border border-white px-4 py-1 hover:bg-white hover:text-black transition-all">
+                        <a href="/schedule" className="text-xs uppercase tracking-wider border border-white px-4 py-1 hover:bg-white hover:text-black transition-all">
                             Full Schedule
                         </a>
                     </div>

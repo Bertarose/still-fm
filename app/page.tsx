@@ -4,7 +4,8 @@ import MixcloudPlayer from './components/MixcloudPlayer';
 const MIXCLOUD_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?limit=10';
 
 // Fonction utilitaire pour adapter les données de l'API Mixcloud à la structure de votre composant
-const formatMixcloudShow = (mix) => {
+// Correction ici : Ajout de ": any" au paramètre 'mix'
+const formatMixcloudShow = (mix: any) => {
     // Formatage de la date à partir de mix.created_time
     const mixDate = new Date(mix.created_time).toLocaleDateString('fr-FR', {
         day: '2-digit', month: 'short', year: 'numeric' 
@@ -14,27 +15,24 @@ const formatMixcloudShow = (mix) => {
         title: mix.name.toUpperCase(), 
         url: mix.url,
         img: mix.pictures?.extra_large, 
-        tags: [], // Tags laissés vides, à implémenter si l'API les fournit
+        tags: [], 
         date: mixDate,
     };
 };
 
 // ------------------------------------------------------------------
-// --- NOUVELLE FONCTION ASYNCHRONE DE RÉCUPÉRATION DE DONNÉES (Remplaçant getStaticProps) ---
+// --- FONCTION ASYNCHRONE DE RÉCUPÉRATION DE DONNÉES ---
 // ------------------------------------------------------------------
 
 async function getMixcloudData() {
     try {
         const response = await fetch(MIXCLOUD_API_URL, { 
-            // Ajouter une option de cache pour Next.js 
-            // Ici, nous forçons la récupération statique et la revalidation toutes les 3600s (1 heure)
+            // Caching pour Next.js : Revalidation toutes les 3600s (1 heure)
             next: { revalidate: 3600 } 
         });
 
         if (!response.ok) {
-            // Loguer l'erreur côté serveur
             console.error(`Erreur HTTP: ${response.status} lors de la récupération de Mixcloud`);
-            // Retourner les valeurs par défaut
             return { latestMix: null, latestShows: [] };
         }
 
@@ -61,18 +59,13 @@ async function getMixcloudData() {
 
 
 // ------------------------------------------------------------------
-// --- COMPOSANT HOME ASYNCHRONE (REÇOIT LES DONNÉES DE LA FONCTION) ---
+// --- COMPOSANT HOME ASYNCHRONE ---
 // ------------------------------------------------------------------
 
-// Rendre le composant par défaut asynchrone pour attendre les données.
 export default async function Home() {
     
-    // Appel de la fonction de récupération de données au moment du build/revalidation
     const { latestMix, latestShows } = await getMixcloudData();
     
-    // Next.js gère la mise en cache et le rendu statique pour vous.
-    
-    // Vérification de chargement/erreur simplifiée
     const loading = !latestMix && latestShows.length === 0;
 
     // Le contenu de la grande carte Hero (utilise latestMix)

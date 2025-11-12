@@ -1,4 +1,4 @@
-import MixcloudPlayer from './components/MixcloudPlayer';
+import MixcloudPlayer from '../components/MixcloudPlayer';
 import Link from 'next/link';
 
 // Force dynamic rendering for this page

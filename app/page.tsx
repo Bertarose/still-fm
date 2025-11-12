@@ -84,7 +84,7 @@ export default async function Home() {
                             {latestMix.date}
                         </span>
                     )}
-                    {/* Correction précédente : Ajout de (tag: string) */}
+                    {/* Typage des tags corrigé */}
                     {latestMix.tags && latestMix.tags.map((tag: string) => (
                         <span key={tag} className="text-[10px] font-normal tracking-wider uppercase border border-white px-2 py-1">
                             {tag}
@@ -198,8 +198,7 @@ export default async function Home() {
                         {loading && latestShows.length === 0 && <p className="col-span-full text-center text-gray-500">Chargement des derniers shows...</p>}
                         
                         {/* Boucle des shows récupérés de Mixcloud */}
-                        {/* CORRECTION 3: Ajout de (show: any) */}
-                        {latestShows.map((show: any, index) => (
+                        {latestShows.map((show: any, index: number) => (
                             <a key={index} href={show.url} target="_blank" rel="noopener noreferrer" className="group">
                                 <div className="aspect-square relative mb-2 border border-white overflow-hidden">
                                     <img 
@@ -212,7 +211,7 @@ export default async function Home() {
                                 <p className="text-[10px] text-gray-400 tracking-wider">{show.date}</p>
                                 {show.tags.length > 0 && (
                                     <div className="flex gap-1 mt-1">
-                                        {/* Correction précédente : Ajout de (tag: string) */}
+                                        {/* Typage des tags corrigé */}
                                         {show.tags.map((tag: string) => (
                                             <span key={tag} className="text-[8px] border border-white px-1 py-0.5">{tag}</span>
                                         ))}

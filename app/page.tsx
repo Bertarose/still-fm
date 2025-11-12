@@ -30,7 +30,7 @@ export default function Home() {
           <a href="#" className="group relative overflow-hidden bg-black hover:opacity-80 transition-opacity">
             <div className="aspect-[4/5] relative">
               <img 
-                src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=1000&fit=crop" 
+                src="https://thumbnailer.mixcloud.com/unsafe/580x580/extaudio/3/3/2/0/1144-c792-4e21-8bb4-fa6a4db336d7" 
                 alt="DJ Performance"
                 className="w-full h-full object-cover grayscale"
               />

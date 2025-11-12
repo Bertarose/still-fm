@@ -38,7 +38,7 @@ const formatMixcloudShow = (mix: any) => {
         img: mix.pictures?.extra_large, 
         tags: tags,
         date: formattedDate,
-        listens: mix.listen_count // On le garde si jamais vous voulez l'utiliser ailleurs
+        listens: mix.listen_count 
     };
 };
 
@@ -46,8 +46,12 @@ const formatMixcloudShow = (mix: any) => {
 async function getShowsData() {
     try {
         const [latestResponse, trendingResponse] = await Promise.all([
+            // La grille principale est revalidée toutes les heures (3600s)
             fetch(LATEST_API_URL, { next: { revalidate: 3600 } }),
-            fetch(TRENDING_API_URL, { next: { revalidate: 3600 } })
+            
+            // TENTATIVE DE DÉBOGAGE : Forcer la revalidation à chaque requête (revalidate: 0)
+            // Cela devrait garantir que le tri 'hot' n'est pas mis en cache
+            fetch(TRENDING_API_URL, { next: { revalidate: 0 } }) 
         ]);
 
         const [latestData, trendingData] = await Promise.all([
@@ -117,7 +121,7 @@ export default async function ShowsPage() {
                                             alt={show.title}
                                             className="w-full h-full object-cover group-hover:opacity-80 transition"
                                         />
-                                         {/* Affichage d'un badge "HOT" ou du nombre d'écoutes si vous le souhaitez */}
+                                         {/* Affichage d'un badge "HOT" */}
                                         <div className="absolute top-2 left-2 text-[8px] font-bold uppercase tracking-wider bg-white text-black px-2 py-0.5">
                                             HOT
                                         </div>

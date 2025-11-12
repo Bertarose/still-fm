@@ -1,14 +1,15 @@
 import MixcloudPlayer from './components/MixcloudPlayer';
+import MobileMenu from './components/MobileMenu'; // Importation du nouveau composant client
+import Link from 'next/link'; // Utiliser Link au lieu de <a> pour les navigations internes
 
-// URL pour les derniers shows (utilisé par getMixcloudData)
+// URL pour les derniers shows
 const LATEST_SHOWS_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?limit=10';
 
-// URL pour les shows les plus populaires (utilisé par getArchiveData)
-// Trié par popularité (ordering=listens) et limité à 5
+// URL pour les shows les plus populaires
 const ARCHIVE_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?ordering=-listens&limit=5';
 
 
-// Fonction utilitaire pour adapter les données de l'API Mixcloud à la structure de votre composant
+// Fonction utilitaire pour adapter les données
 const formatMixcloudShow = (mix: any, isPopular: boolean = false) => {
     // Formatage de la date à partir de mix.created_time
     const mixDate = new Date(mix.created_time).toLocaleDateString('fr-FR', {
@@ -24,20 +25,15 @@ const formatMixcloudShow = (mix: any, isPopular: boolean = false) => {
         title: mix.name.toUpperCase(), 
         url: mix.url,
         img: mix.pictures?.extra_large, 
-        // L'API ne fournit pas directement les tags, on les laisse vides ou simule
         tags: [], 
         date: dateOrStats,
     };
 };
 
-// ------------------------------------------------------------------
-// --- NOUVELLE FONCTION: RÉCUPÉRATION DES ARCHIVES (5 PLUS POPULAIRES) ---
-// ------------------------------------------------------------------
-
+// Récupération des archives (5 plus populaires)
 async function getArchiveData() {
     try {
         const response = await fetch(ARCHIVE_API_URL, { 
-            // Caching pour Next.js : Revalidation toutes les 3600s (1 heure)
             next: { revalidate: 3600 } 
         });
 
@@ -47,7 +43,6 @@ async function getArchiveData() {
         }
 
         const data = await response.json();
-        // Le second paramètre est true pour indiquer que ce sont des shows populaires
         return data.data.map((mix: any) => formatMixcloudShow(mix, true)); 
 
     } catch (error) {
@@ -57,12 +52,8 @@ async function getArchiveData() {
 }
 
 
-// ------------------------------------------------------------------
-// --- FONCTION DE RÉCUPÉRATION PRINCIPALE (MODIFIÉE) ---
-// ------------------------------------------------------------------
-
+// Fonction de récupération principale
 async function getMixcloudData() {
-    // Exécute les deux appels API en parallèle pour de meilleures performances
     const [latestShowsResponse, archiveShows] = await Promise.all([
         fetch(LATEST_SHOWS_API_URL, { next: { revalidate: 3600 } }),
         getArchiveData()
@@ -99,29 +90,20 @@ async function getMixcloudData() {
 }
 
 
-// ------------------------------------------------------------------
-// --- COMPOSANT HOME ASYNCHRONE ---
-// ------------------------------------------------------------------
-
+// COMPOSANT HOME ASYNCHRONE (Serveur)
 export default async function Home() {
     
-    // Le composant reçoit les trois ensembles de données
     const { latestMix, latestShows, archiveShows } = await getMixcloudData();
     
     const loading = !latestMix && latestShows.length === 0;
-
-    // Déterminer la carte vedette de l'archive (le premier des 5 plus populaires)
     const featuredArchive = archiveShows[0]; 
-    // Les autres archives (pour la grille de 4)
     const smallArchiveGrid = archiveShows.slice(1, 5); 
 
-    // Rendu du Hero Card (inchangé, sauf l'utilisation de latestMix)
     const heroCard1Content = latestMix ? (
         <>
             <img 
                 src={latestMix.pictures?.extra_large} 
                 alt={latestMix.title}
-                // grayscale REMOVED here
                 className="w-full h-full object-cover" 
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
@@ -152,23 +134,31 @@ export default async function Home() {
 
     return (
         <div className="min-h-screen bg-black text-white font-mono">
-            {/* Header (inchangé) */}
-            <header className="border-b border-white">
+            {/* Header: Ajout de 'relative' pour que le menu mobile absolu fonctionne */}
+            <header className="border-b border-white relative">
                 <div className="max-w-full px-4 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-8">
                         <h1 className="text-xs font-normal tracking-widest uppercase">
                             STILL FM
                         </h1>
+                        {/* Navigation de bureau classique */}
                         <nav className="hidden md:flex gap-6">
-                            <a href="/shows" className="text-xs uppercase tracking-wider hover:opacity-50 transition-opacity">Shows</a>
-                            <a href="/schedule" className="text-xs uppercase tracking-wider hover:opacity-50 transition-opacity">Schedule</a>
-                            <a href="/residents" className="text-xs uppercase tracking-wider hover:opacity-50 transition-opacity">Residents</a>
-                            <a href="/about" className="text-xs uppercase tracking-wider hover:opacity-50 transition-opacity">About</a>
+                            <Link href="/shows" className="text-xs uppercase tracking-wider hover:opacity-50 transition-opacity">Shows</Link>
+                            <Link href="/schedule" className="text-xs uppercase tracking-wider hover:opacity-50 transition-opacity">Schedule</Link>
+                            <Link href="/residents" className="text-xs uppercase tracking-wider hover:opacity-50 transition-opacity">Residents</Link>
+                            <Link href="/about" className="text-xs uppercase tracking-wider hover:opacity-50 transition-opacity">About</Link>
                         </nav>
                     </div>
-                    <button className="border border-white px-4 py-1 text-xs uppercase tracking-wider hover:bg-white hover:text-black transition-all">
-                        Listen Live
-                    </button>
+                    
+                    <div className="flex items-center gap-4"> 
+                        {/* 1. Composant Client pour le Menu Mobile */}
+                        <MobileMenu />
+                        
+                        {/* 2. Bouton Listen Live */}
+                        <button className="border border-white px-4 py-1 text-xs uppercase tracking-wider hover:bg-white hover:text-black transition-all">
+                            Listen Live
+                        </button>
+                    </div>
                 </div>
             </header>
             
@@ -176,11 +166,11 @@ export default async function Home() {
                 {/* Hero Section - 2 Large Cards */}
                 <div className="grid md:grid-cols-2 gap-4 mb-4">
                     {/* Card 1 - Latest Mixcloud Show (Dynamique) */}
-                    <a href={latestMix?.url || "#"} target="_blank" rel="noopener noreferrer" className="group relative overflow-hidden bg-black hover:opacity-80 transition-opacity">
+                    <Link href={latestMix?.url || "#"} target="_blank" rel="noopener noreferrer" className="group relative overflow-hidden bg-black hover:opacity-80 transition-opacity">
                         <div className="aspect-[4/5] relative">
                             {heroCard1Content}
                         </div>
-                    </a>
+                    </Link>
 
                     {/* Card 2 - TWITCH LIVE STREAM (inchangé) */}
                     <div className="group relative overflow-hidden bg-black">
@@ -237,9 +227,9 @@ export default async function Home() {
                 <section className="mb-12">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold uppercase tracking-wider">Latest Shows</h2>
-                        <a href="/shows" className="text-xs uppercase tracking-wider border border-white px-4 py-1 hover:bg-white hover:text-black transition-all">
+                        <Link href="/shows" className="text-xs uppercase tracking-wider border border-white px-4 py-1 hover:bg-white hover:text-black transition-all">
                             See All
-                        </a>
+                        </Link>
                     </div>
                     
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -247,12 +237,11 @@ export default async function Home() {
                         
                         {/* Boucle des shows récupérés de Mixcloud */}
                         {latestShows.map((show: any, index: number) => (
-                            <a key={index} href={show.url} target="_blank" rel="noopener noreferrer" className="group">
+                            <Link key={index} href={show.url} target="_blank" rel="noopener noreferrer" className="group">
                                 <div className="aspect-square relative mb-2 border border-white overflow-hidden">
                                     <img 
                                         src={show.img} 
                                         alt={show.title}
-                                        // grayscale REMOVED here
                                         className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
                                     />
                                 </div>
@@ -265,30 +254,29 @@ export default async function Home() {
                                         ))}
                                     </div>
                                 )}
-                            </a>
+                            </Link>
                         ))}
                     </div>
                 </section>
                 
-                {/* FROM THE ARCHIVE Section (MAINTENANT DYNAMIQUE) */}
+                {/* FROM THE ARCHIVE Section (Dynamique) */}
                 <section className="mb-12">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold uppercase tracking-wider">From The Archive</h2>
-                        <a href="/shows" className="text-xs uppercase tracking-wider border border-white px-4 py-1 hover:bg-white hover:text-black transition-all">
+                        <Link href="/shows" className="text-xs uppercase tracking-wider border border-white px-4 py-1 hover:bg-white hover:text-black transition-all">
                             See All
-                        </a>
+                        </Link>
                     </div>
                     
                     <div className="grid md:grid-cols-3 gap-4">
                         
                         {/* Grande Carte Vedette (Le show le plus populaire) */}
                         {featuredArchive ? (
-                            <a href={featuredArchive.url} target="_blank" rel="noopener noreferrer" className="md:col-span-1 group relative">
+                            <Link href={featuredArchive.url} target="_blank" rel="noopener noreferrer" className="md:col-span-1 group relative">
                                 <div className="aspect-[3/4] relative border border-white overflow-hidden">
                                     <img 
                                         src={featuredArchive.img} 
                                         alt={featuredArchive.title}
-                                        // grayscale REMOVED here
                                         className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
                                     />
                                     {/* Overlay pour le titre sur la grande carte */}
@@ -297,7 +285,7 @@ export default async function Home() {
                                         <p className="text-[10px] text-gray-400 tracking-wider">{featuredArchive.date}</p>
                                     </div>
                                 </div>
-                            </a>
+                            </Link>
                         ) : (
                              <div className="md:col-span-1 flex items-center justify-center aspect-[3/4] border border-white">
                                 <p className="text-xs text-gray-500">Chargement...</p>
@@ -307,18 +295,17 @@ export default async function Home() {
                         {/* Petite Grille d'Archive (Les 4 shows suivants) */}
                         <div className="md:col-span-2 grid grid-cols-2 gap-4">
                             {smallArchiveGrid.map((show: any, index: number) => (
-                                <a href={show.url} key={index} target="_blank" rel="noopener noreferrer" className="group">
+                                <Link href={show.url} key={index} target="_blank" rel="noopener noreferrer" className="group">
                                     <div className="aspect-square relative mb-2 border border-white overflow-hidden">
                                         <img 
                                             src={show.img} 
                                             alt={show.title}
-                                            // grayscale REMOVED here
                                             className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
                                         />
                                     </div>
                                     <h3 className="text-xs uppercase tracking-wide mb-1">{show.title}</h3>
                                     <p className="text-[10px] text-gray-400 tracking-wider">{show.date}</p>
-                                </a>
+                                </Link>
                             ))}
                         </div>
                     </div>
@@ -328,9 +315,9 @@ export default async function Home() {
                 <section className="mb-12">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold uppercase tracking-wider">This Week</h2>
-                        <a href="/schedule" className="text-xs uppercase tracking-wider border border-white px-4 py-1 hover:bg-white hover:text-black transition-all">
+                        <Link href="/schedule" className="text-xs uppercase tracking-wider border border-white px-4 py-1 hover:bg-white hover:text-black transition-all">
                             Full Schedule
-                        </a>
+                        </Link>
                     </div>
 
                     <div className="border border-white">

@@ -1,6 +1,14 @@
 // L'URL de l'API Mixcloud pour récupérer les shows (cloudcasts) de l'utilisateur "StillFM".
-// Nous fixons la limite à 24 pour correspondre à votre grille.
 const MIXCLOUD_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?limit=24';
+
+// NOUVELLE FONCTION: Algorithme de Fisher-Yates pour mélanger un tableau de manière aléatoire
+function shuffleArray(array: any[]) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
 
 // Fonction utilitaire pour adapter les données de l'API Mixcloud à la structure de votre composant
 const formatMixcloudShow = (mix: any) => {
@@ -45,8 +53,12 @@ async function getMixcloudData() {
         }
 
         const data = await response.json();
+        
         // Mappage des données brutes vers notre format structuré
-        return data.data.map(formatMixcloudShow);
+        const mappedShows = data.data.map(formatMixcloudShow);
+        
+        // ÉTAPE CLÉ : Mélanger les shows avant de les retourner
+        return shuffleArray(mappedShows);
 
     } catch (error) {
         console.error("Erreur de récupération Mixcloud:", error);
@@ -58,7 +70,7 @@ async function getMixcloudData() {
 // Le composant doit être une fonction asynchrone pour l'App Router de Next.js
 export default async function ShowsPage() {
     
-    // Récupération des 24 derniers shows
+    // Récupération des 24 derniers shows (maintenant mélangés)
     const allShows = await getMixcloudData();
     
     const loading = allShows.length === 0;
@@ -96,7 +108,6 @@ export default async function ShowsPage() {
                                 <img 
                                     src={show.img}
                                     alt={show.title}
-                                    // CLASSE grayscale RETIRÉE ICI
                                     className="w-full h-full object-cover group-hover:opacity-80 transition"
                                 />
                                 {/* Ajout des tags */}

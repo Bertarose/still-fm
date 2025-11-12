@@ -46,7 +46,7 @@ export default function Home() {
                   </span>
                 </div>
                 <h2 className="text-lg font-normal uppercase tracking-wide leading-tight">
-                  SOUNDS NAIS: MONI-MONI B2B SALO-SALO
+                 2021-08-22 // Dante Maxwell - Le Keyhole ep. 6 : Baile Funk Edition
                 </h2>
               </div>
             </div>

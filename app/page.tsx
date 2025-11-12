@@ -164,7 +164,14 @@ export default function LandingPage() {
           </span>
         </div>
 
-       
+        {/* Logo 3D Image */}
+        <div className="mb-8">
+          <img 
+            src="https://raw.githubusercontent.com/Bertarose/still-fm/main/public/logo-s.png"
+            alt="Still FM Logo" 
+            className="w-48 h-48 md:w-64 md:h-64 object-contain animate-pulse"
+          />
+        </div>
 
         {/* Logo/Title */}
         <h1 className="text-6xl md:text-8xl font-bold uppercase tracking-widest mb-16 drop-shadow-2xl">

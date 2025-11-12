@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import ShowCard from './components/ShowCard';
@@ -26,18 +26,31 @@ interface Resident {
 }
 
 export default function Home() {
-  const [trendingShows, setTrendingShows] = useState<Show[]>([]);
+  const [allShows, setAllShows] = useState<Show[]>([]);
+  const [latestShow, setLatestShow] = useState<Show | null>(null);
   const [residents, setResidents] = useState<Resident[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Randomize shows for archive section
+  const randomArchiveShows = useMemo(() => {
+    if (allShows.length === 0) return [];
+    const shuffled = [...allShows].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 6);
+  }, [allShows]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch trending shows
-        const trendingResponse = await fetch('/api/mixcloud?type=trending');
-        if (trendingResponse.ok) {
-          const trendingData = await trendingResponse.json();
-          setTrendingShows(trendingData.data || []);
+        // Fetch all shows from StillFM
+        const showsResponse = await fetch('/api/mixcloud?username=StillFM&limit=50');
+        if (showsResponse.ok) {
+          const showsData = await showsResponse.json();
+          const shows = showsData.data || [];
+          setAllShows(shows);
+          // Get the very latest show
+          if (shows.length > 0) {
+            setLatestShow(shows[0]);
+          }
         }
 
         // Fetch residents
@@ -58,15 +71,67 @@ export default function Home() {
 
   return (
     <main className="flex-grow">
-      {/* Hero Section with Twitch Embed */}
-      <section className="relative w-full bg-black">
-        <div className="w-full" style={{ paddingTop: '56.25%', position: 'relative' }}>
-          <iframe
-            src="https://player.twitch.tv/?channel=stillfmradio&parent=localhost&parent=still-fm.vercel.app&parent=www.stillfm.com&parent=stillfm.com&muted=true&autoplay=true"
-            className="absolute top-0 left-0 w-full h-full"
-            allowFullScreen
-            style={{ border: 'none' }}
-          />
+      {/* Hero Section - Latest Show + Twitch Stream */}
+      <section className="w-full px-4 sm:px-6 lg:px-8 py-8 bg-black">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* Latest Show */}
+            <div className="bg-gray-900 rounded-lg overflow-hidden">
+              <div className="p-4 sm:p-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">Latest Show</h2>
+                {isLoading ? (
+                  <div className="flex justify-center items-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+                  </div>
+                ) : latestShow ? (
+                  <a 
+                    href={latestShow.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="block group"
+                  >
+                    <div className="relative w-full pt-[100%] mb-4">
+                      <Image
+                        src={latestShow.pictures.large}
+                        alt={latestShow.name}
+                        fill
+                        className="object-cover rounded group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                    <h3 className="text-white font-semibold text-lg group-hover:text-gray-300 transition-colors">
+                      {latestShow.name}
+                    </h3>
+                    <p className="text-gray-400 text-sm mt-2">
+                      {new Date(latestShow.created_time).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </a>
+                ) : (
+                  <p className="text-gray-400">No shows available</p>
+                )}
+              </div>
+            </div>
+
+            {/* Twitch Stream */}
+            <div className="bg-black rounded-lg overflow-hidden">
+              <div className="p-4 sm:p-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">Live Now</h2>
+                <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
+                  <iframe
+                    src="https://player.twitch.tv/?channel=stillfmradio&parent=localhost&parent=still-fm.vercel.app&parent=www.stillfm.com&parent=stillfm.com&muted=true&autoplay=true"
+                    className="absolute top-0 left-0 w-full h-full rounded"
+                    allowFullScreen
+                    style={{ border: 'none' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+          </div>
         </div>
       </section>
 
@@ -90,24 +155,24 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trending Shows Section */}
+      {/* Latest Shows Section */}
       <section className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">Trending Shows</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">Latest Shows</h2>
           
           {isLoading ? (
             <div className="flex justify-center items-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
             </div>
-          ) : trendingShows && trendingShows.length > 0 ? (
+          ) : allShows && allShows.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {trendingShows.slice(0, 6).map((show) => (
+              {allShows.slice(1, 7).map((show) => (
                 <ShowCard key={show.key} show={show} />
               ))}
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-gray-600 text-lg">No trending shows available at the moment.</p>
+              <p className="text-gray-600 text-lg">No shows available at the moment.</p>
             </div>
           )}
           
@@ -122,8 +187,40 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Residents Section */}
+      {/* From the Archive Section - Random Shows */}
       <section className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">From the Archive</h2>
+          
+          {isLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+            </div>
+          ) : randomArchiveShows && randomArchiveShows.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {randomArchiveShows.map((show) => (
+                <ShowCard key={show.key} show={show} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-600 text-lg">No archive shows available at the moment.</p>
+            </div>
+          )}
+          
+          <div className="text-center mt-8 sm:mt-12">
+            <Link 
+              href="/shows" 
+              className="inline-block bg-black text-white px-6 sm:px-8 py-2 sm:py-3 rounded hover:bg-gray-800 transition-colors text-sm sm:text-base"
+            >
+              See All
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Residents Section */}
+      <section className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">Featured Residents</h2>
           
@@ -178,7 +275,7 @@ export default function Home() {
       </section>
 
       {/* Schedule Teaser */}
-      <section className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
+      <section className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 bg-gray-50">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6">
             Live Shows & Schedule

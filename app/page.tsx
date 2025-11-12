@@ -6,7 +6,7 @@ import Link from 'next/link'; // Utiliser Link au lieu de <a> pour les navigatio
 const LATEST_SHOWS_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?limit=10';
 
 // URL pour les shows les plus populaires
-const ARCHIVE_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?ordering=-listens&limit=5';
+const ARCHIVE_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?ordering=hot&limit=5';
 
 
 // Fonction utilitaire pour adapter les données

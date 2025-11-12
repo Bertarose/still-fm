@@ -4,7 +4,6 @@ import MixcloudPlayer from './components/MixcloudPlayer';
 const MIXCLOUD_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?limit=10';
 
 // Fonction utilitaire pour adapter les données de l'API Mixcloud à la structure de votre composant
-// Correction ici : Ajout de ": any" au paramètre 'mix'
 const formatMixcloudShow = (mix: any) => {
     // Formatage de la date à partir de mix.created_time
     const mixDate = new Date(mix.created_time).toLocaleDateString('fr-FR', {
@@ -85,7 +84,8 @@ export default async function Home() {
                             {latestMix.date}
                         </span>
                     )}
-                    {latestMix.tags && latestMix.tags.map(tag => (
+                    {/* CORRECTION 1: Ajout de (tag: string) */}
+                    {latestMix.tags && latestMix.tags.map((tag: string) => (
                         <span key={tag} className="text-[10px] font-normal tracking-wider uppercase border border-white px-2 py-1">
                             {tag}
                         </span>
@@ -211,7 +211,8 @@ export default async function Home() {
                                 <p className="text-[10px] text-gray-400 tracking-wider">{show.date}</p>
                                 {show.tags.length > 0 && (
                                     <div className="flex gap-1 mt-1">
-                                        {show.tags.map(tag => (
+                                        {/* CORRECTION 2: Ajout de (tag: string) */}
+                                        {show.tags.map((tag: string) => (
                                             <span key={tag} className="text-[8px] border border-white px-1 py-0.5">{tag}</span>
                                         ))}
                                     </div>

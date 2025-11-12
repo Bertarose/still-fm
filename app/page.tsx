@@ -1,5 +1,4 @@
 import MixcloudPlayer from './components/MixcloudPlayer';
-import MobileMenu from './components/MobileMenu'; // Importation du nouveau composant client
 import Link from 'next/link'; // Utiliser Link au lieu de <a> pour les navigations internes
 
 // URL pour les derniers shows
@@ -152,7 +151,7 @@ export default async function Home() {
                     
                     <div className="flex items-center gap-4"> 
                         {/* 1. Composant Client pour le Menu Mobile */}
-                        <MobileMenu />
+                      
                         
                         {/* 2. Bouton Listen Live */}
                         <button className="border border-white px-4 py-1 text-xs uppercase tracking-wider hover:bg-white hover:text-black transition-all">

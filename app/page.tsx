@@ -73,7 +73,7 @@ export default function LandingPage() {
         {/* Logo 3D Image */}
         <div className="mb-8">
           <img 
-            src="https://raw.githubusercontent.com/Bertarose/still-fm/main/public/logo-s.png" 
+            src="https://still-fm.vercel.app/logo-s.png" 
             alt="Still FM Logo" 
             className="w-48 h-48 md:w-64 md:h-64 object-contain animate-pulse"
           />

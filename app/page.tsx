@@ -210,4 +210,48 @@ export default function LandingPage() {
       {isLive && (
         <div className="absolute inset-0 w-full h-full opacity-30">
           <iframe
-            src={`
+            src={`https://player.twitch.tv/?channel=stillfmradio&parent=localhost&parent=stillfm-radio.vercel.app&parent=www.stillfm.com&parent=stillfm.com&muted=true&autoplay=true`}
+            className="w-full h-full object-cover"
+            allowFullScreen
+            style={{ border: 'none' }}
+          />
+        </div>
+      )}
+
+      {/* Dark Overlay for better text contrast */}
+      <div className="absolute inset-0 bg-black/20" />
+
+      {/* Content */}
+      <div className="relative z-10 flex flex-col items-center justify-center h-full text-white font-mono">
+        
+        {/* Live/Offline Indicator */}
+        <div className="mb-8 flex items-center gap-3">
+          <div className={`w-3 h-3 rounded-full ${isLive ? 'bg-red-500 animate-pulse' : 'bg-gray-500'}`} />
+          <span className="text-xs uppercase tracking-widest">
+            {isLive ? 'LIVE NOW' : 'OFFLINE'}
+          </span>
+        </div>
+
+        {/* Logo/Title */}
+        <h1 className="text-6xl md:text-8xl font-bold uppercase tracking-widest mb-16 drop-shadow-2xl">
+          STILL FM
+        </h1>
+
+        {/* Enter Button */}
+        <Link 
+          href="/home"
+          className="group relative"
+        >
+          <div className="border-2 border-white px-12 py-4 text-sm uppercase tracking-widest transition-all duration-300 hover:bg-white hover:text-black backdrop-blur-sm">
+            Enter Site
+          </div>
+        </Link>
+
+        {/* Subtitle */}
+        <p className="mt-8 text-xs uppercase tracking-wider text-gray-300">
+          Montreal Underground Radio
+        </p>
+      </div>
+    </div>
+  );
+}

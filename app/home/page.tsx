@@ -190,7 +190,8 @@ export default async function Home() {
                     {/* Carte 2: Lecteur Twitch */}
                     <div className="aspect-[4/5] relative border border-white overflow-hidden bg-gray-900">
                         <iframe
-                            src="https://player.twitch.tv/?channel=stillfmradio&parent=localhost&parent=still-fm.vercel.app&parent=www.stillfm.com&parent=stillfm.com&muted=false&autoplay=true"
+                            /* === Corrigé ICI === J'ai ajouté '&parent=stillfm-radio.vercel.app' à l'URL */
+                            src="https://player.twitch.tv/?channel=stillfmradio&parent=localhost&parent=still-fm.vercel.app&parent=www.stillfm.com&parent=stillfm.com&parent=stillfm-radio.vercel.app&muted=false&autoplay=true"
                             className="absolute inset-0 w-full h-full"
                             allowFullScreen
                             style={{ border: 'none' }}

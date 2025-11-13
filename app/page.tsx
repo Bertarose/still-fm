@@ -54,11 +54,11 @@ export default function LandingPage() {
   useEffect(() => {
     const fetchShows = async () => {
       try {
-        // <-- MODIFIÉ : J'essaie avec 'stillfmradio'
-        const response = await fetch('https://api.mixcloud.com/stillfmradio/cloudcasts/');
+        // <-- MODIFIÉ : J'utilise 'StillFM' (comme dans votre /home page)
+        const response = await fetch('https://api.mixcloud.com/StillFM/cloudcasts/');
         const data = await response.json();
         
-        // <-- AJOUTÉ : Vérification plus robuste
+        // Vérification plus robuste
         if (data.data && data.data.length > 0) {
           const formattedShows: MixcloudShow[] = data.data.map((show: any) => ({
             key: show.key,
@@ -68,12 +68,12 @@ export default function LandingPage() {
         } else {
           // Si la liste est vide
           console.error('Aucun show trouvé pour ce compte.');
-          setCurrentShowName('Aucun show trouvé.'); // <-- Nouveau message d'état
+          setCurrentShowName('Aucun show trouvé.'); 
         }
       } catch (error) {
         // Si l'API plante
         console.error('Erreur de chargement des shows Mixcloud:', error);
-        setCurrentShowName('Radio error.'); // <-- Nouveau message d'état
+        setCurrentShowName('Radio error.'); 
       }
     };
     fetchShows();

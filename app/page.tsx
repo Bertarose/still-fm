@@ -31,34 +31,41 @@ export default function LandingPage() {
       speedX: number;
       speedY: number;
       opacity: number;
+      canvas: HTMLCanvasElement; // <-- AJOUTÉ : pour stocker le canvas
+      ctx: CanvasRenderingContext2D; // <-- AJOUTÉ : pour stocker le contexte
 
-      // <-- MODIFIÉ : Le constructeur accepte 'canvas' en argument
-      constructor(canvas: HTMLCanvasElement) {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
+      // <-- MODIFIÉ : Le constructeur accepte 'canvas' ET 'ctx'
+      constructor(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
+        this.canvas = canvas; // <-- AJOUTÉ : On stocke le canvas
+        this.ctx = ctx;       // <-- AJOUTÉ : On stocke le contexte
+        
+        // On utilise 'this.canvas' au lieu de 'canvas' global
+        this.x = Math.random() * this.canvas.width;
+        this.y = Math.random() * this.canvas.height;
         this.size = Math.random() * 2 + 0.5;
         this.speedX = Math.random() * 0.5 - 0.25;
         this.speedY = Math.random() * 0.5 - 0.25;
         this.opacity = Math.random() * 0.5 + 0.3;
       }
 
+      // <-- MODIFIÉ : On utilise 'this.canvas' au lieu de 'canvas' global
       update() {
         this.x += this.speedX;
         this.y += this.speedY;
 
         // Wrap around screen
-        if (this.x > canvas.width) this.x = 0;
-        if (this.x < 0) this.x = canvas.width;
-        if (this.y > canvas.height) this.y = 0;
-        if (this.y < 0) this.y = canvas.height;
+        if (this.x > this.canvas.width) this.x = 0;
+        if (this.x < 0) this.x = this.canvas.width;
+        if (this.y > this.canvas.height) this.y = 0;
+        if (this.y < 0) this.y = this.canvas.height;
       }
 
+      // <-- MODIFIÉ : On utilise 'this.ctx' au lieu de 'ctx' global
       draw() {
-        if (!ctx) return;
-        ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
+        this.ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+        this.ctx.beginPath();
+        this.ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        this.ctx.fill();
       }
     }
 
@@ -66,8 +73,8 @@ export default function LandingPage() {
     const particleCount = 150;
     const particles: Particle[] = [];
     for (let i = 0; i < particleCount; i++) {
-      // <-- MODIFIÉ : On passe 'canvas' lors de la création
-      particles.push(new Particle(canvas));
+      // <-- MODIFIÉ : On passe 'canvas' ET 'ctx' lors de la création
+      particles.push(new Particle(canvas, ctx));
     }
 
     // Animation loop

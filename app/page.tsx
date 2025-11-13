@@ -54,23 +54,30 @@ export default function LandingPage() {
   useEffect(() => {
     const fetchShows = async () => {
       try {
-        // NOTE : J'ai changé 'stillfmradio' pour 'StillFM' car j'ai vu 'StillFM' dans votre code /home
-        // Si ça ne marche pas, remettez 'stillfmradio' ici.
-        const response = await fetch('https://api.mixcloud.com/StillFM/cloudcasts/');
+        // <-- MODIFIÉ : J'essaie avec 'stillfmradio'
+        const response = await fetch('https://api.mixcloud.com/stillfmradio/cloudcasts/');
         const data = await response.json();
-        // On ne garde que 'key' et 'name' pour être léger
-        const formattedShows: MixcloudShow[] = data.data.map((show: any) => ({
-          key: show.key,
-          name: show.name,
-        }));
-        setShowList(formattedShows);
+        
+        // <-- AJOUTÉ : Vérification plus robuste
+        if (data.data && data.data.length > 0) {
+          const formattedShows: MixcloudShow[] = data.data.map((show: any) => ({
+            key: show.key,
+            name: show.name,
+          }));
+          setShowList(formattedShows);
+        } else {
+          // Si la liste est vide
+          console.error('Aucun show trouvé pour ce compte.');
+          setCurrentShowName('Aucun show trouvé.'); // <-- Nouveau message d'état
+        }
       } catch (error) {
+        // Si l'API plante
         console.error('Erreur de chargement des shows Mixcloud:', error);
-        setCurrentShowName('Radio error');
+        setCurrentShowName('Radio error.'); // <-- Nouveau message d'état
       }
     };
     fetchShows();
-  }, []);
+  }, []); // Ce crochet ne s'exécute qu'une fois
 
   // 2. Fonction pour jouer un show aléatoire
   const playRandomShow = () => {
@@ -79,15 +86,9 @@ export default function LandingPage() {
       return;
     }
 
-    // Choisit un show au hasard dans la liste
     const randomShow = showList[Math.floor(Math.random() * showList.length)];
-    
-    // Met à jour le titre du show
     setCurrentShowName(randomShow.name);
-
-    // Dit au widget de charger et jouer le nouveau show
-    // Le 'true' à la fin signifie 'autoplay'
-    widgetRef.current.load(randomShow.key, true);
+    widgetRef.current.load(randomShow.key, true); // 'true' = autoplay
   };
 
   // 3. Charger le script de l'API
@@ -97,21 +98,18 @@ export default function LandingPage() {
 
   // 4. Initialiser le widget (quand le script et la liste de shows sont prêts)
   useEffect(() => {
+    // Ne s'exécute que si tout est prêt
     if (isScriptLoaded && showList.length > 0 && playerRef.current && !widgetRef.current) {
-      // Crée le widget dans notre <div>
+      
       const widget = (window as any).Mixcloud.PlayerWidget(playerRef.current);
       widgetRef.current = widget;
 
-      // Attend que le widget soit 100% prêt
       widget.ready.then(() => {
-        // Écoute l'événement 'ended' (fin du show)
-        widget.events.ended.on(playRandomShow); // <-- MAGIE : joue un nouveau show à la fin
-
-        // Joue le premier show aléatoire
-        playRandomShow();
+        widget.events.ended.on(playRandomShow); // Joue le suivant à la fin
+        playRandomShow(); // Joue le premier
       });
     }
-    // Dépend de isScriptLoaded et showList
+    // Ce crochet se ré-exécute si isScriptLoaded ou showList changent
   }, [isScriptLoaded, showList]);
 
 
@@ -186,18 +184,18 @@ export default function LandingPage() {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
       
-      {/* === DÉBUT : NOUVEAU LECTEUR RADIO === */}
+      {/* === LECTEUR RADIO === */}
       <div className="relative z-20 w-full p-4 backdrop-blur-sm bg-black/10 text-white font-mono text-center">
         <div className="text-xs uppercase tracking-widest mb-2">NOW PLAYING (RANDOM)</div>
+        {/* Affiche le nom du show ou le message d'erreur */}
         <div className="text-xs truncate px-4" title={currentShowName}>
           {currentShowName}
         </div>
         
         {/* Le conteneur invisible pour le widget Mixcloud */}
-        {/* 'h-0' le cache, mais il est toujours fonctionnel */}
         <div ref={playerRef} className="w-full h-0 opacity-0" />
       </div>
-      {/* === FIN : NOUVEAU LECTEUR RADIO === */}
+      {/* === FIN LECTEUR RADIO === */}
 
 
       {/* Animated Canvas Background */}

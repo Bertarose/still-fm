@@ -32,7 +32,8 @@ export default function LandingPage() {
       speedY: number;
       opacity: number;
 
-      constructor() {
+      // <-- MODIFIÉ : Le constructeur accepte 'canvas' en argument
+      constructor(canvas: HTMLCanvasElement) {
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
         this.size = Math.random() * 2 + 0.5;
@@ -65,7 +66,8 @@ export default function LandingPage() {
     const particleCount = 150;
     const particles: Particle[] = [];
     for (let i = 0; i < particleCount; i++) {
-      particles.push(new Particle());
+      // <-- MODIFIÉ : On passe 'canvas' lors de la création
+      particles.push(new Particle(canvas));
     }
 
     // Animation loop

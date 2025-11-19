@@ -6,11 +6,12 @@ import Link from 'next/link';
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600; // Revalidate every hour
 
-// URL pour les derniers shows
-const LATEST_SHOWS_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?limit=10';
+// URL pour récupérer beaucoup de shows et les trier par popularité
+const LATEST_SHOWS_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?limit=100';
 
-// URL pour les shows les plus populaire
-const ARCHIVE_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?ordering=-play_count&limit=5';
+// URL pour les archives - Shows de 2022 (les débuts de Still FM)
+// since = 1er janvier 2022, until = 31 décembre 2022
+const ARCHIVE_API_URL = 'https://api.mixcloud.com/StillFM/cloudcasts/?since=1640995200&until=1672531199&limit=20';
 
 // Fonction utilitaire pour adapter les données
 const formatMixcloudShow = (mix: any, isPopular: boolean = false) => {
@@ -27,17 +28,17 @@ const formatMixcloudShow = (mix: any, isPopular: boolean = false) => {
     return {
         title: mix.name.toUpperCase(), 
         url: mix.url,
-        img: mix.pictures?.extra_large, 
+        img: mix.pictures?.extra_large,
         tags: [], 
         date: dateOrStats,
     };
 };
 
-// Récupération des archives (5 plus populaires)
+// Récupération des archives (5 meilleurs shows de 2022)
 async function getArchiveData() {
     try {
         const response = await fetch(ARCHIVE_API_URL, { 
-            cache: 'no-store' // Use no-store instead of revalidate: 0
+            cache: 'no-store'
         });
 
         if (!response.ok) {
@@ -46,7 +47,18 @@ async function getArchiveData() {
         }
 
         const data = await response.json();
-        return data.data.map((mix: any) => formatMixcloudShow(mix, true)); 
+        
+        // Trier les shows de 2022 par popularité
+        const sortedBy2022Popularity = data.data.sort((a: any, b: any) => {
+            const aPlays = a.play_count || 0;
+            const bPlays = b.play_count || 0;
+            return bPlays - aPlays;
+        });
+        
+        // Garder les 5 plus populaires de 2022
+        const top5 = sortedBy2022Popularity.slice(0, 5);
+        
+        return top5.map((mix: any) => formatMixcloudShow(mix, true)); 
 
     } catch (error) {
         console.error("Erreur de récupération Archives Mixcloud:", error);
@@ -71,19 +83,27 @@ async function getMixcloudData() {
         }
         
         const data = await latestShowsResponse.json();
-        const allLatestShows = data.data.map((mix: any) => formatMixcloudShow(mix, false));
         
-        // Dernier show pour le Hero
+        // Trier manuellement par nombre d'écoutes (play_count) pour avoir les VRAIS plus populaires
+        const sortedByPopularity = data.data.sort((a: any, b: any) => {
+            const aPlays = a.play_count || 0;
+            const bPlays = b.play_count || 0;
+            return bPlays - aPlays; // Du plus populaire au moins populaire
+        });
+        
+        const allLatestShows = sortedByPopularity.map((mix: any) => formatMixcloudShow(mix, false));
+        
+        // Le show le plus populaire pour le Hero
         if (allLatestShows.length > 0) {
             latestMix = {
                 ...allLatestShows[0],
-                tags: ["LAST SHOW", "ARCHIVE"], 
+                tags: ["POPULAR", "ARCHIVE"], 
                 pictures: { extra_large: allLatestShows[0].img }
             };
         }
 
-        // 10 derniers shows pour la grille
-        latestShows = allLatestShows.slice(0, 10);
+        // Les 8 shows les plus populaires de tous les temps
+        latestShows = allLatestShows.slice(0, 8);
         
     } catch (error) {
         console.error("Erreur de récupération des derniers shows:", error);
@@ -155,7 +175,7 @@ export default async function Home() {
 
                     <div className="flex items-center gap-4">
                         <a 
-                            href="https://www.twitch.tv/stillfmradio" 
+                            href="https://www.twitch.tv/bertarose" 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="hidden md:block text-xs uppercase tracking-wider border border-white px-4 py-1 hover:bg-white hover:text-black transition-all"
@@ -196,7 +216,7 @@ export default async function Home() {
                     {/* Carte 2: Lecteur Twitch */}
                     <div className="aspect-[4/5] relative border border-white overflow-hidden bg-gray-900">
                         <iframe
-                            src="https://player.twitch.tv/?channel=stillfmradio&parent=still-fm.vercel.app&parent=localhost&muted=false&autoplay=true"
+                            src="https://player.twitch.tv/?channel=bertarose&parent=still-fm.vercel.app&parent=localhost&muted=false&autoplay=true"
                             className="absolute inset-0 w-full h-full"
                             allowFullScreen
                             allow="autoplay; fullscreen"
@@ -205,10 +225,10 @@ export default async function Home() {
                     </div>
                 </section>
 
-                {/* Latest Shows Section */}
+                {/* Popular Shows Section */}
                 <section className="mb-12">
                     <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-bold uppercase tracking-wider">Latest Shows</h2>
+                        <h2 className="text-2xl font-bold uppercase tracking-wider">Popular Shows</h2>
                         <a href="https://www.mixcloud.com/StillFM/" target="_blank" rel="noopener noreferrer" className="text-xs uppercase tracking-wider border border-white px-4 py-1 hover:bg-white hover:text-black transition-all">
                             See All
                         </a>
@@ -219,7 +239,7 @@ export default async function Home() {
                             <p className="text-xs text-gray-500 uppercase tracking-wider">Chargement des shows...</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {latestShows.map((show: any, index: number) => (
                                 <Link href={show.url} key={index} target="_blank" rel="noopener noreferrer" className="group">
                                     <div className="aspect-square relative mb-2 border border-white overflow-hidden">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import AudioPlayer from './components/AudioPlayer';
 
 export default function LandingPage() {
   const [isLive, setIsLive] = useState(false);
@@ -188,6 +189,9 @@ export default function LandingPage() {
           Montreal Underground Radio
         </p>
       </div>
+
+      {/* Audio Player - Fixed bottom left */}
+      <AudioPlayer />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import MixcloudPlayer from '../components/MixcloudPlayer';
+import TopAudioPlayer from '../components/TopAudioPlayer';
 import Link from 'next/link';
 
 // Force dynamic rendering for this page
@@ -175,6 +176,11 @@ export default async function Home() {
                 </div>
             </header>
 
+            {/* Audio Player en haut */}
+            <div className="border-b border-white">
+                <TopAudioPlayer />
+            </div>
+
             {/* Main */}
             <main className="max-w-full px-4 py-8">
                 
@@ -190,10 +196,10 @@ export default async function Home() {
                     {/* Carte 2: Lecteur Twitch */}
                     <div className="aspect-[4/5] relative border border-white overflow-hidden bg-gray-900">
                         <iframe
-                            /* === Corrigé ICI === J'ai ajouté '&parent=stillfm-radio.vercel.app' à l'URL */
-                            src="https://player.twitch.tv/?channel=stillfmradio&parent=localhost&parent=still-fm.vercel.app&parent=www.stillfm.com&parent=stillfm.com&parent=stillfm-radio.vercel.app&muted=false&autoplay=true"
+                            src="https://player.twitch.tv/?channel=stillfmradio&parent=still-fm.vercel.app&parent=localhost&muted=false&autoplay=true"
                             className="absolute inset-0 w-full h-full"
                             allowFullScreen
+                            allow="autoplay; fullscreen"
                             style={{ border: 'none' }}
                         />
                     </div>

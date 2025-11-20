@@ -3,13 +3,13 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import AudioPlayer from './components/AudioPlayer';
-import { usePlayer } from './context/PlayerContext'; // Import du Contexte
+import { usePlayer } from './context/PlayerContext';
 
 export default function LandingPage() {
   // On récupère les commandes du lecteur global
-  const { currentShow, isPlaying, togglePlay } = usePlayer();
+  const { togglePlay } = usePlayer();
   
-  // Pour le test, on initialise à TRUE pour voir le stream tout de suite
+  // Initialisé à TRUE pour que vous voyiez le stream (à remettre sur la logique réelle plus tard)
   const [isLive, setIsLive] = useState(true); 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -71,52 +71,25 @@ export default function LandingPage() {
     return () => { window.removeEventListener('resize', resizeCanvas); };
   }, []);
 
-  // Logique de vérification du Live (Simulée pour l'instant)
+  // Vérification du Live (Simulé)
   useEffect(() => {
-    // Ici on pourrait faire un fetch vers l'API Twitch pour vérifier si 'bertarose' est en live
-    // Pour l'instant on laisse à true pour que vous voyiez le stream
-    setIsLive(true); 
+    setIsLive(true); // Forcé à TRUE pour le test visuel
   }, []);
 
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
       
-      {/* === CONTROLE RADIO (HAUT) === */}
-      <div className="relative z-30 w-full p-4 backdrop-blur-sm bg-black/10 text-white font-mono flex flex-col items-center justify-center border-b border-white/10">
-        <div className="text-xs uppercase tracking-widest mb-2 text-gray-400">STILL FM RADIO</div>
-        
-        <div className="flex items-center gap-4">
-          {/* BOUTON PLAY / PAUSE GLOBAL */}
-          <button 
-            onClick={togglePlay}
-            className="w-8 h-8 flex items-center justify-center border border-white rounded-full hover:bg-white hover:text-black transition-colors cursor-pointer"
-          >
-            {isPlaying ? (
-              <div className="flex gap-1">
-                <div className="w-1 h-3 bg-current"></div>
-                <div className="w-1 h-3 bg-current"></div>
-              </div>
-            ) : (
-              <div className="w-0 h-0 border-t-[5px] border-t-transparent border-l-[8px] border-l-current border-b-[5px] border-b-transparent ml-1"></div>
-            )}
-          </button>
+      {/* NOTE: J'ai supprimé le lecteur du haut ici pour éviter le doublon */}
 
-          <div className="text-xs truncate max-w-[200px] md:max-w-md uppercase tracking-wide">
-            {currentShow ? currentShow.name : 'Loading...'}
-          </div>
-        </div>
-      </div>
-
-      {/* === IMAGE DE FOND (Masquée si Live) === */}
+      {/* === IMAGE DE FOND === */}
       <div className="absolute inset-0 z-0">
         <img 
           src="/bg.jpg" 
           alt="Background" 
-          // Si Live: Opacité très faible (10%). Sinon: Opacité forte (80%)
-          className={`w-full h-full object-cover transition-opacity duration-1000 image-vintage-effect ${isLive ? 'opacity-10' : 'opacity-80'}`} 
+          // Si Live: Opacité faible. Sinon: Opacité forte.
+          className={`w-full h-full object-cover transition-opacity duration-1000 image-vintage-effect ${isLive ? 'opacity-20' : 'opacity-80'}`} 
         />
-        {/* Overlay bruit TV toujours présent mais subtil */}
         <div className="absolute inset-0 tv-noise-overlay pointer-events-none opacity-50" />
       </div>
 
@@ -126,13 +99,12 @@ export default function LandingPage() {
         className="absolute inset-0 w-full h-full z-1 pointer-events-none mix-blend-screen opacity-50"
       />
 
-      {/* === STREAM TWITCH (Visible si Live) === */}
+      {/* === STREAM TWITCH (Arrière-plan) === */}
       {isLive && (
         <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
           <iframe
-            // Opacité à 80% pour bien voir le stream, avec un filtre noir et blanc pour le style
             src={`https://player.twitch.tv/?channel=bertarose&parent=localhost&parent=still-fm.vercel.app&muted=true&autoplay=true`}
-            className="w-full h-full object-cover opacity-80 grayscale contrast-125"
+            className="w-full h-full object-cover opacity-60 grayscale contrast-125"
             allowFullScreen
             style={{ border: 'none' }}
           />
@@ -140,19 +112,26 @@ export default function LandingPage() {
       )}
 
       {/* Dark Overlay */}
-      <div className="absolute inset-0 bg-black/10 z-3 pointer-events-none" />
+      <div className="absolute inset-0 bg-black/20 z-3 pointer-events-none" />
 
       {/* === CONTENU PRINCIPAL === */}
       <div className="relative z-10 flex flex-col items-center justify-center h-full text-white font-mono pb-20">
         
-        <div className="mb-8 flex items-center gap-3 backdrop-blur-sm px-4 py-2 rounded-full bg-black/20 border border-white/10">
-          <div className={`w-2 h-2 rounded-full ${isLive ? 'bg-red-500 animate-pulse' : 'bg-gray-400'}`} />
-          <span className="text-[10px] uppercase tracking-[0.2em]">
+        {/* INDICATEUR LIVE (Couleurs corrigées) */}
+        <div className="mb-8 flex items-center gap-3 backdrop-blur-sm px-4 py-2 rounded-full bg-black/40 border border-white/10">
+          {/* CORRECTION ICI : bg-green-500 si Live, sinon bg-red-500 */}
+          <div className={`w-2 h-2 rounded-full ${isLive ? 'bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'bg-red-500'}`} />
+          <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-200">
             {isLive ? 'LIVE ON AIR' : 'OFFLINE'}
           </span>
         </div>
 
-        <h1 className="text-7xl md:text-9xl font-bold uppercase tracking-tighter mb-12 drop-shadow-2xl mix-blend-overlay opacity-90 select-none">
+        {/* GRAND TITRE (Cliquable pour Play/Pause) */}
+        <h1 
+          onClick={togglePlay} // AJOUT : Cliquer sur le titre lance la radio
+          className="text-7xl md:text-9xl font-bold uppercase tracking-tighter mb-12 drop-shadow-2xl mix-blend-overlay opacity-90 select-none cursor-pointer hover:opacity-100 transition-opacity hover:scale-105 transform duration-500"
+          title="Click to Play Radio"
+        >
           STILL FM
         </h1>
 
@@ -160,7 +139,7 @@ export default function LandingPage() {
           href="/home"
           className="group relative overflow-hidden"
         >
-          <div className="border border-white px-16 py-4 text-xs uppercase tracking-[0.2em] transition-all duration-500 hover:bg-white hover:text-black backdrop-blur-md bg-black/20">
+          <div className="border border-white px-16 py-4 text-xs uppercase tracking-[0.2em] transition-all duration-500 hover:bg-white hover:text-black backdrop-blur-md bg-black/30 font-bold">
             Enter Site
           </div>
         </Link>
@@ -170,7 +149,7 @@ export default function LandingPage() {
         </p>
       </div>
 
-      {/* LECTEUR AUDIO FLOTTANT */}
+      {/* LECTEUR AUDIO FLOTTANT (Seul et unique lecteur) */}
       <AudioPlayer />
     </div>
   );

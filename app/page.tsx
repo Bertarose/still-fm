@@ -3,11 +3,14 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import AudioPlayer from './components/AudioPlayer';
+import { usePlayer } from './context/PlayerContext'; // Import du Contexte
 
 export default function LandingPage() {
+  // On récupère les commandes du lecteur global
+  const { currentShow, isPlaying, togglePlay } = usePlayer();
+  
   const [isLive, setIsLive] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null); // Référence pour l'image de fond
 
   // --- Animation des étoiles (Canvas) ---
   useEffect(() => {
@@ -49,7 +52,6 @@ export default function LandingPage() {
 
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
       particles.forEach(particle => { particle.update(); particle.draw(); });
       particles.forEach((particleA, indexA) => {
         particles.slice(indexA + 1).forEach(particleB => {
@@ -68,11 +70,12 @@ export default function LandingPage() {
     return () => { window.removeEventListener('resize', resizeCanvas); };
   }, []);
 
-  // Vérification du statut LIVE (Simulé ou via API si vous avez une route Twitch)
+  // Check Live Status (Twitch)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const checkLiveStatus = async () => {
-      try { setIsLive(false); } catch (error) { console.error('Error checking live status:', error); setIsLive(false); }
+      // Mettez à true pour tester le fond vidéo
+      try { setIsLive(false); } catch (error) { console.error(error); setIsLive(false); }
     };
     checkLiveStatus();
   }, []);
@@ -81,31 +84,53 @@ export default function LandingPage() {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
       
-      {/* === IMAGE DE FOND AVEC EFFET VIEILLE TÉLÉ === */}
-      {/* Le conteneur `image-vintage-effect` applique les filtres et le grain */}
+      {/* === CONTROLE RADIO (HAUT) === */}
+      <div className="relative z-30 w-full p-4 backdrop-blur-sm bg-black/10 text-white font-mono flex flex-col items-center justify-center border-b border-white/10">
+        <div className="text-xs uppercase tracking-widest mb-2 text-gray-400">STILL FM RADIO</div>
+        
+        <div className="flex items-center gap-4">
+          {/* BOUTON PLAY / PAUSE GLOBAL (Contrôle le AudioPlayer) */}
+          <button 
+            onClick={togglePlay}
+            className="w-8 h-8 flex items-center justify-center border border-white rounded-full hover:bg-white hover:text-black transition-colors cursor-pointer"
+          >
+            {isPlaying ? (
+              <div className="flex gap-1">
+                <div className="w-1 h-3 bg-current"></div>
+                <div className="w-1 h-3 bg-current"></div>
+              </div>
+            ) : (
+              <div className="w-0 h-0 border-t-[5px] border-t-transparent border-l-[8px] border-l-current border-b-[5px] border-b-transparent ml-1"></div>
+            )}
+          </button>
+
+          <div className="text-xs truncate max-w-[200px] md:max-w-md uppercase tracking-wide">
+            {currentShow ? currentShow.name : 'Loading...'}
+          </div>
+        </div>
+      </div>
+
+      {/* === IMAGE DE FOND === */}
       <div className="absolute inset-0 z-0">
         <img 
-          ref={imageRef} // J'ai ajouté une référence ici si besoin plus tard
           src="/bg.jpg" 
           alt="Background" 
-          // MODIFICATIONS ICI : Les classes CSS `image-vintage-effect` et `tv-noise-overlay` sont définies dans `globals.css`
           className="w-full h-full object-cover opacity-80 image-vintage-effect" 
         />
-        {/* Cet overlay simule le "grain" ou le "bruit" d'une vieille télévision */}
         <div className="absolute inset-0 tv-noise-overlay pointer-events-none" />
       </div>
 
       {/* === CANVAS (ÉTOILES) === */}
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 w-full h-full z-1 pointer-events-none"
+        className="absolute inset-0 w-full h-full z-1 pointer-events-none mix-blend-screen"
       />
 
       {/* Optional: Show Twitch when live */}
       {isLive && (
         <div className="absolute inset-0 w-full h-full opacity-30 z-2 pointer-events-none">
           <iframe
-            src={`https://player.twitch.tv/?channel=stillfmradio&parent=localhost&parent=stillfm-radio.vercel.app&parent=www.stillfm.com&parent=stillfm.com&muted=true&autoplay=true`}
+            src={`https://player.twitch.tv/?channel=bertarose&parent=localhost&parent=still-fm.vercel.app&muted=true&autoplay=true`}
             className="w-full h-full object-cover"
             allowFullScreen
             style={{ border: 'none' }}
@@ -113,13 +138,12 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* Dark Overlay (Reduced) */}
+      {/* Dark Overlay */}
       <div className="absolute inset-0 bg-black/10 z-3 pointer-events-none" />
 
       {/* === CONTENU PRINCIPAL === */}
-      <div className="relative z-10 flex flex-col items-center justify-center h-full text-white font-mono">
+      <div className="relative z-10 flex flex-col items-center justify-center h-full text-white font-mono pb-20">
         
-        {/* Indicateur Live */}
         <div className="mb-8 flex items-center gap-3 backdrop-blur-sm px-4 py-2 rounded-full bg-black/20 border border-white/10">
           <div className={`w-2 h-2 rounded-full ${isLive ? 'bg-red-500 animate-pulse' : 'bg-gray-400'}`} />
           <span className="text-[10px] uppercase tracking-[0.2em]">
@@ -127,12 +151,10 @@ export default function LandingPage() {
           </span>
         </div>
 
-        {/* Grand Titre */}
-        <h1 className="text-7xl md:text-9xl font-bold uppercase tracking-tighter mb-12 drop-shadow-2xl mix-blend-overlay opacity-90">
+        <h1 className="text-7xl md:text-9xl font-bold uppercase tracking-tighter mb-12 drop-shadow-2xl mix-blend-overlay opacity-90 select-none">
           STILL FM
         </h1>
 
-        {/* Bouton Enter */}
         <Link 
           href="/home"
           className="group relative overflow-hidden"
@@ -147,7 +169,7 @@ export default function LandingPage() {
         </p>
       </div>
 
-      {/* === LECTEUR AUDIO (Unique) === */}
+      {/* LECTEUR AUDIO FLOTTANT (Apparaît en bas à gauche) */}
       <AudioPlayer />
     </div>
   );

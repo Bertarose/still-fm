@@ -40,7 +40,7 @@ export default function ShowsPage() {
                     <div className="flex-1 flex items-center px-4 bg-white">/// ALL BROADCASTS ARCHIVE</div>
                 </div>
                 <nav className="flex h-8 items-stretch">
-                    {['Shows', 'Residents', 'Editorial', 'Shop'].map((item) => (
+                    {['Shows', 'Residents', 'Shop'].map((item) => (
                         <Link key={item} href={`/${item.toLowerCase()}`} className={`flex items-center px-6 border-r border-black hover:bg-black hover:text-white transition-colors cursor-pointer ${item === 'Shows' ? 'bg-black text-white' : ''}`}>
                             {item}
                         </Link>

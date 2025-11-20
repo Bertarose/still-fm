@@ -9,7 +9,8 @@ export default function LandingPage() {
   // On récupère les commandes du lecteur global
   const { currentShow, isPlaying, togglePlay } = usePlayer();
   
-  const [isLive, setIsLive] = useState(false);
+  // Pour le test, on initialise à TRUE pour voir le stream tout de suite
+  const [isLive, setIsLive] = useState(true); 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // --- Animation des étoiles (Canvas) ---
@@ -70,14 +71,11 @@ export default function LandingPage() {
     return () => { window.removeEventListener('resize', resizeCanvas); };
   }, []);
 
-  // Check Live Status (Twitch)
+  // Logique de vérification du Live (Simulée pour l'instant)
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const checkLiveStatus = async () => {
-      // Mettez à true pour tester le fond vidéo
-      try { setIsLive(false); } catch (error) { console.error(error); setIsLive(false); }
-    };
-    checkLiveStatus();
+    // Ici on pourrait faire un fetch vers l'API Twitch pour vérifier si 'bertarose' est en live
+    // Pour l'instant on laisse à true pour que vous voyiez le stream
+    setIsLive(true); 
   }, []);
 
 
@@ -89,7 +87,7 @@ export default function LandingPage() {
         <div className="text-xs uppercase tracking-widest mb-2 text-gray-400">STILL FM RADIO</div>
         
         <div className="flex items-center gap-4">
-          {/* BOUTON PLAY / PAUSE GLOBAL (Contrôle le AudioPlayer) */}
+          {/* BOUTON PLAY / PAUSE GLOBAL */}
           <button 
             onClick={togglePlay}
             className="w-8 h-8 flex items-center justify-center border border-white rounded-full hover:bg-white hover:text-black transition-colors cursor-pointer"
@@ -110,28 +108,31 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* === IMAGE DE FOND === */}
+      {/* === IMAGE DE FOND (Masquée si Live) === */}
       <div className="absolute inset-0 z-0">
         <img 
           src="/bg.jpg" 
           alt="Background" 
-          className="w-full h-full object-cover opacity-80 image-vintage-effect" 
+          // Si Live: Opacité très faible (10%). Sinon: Opacité forte (80%)
+          className={`w-full h-full object-cover transition-opacity duration-1000 image-vintage-effect ${isLive ? 'opacity-10' : 'opacity-80'}`} 
         />
-        <div className="absolute inset-0 tv-noise-overlay pointer-events-none" />
+        {/* Overlay bruit TV toujours présent mais subtil */}
+        <div className="absolute inset-0 tv-noise-overlay pointer-events-none opacity-50" />
       </div>
 
       {/* === CANVAS (ÉTOILES) === */}
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 w-full h-full z-1 pointer-events-none mix-blend-screen"
+        className="absolute inset-0 w-full h-full z-1 pointer-events-none mix-blend-screen opacity-50"
       />
 
-      {/* Optional: Show Twitch when live */}
+      {/* === STREAM TWITCH (Visible si Live) === */}
       {isLive && (
-        <div className="absolute inset-0 w-full h-full opacity-30 z-2 pointer-events-none">
+        <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
           <iframe
+            // Opacité à 80% pour bien voir le stream, avec un filtre noir et blanc pour le style
             src={`https://player.twitch.tv/?channel=bertarose&parent=localhost&parent=still-fm.vercel.app&muted=true&autoplay=true`}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover opacity-80 grayscale contrast-125"
             allowFullScreen
             style={{ border: 'none' }}
           />
@@ -169,7 +170,7 @@ export default function LandingPage() {
         </p>
       </div>
 
-      {/* LECTEUR AUDIO FLOTTANT (Apparaît en bas à gauche) */}
+      {/* LECTEUR AUDIO FLOTTANT */}
       <AudioPlayer />
     </div>
   );

@@ -6,13 +6,11 @@ import AudioPlayer from './components/AudioPlayer';
 import { usePlayer } from './context/PlayerContext';
 
 export default function LandingPage() {
-  const { togglePlay } = usePlayer();
-  
-  // Mettez ceci à 'true' pour voir le stream Twitch en fond immédiatement
-  const [isLive, setIsLive] = useState(true); 
+  const { currentShow, isPlaying, togglePlay } = usePlayer();
+  const [isLive, setIsLive] = useState(true); // Pour le test visuel
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // --- Animation des étoiles ---
+  // --- Animation des étoiles (Canvas) ---
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -79,21 +77,20 @@ export default function LandingPage() {
         <img 
           src="/bg.jpg" 
           alt="Background" 
-          // Si Live, on cache presque l'image pour voir le stream
           className={`w-full h-full object-cover transition-opacity duration-1000 image-vintage-effect ${isLive ? 'opacity-0' : 'opacity-80'}`} 
         />
         <div className="absolute inset-0 tv-noise-overlay pointer-events-none opacity-30" />
       </div>
 
-      {/* === STREAM TWITCH (ARRIÈRE-PLAN) === */}
+      {/* === STREAM TWITCH (Visuel d'ambiance uniquement) === */}
+      {/* pointer-events-none empêche de cliquer dessus, évitant le bouton play Twitch */}
       {isLive && (
-        <div className="absolute inset-0 w-full h-full z-0">
+        <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
           <iframe
-            // Note: muted=true est OBLIGATOIRE pour l'autoplay en background
             src={`https://player.twitch.tv/?channel=bertarose&parent=localhost&parent=still-fm.vercel.app&muted=true&autoplay=true&controls=false`}
             className="w-full h-full object-cover grayscale contrast-125 opacity-60"
             allowFullScreen
-            style={{ border: 'none', pointerEvents: 'none' }} // Pas d'interaction pour garder le focus sur le site
+            style={{ border: 'none' }} 
           />
         </div>
       )}
@@ -104,11 +101,11 @@ export default function LandingPage() {
         className="absolute inset-0 w-full h-full z-1 pointer-events-none mix-blend-screen opacity-50"
       />
 
-      {/* Dark Overlay pour lisibilité */}
+      {/* Dark Overlay */}
       <div className="absolute inset-0 bg-black/30 z-3 pointer-events-none" />
 
       {/* === CONTENU PRINCIPAL === */}
-      <div className="relative z-10 flex flex-col items-center justify-center h-full text-white font-mono pb-20">
+      <div className="relative z-10 flex flex-col items-center justify-center h-full text-white font-mono pb-10">
         
         {/* INDICATEUR LIVE */}
         <div className="mb-8 flex items-center gap-3 backdrop-blur-sm px-4 py-2 rounded-full bg-black/40 border border-white/10">
@@ -118,12 +115,21 @@ export default function LandingPage() {
           </span>
         </div>
 
-        {/* TITRE (Simple, sans interaction play confuse) */}
-        <h1 className="text-7xl md:text-9xl font-bold uppercase tracking-tighter mb-12 drop-shadow-2xl mix-blend-overlay opacity-90 select-none">
+        {/* TITRE PRINCIPAL */}
+        <h1 className="text-7xl md:text-9xl font-bold uppercase tracking-tighter mb-6 drop-shadow-2xl mix-blend-overlay opacity-90 select-none">
           STILL FM
         </h1>
 
-        {/* BOUTON D'ENTRÉE */}
+        {/* === INFORMATION SHOW (Demande Client) === */}
+        {/* Affiche le titre du show en cours ou "Loading..." */}
+        <div className="mb-8 text-center max-w-2xl px-4">
+            <div className="text-[10px] text-gray-400 uppercase tracking-widest mb-2">LATEST TRANSMISSION</div>
+            <p className="text-sm md:text-lg uppercase font-bold text-white tracking-wider leading-relaxed">
+                {currentShow ? currentShow.name : "LOADING FREQUENCY..."}
+            </p>
+        </div>
+
+        {/* BOUTON ENTER SITE */}
         <Link 
           href="/home"
           className="group relative overflow-hidden"
@@ -133,12 +139,12 @@ export default function LandingPage() {
           </div>
         </Link>
 
-        <p className="mt-8 text-[10px] uppercase tracking-widest text-gray-400 opacity-70">
+        <p className="mt-12 text-[10px] uppercase tracking-widest text-gray-500 opacity-60">
           Montreal Underground Radio
         </p>
       </div>
 
-      {/* LECTEUR AUDIO FLOTTANT (C'est ici qu'on clique Play pour la radio) */}
+      {/* LECTEUR AUDIO FLOTTANT (Seul endroit pour contrôler le son) */}
       <AudioPlayer />
     </div>
   );

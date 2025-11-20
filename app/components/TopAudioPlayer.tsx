@@ -1,17 +1,24 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { usePlayer, Show } from '../context/PlayerContext';
+import { usePlayer } from '../context/PlayerContext';
 
-// Hook pour charger le script API Mixcloud
+// Hook pour charger le script API Mixcloud proprement
 const useMixcloudScript = (onScriptLoad: () => void) => {
   useEffect(() => {
+    if (window.location.hostname === 'localhost' || typeof document === 'undefined') {
+        // Petite sécurité
+    }
+
     if ((window as any).Mixcloud) {
       onScriptLoad();
       return;
     }
+
     const id = 'mixcloud-widget-api-script';
-    if (document.getElementById(id)) return;
+    if (document.getElementById(id)) {
+      return; // Déjà en cours de chargement
+    }
 
     const script = document.createElement('script');
     script.id = id;
@@ -22,112 +29,107 @@ const useMixcloudScript = (onScriptLoad: () => void) => {
   }, [onScriptLoad]);
 };
 
-export default function AudioPlayer() {
+export default function TopAudioPlayer() {
   const { currentShow, isPlaying, togglePlay, playShow } = usePlayer();
   const [isReady, setIsReady] = useState(false);
   const widgetRef = useRef<any>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Charger un show par défaut (Le dernier) si aucun n'est sélectionné
-  useEffect(() => {
-    const fetchLatest = async () => {
-      if (!currentShow) {
-        try {
-          const res = await fetch('https://api.mixcloud.com/StillFM/cloudcasts/?limit=1');
-          const data = await res.json();
-          if (data.data && data.data.length > 0) {
-            const latest = data.data[0];
-            // On initialise le contexte avec ce show
-            playShow({
-               key: latest.key,
-               name: latest.name,
-               url: latest.url
-            }); 
-          }
-        } catch (e) { console.error(e); }
-      }
-    };
-    fetchLatest();
-  }, []);
-
-  // Initialiser le Widget
+  // 1. Charger le script API
   useMixcloudScript(() => {
-    if (iframeRef.current && !widgetRef.current && (window as any).Mixcloud) {
-      const widget = (window as any).Mixcloud.PlayerWidget(iframeRef.current);
-      widgetRef.current = widget;
-      widget.ready.then(() => {
-        setIsReady(true);
-        // On ne force pas la lecture ici pour éviter l'autoplay bloqué
-      });
+    // Le script est chargé, on peut initialiser si l'iframe est là
+    if (iframeRef.current && !widgetRef.current) {
+       initWidget();
     }
   });
 
-  // Réaction : Changement de Show ou Play/Pause
+  // Fonction d'initialisation du widget
+  const initWidget = () => {
+    if (!iframeRef.current || !(window as any).Mixcloud) return;
+
+    const widget = (window as any).Mixcloud.PlayerWidget(iframeRef.current);
+    widgetRef.current = widget;
+
+    widget.ready.then(() => {
+      setIsReady(true);
+      console.log("Mixcloud Widget Ready");
+      
+      // Synchroniser les événements du widget avec notre Contexte (optionnel mais recommandé)
+      // Par exemple, si l'utilisateur met pause directement sur le widget iframe
+      widget.events.pause.on(() => {
+         // On pourrait mettre à jour le contexte ici si on voulait une synchro parfaite bidirectionnelle
+      });
+    });
+  };
+
+  // 2. Initialiser un show par défaut si le contexte est vide au démarrage
   useEffect(() => {
-    if (widgetRef.current && isReady && currentShow) {
-        // Si la clé est différente, on charge
-        widgetRef.current.load(currentShow.key, isPlaying).then(() => {
-             if (isPlaying) widgetRef.current.play();
-             else widgetRef.current.pause();
+    if (!currentShow) {
+        const fetchLatest = async () => {
+            try {
+                const res = await fetch('https://api.mixcloud.com/StillFM/cloudcasts/?limit=1');
+                const data = await res.json();
+                if(data.data && data.data.length > 0) {
+                    // On injecte le show dans le contexte MAIS sans le jouer tout de suite (false)
+                    // Cela permet d'avoir le lecteur visuellement prêt
+                    // Note : playShow du contexte met isPlaying à true, donc on ruse un peu ou on accepte l'autoplay
+                    // Pour faire simple ici, on laisse l'utilisateur cliquer.
+                }
+            } catch(e) { console.error(e); }
+        };
+        fetchLatest();
+    }
+  }, []);
+
+  // 3. RÉACTION : Quand le show change dans le contexte (clic sur une grille)
+  useEffect(() => {
+    if (widgetRef.current && currentShow) {
+        // On charge le nouveau show et ON LANCE LA LECTURE (true)
+        widgetRef.current.load(currentShow.key, true).then(() => {
+            // Par sécurité, on s'assure que ça joue
+             widgetRef.current.play();
         });
     }
-  }, [currentShow, isPlaying, isReady]);
+  }, [currentShow]); // Se déclenche quand currentShow change
 
-  // UI si pas de show
-  if (!currentShow) return null;
+  // 4. RÉACTION : Quand isPlaying change (clic sur Play/Pause global)
+  useEffect(() => {
+    if (widgetRef.current && isReady) {
+        if (isPlaying) {
+            widgetRef.current.play();
+        } else {
+            widgetRef.current.pause();
+        }
+    }
+  }, [isPlaying, isReady]);
+
+
+  // Si aucun show n'est chargé, on ne rend rien ou un placeholder
+  if (!currentShow) {
+      return (
+        <div className="w-full backdrop-blur-md bg-black border-b border-gray-800 font-mono h-[80px] flex items-center justify-center z-50">
+            <span className="text-gray-500 text-xs uppercase animate-pulse">Waiting for signal...</span>
+        </div>
+      );
+  }
 
   return (
-    <>
-      {/* Widget Invisible (Moteur Audio) */}
+    <div className="w-full backdrop-blur-md bg-black border-b border-gray-800 font-mono h-[80px] flex items-center z-50 relative">
+      
+      {/* Iframe Mixcloud */}
       <iframe
         ref={iframeRef}
-        src={`https://www.mixcloud.com/widget/iframe/?hide_cover=1&mini=1&light=1&feed=${encodeURIComponent(currentShow.key)}`}
-        className="absolute opacity-0 pointer-events-none"
+        width="100%"
+        height="60"
+        src={`https://www.mixcloud.com/widget/iframe/?hide_cover=1&mini=1&light=1&autoplay=${isPlaying ? 1 : 0}&feed=${encodeURIComponent(currentShow.key)}`}
+        frameBorder="0"
         allow="autoplay"
+        className="absolute top-2 left-0 w-full h-full"
+        onLoad={initWidget} // Tente l'init au chargement de l'iframe
       />
-
-      {/* UI du Lecteur (Visible en bas à gauche) */}
-      <div className="fixed bottom-6 left-6 z-50 backdrop-blur-md bg-black/90 border border-white/20 hover:border-white/40 transition-all duration-300 px-5 py-3 font-mono max-w-sm group">
-        <div className="flex items-center gap-4">
-          {/* Bouton Play/Pause Local */}
-          <button
-            onClick={togglePlay}
-            className="relative w-9 h-9 border border-white/40 hover:border-white hover:bg-white/10 transition-all duration-200 flex items-center justify-center shrink-0"
-            aria-label={isPlaying ? 'Pause' : 'Play'}
-          >
-            {isPlaying ? (
-              <div className="flex gap-1">
-                <div className="w-[3px] h-4 bg-white" />
-                <div className="w-[3px] h-4 bg-white" />
-              </div>
-            ) : (
-              <div className="w-0 h-0 border-l-[10px] border-l-white border-t-[7px] border-t-transparent border-b-[7px] border-b-transparent ml-[2px]" />
-            )}
-          </button>
-
-          {/* Infos */}
-          <div className="flex-1 min-w-0">
-            <div className="text-[9px] text-white/50 uppercase tracking-[0.15em] mb-1 font-medium">
-              Now Playing
-            </div>
-            <div className="text-[13px] text-white truncate leading-tight">
-              {currentShow.name}
-            </div>
-          </div>
-
-          {/* Indicateur Live */}
-          <div className={`w-2 h-2 rounded-full shrink-0 ${isPlaying ? 'bg-green-400 animate-pulse' : 'bg-gray-500/50'}`} />
-        </div>
-
-        <a 
-          href={currentShow.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-2 text-[9px] text-white/40 hover:text-white/70 uppercase tracking-wider block"
-        >
-          View on Mixcloud →
-        </a>
-      </div>
-    </>
+      
+      {/* Overlay de contrôle (Optionnel : masque l'iframe pour utiliser nos propres boutons, 
+          mais ici on laisse l'iframe native pour avoir la barre de progression) */}
+    </div>
   );
 }

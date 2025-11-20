@@ -6,11 +6,73 @@ import AudioPlayer from './components/AudioPlayer';
 import { usePlayer } from './context/PlayerContext';
 
 export default function LandingPage() {
-  const { currentShow, isPlaying, togglePlay } = usePlayer();
-  const [isLive, setIsLive] = useState(true); // Pour le test visuel
+  const { togglePlay } = usePlayer();
+  const [isLive, setIsLive] = useState(false); // On laisse false par défaut, l'API nous dira si c'est vrai
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // Référence pour éviter de charger le player deux fois
+  const playerInitialized = useRef(false);
 
-  // --- Animation des étoiles (Canvas) ---
+  // --- 1. INTÉGRATION TWITCH API (Le "Force Play") ---
+  useEffect(() => {
+    // Sécurité pour ne pas charger si on quitte la page ou re-render
+    if (playerInitialized.current) return;
+
+    // Fonction d'initialisation du player
+    const initTwitchPlayer = () => {
+      if ((window as any).Twitch && document.getElementById('twitch-embed')) {
+        playerInitialized.current = true;
+        
+        const options = {
+          width: '100%',
+          height: '100%',
+          channel: 'bertarose', // Votre chaîne
+          // LISTE DES DOMAINES AUTORISÉS (Important pour Twitch)
+          parent: ['localhost', 'still-fm.vercel.app', 'www.stillfm.com', 'stillfm.com'], 
+          autoplay: true,   // Demande la lecture auto
+          muted: true,      // OBLIGATOIRE pour l'autoplay
+          controls: false,  // CACHE L'INTERFACE (Le gros bouton play, le volume, etc.)
+        };
+
+        const player = new (window as any).Twitch.Player('twitch-embed', options);
+
+        // Écouteurs d'événements pour automatiser le tout
+        player.addEventListener((window as any).Twitch.Player.READY, () => {
+          console.log("Twitch Ready");
+          player.setMuted(true); // On insiste sur le mute
+          player.play(); // ON POUSSE LE PLAY ICI
+        });
+
+        // Si le stream commence à jouer, on considère qu'on est LIVE
+        player.addEventListener((window as any).Twitch.Player.PLAY, () => {
+          console.log("Twitch Playing -> LIVE ON");
+          setIsLive(true);
+        });
+
+        // Si le stream est offline
+        player.addEventListener((window as any).Twitch.Player.OFFLINE, () => {
+          console.log("Twitch Offline");
+          setIsLive(false);
+        });
+      }
+    };
+
+    // Chargement du script Twitch si pas déjà là
+    if (!document.getElementById('twitch-js')) {
+      const script = document.createElement('script');
+      script.id = 'twitch-js';
+      script.src = 'https://player.twitch.tv/js/embed/v1.js';
+      script.async = true;
+      script.onload = initTwitchPlayer;
+      document.body.appendChild(script);
+    } else {
+      initTwitchPlayer();
+    }
+
+  }, []);
+
+
+  // --- 2. Animation des étoiles (Canvas) ---
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -72,28 +134,24 @@ export default function LandingPage() {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
       
-      {/* === IMAGE DE FOND === */}
-      <div className="absolute inset-0 z-0">
+      {/* === CONTAINER TWITCH (En arrière-plan absolu) === */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        {/* Le div qui recevra le lecteur Twitch via JS */}
+        <div 
+          id="twitch-embed" 
+          className={`w-full h-full object-cover transition-opacity duration-1000 grayscale contrast-125 pointer-events-none ${isLive ? 'opacity-60' : 'opacity-0'}`}
+        />
+      </div>
+
+      {/* === IMAGE DE FOND (Visible si Twitch est Offline ou charge) === */}
+      <div className={`absolute inset-0 z-0 transition-opacity duration-1000 ${isLive ? 'opacity-0' : 'opacity-80'}`}>
         <img 
           src="/bg.jpg" 
           alt="Background" 
-          className={`w-full h-full object-cover transition-opacity duration-1000 image-vintage-effect ${isLive ? 'opacity-0' : 'opacity-80'}`} 
+          className="w-full h-full object-cover image-vintage-effect" 
         />
         <div className="absolute inset-0 tv-noise-overlay pointer-events-none opacity-30" />
       </div>
-
-      {/* === STREAM TWITCH (Visuel d'ambiance uniquement) === */}
-      {/* pointer-events-none empêche de cliquer dessus, évitant le bouton play Twitch */}
-      {isLive && (
-        <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
-          <iframe
-            src={`https://player.twitch.tv/?channel=bertarose&parent=localhost&parent=still-fm.vercel.app&muted=true&autoplay=true&controls=false`}
-            className="w-full h-full object-cover grayscale contrast-125 opacity-60"
-            allowFullScreen
-            style={{ border: 'none' }} 
-          />
-        </div>
-      )}
 
       {/* === CANVAS (ÉTOILES) === */}
       <canvas
@@ -105,9 +163,9 @@ export default function LandingPage() {
       <div className="absolute inset-0 bg-black/30 z-3 pointer-events-none" />
 
       {/* === CONTENU PRINCIPAL === */}
-      <div className="relative z-10 flex flex-col items-center justify-center h-full text-white font-mono pb-10">
+      <div className="relative z-10 flex flex-col items-center justify-center h-full text-white font-mono pb-20">
         
-        {/* INDICATEUR LIVE */}
+        {/* INDICATEUR LIVE (Automatique maintenant !) */}
         <div className="mb-8 flex items-center gap-3 backdrop-blur-sm px-4 py-2 rounded-full bg-black/40 border border-white/10">
           <div className={`w-2 h-2 rounded-full ${isLive ? 'bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'bg-red-500'}`} />
           <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-200">
@@ -115,21 +173,12 @@ export default function LandingPage() {
           </span>
         </div>
 
-        {/* TITRE PRINCIPAL */}
-        <h1 className="text-7xl md:text-9xl font-bold uppercase tracking-tighter mb-6 drop-shadow-2xl mix-blend-overlay opacity-90 select-none">
+        {/* TITRE (Sans interaction confuse) */}
+        <h1 className="text-7xl md:text-9xl font-bold uppercase tracking-tighter mb-12 drop-shadow-2xl mix-blend-overlay opacity-90 select-none">
           STILL FM
         </h1>
 
-        {/* === INFORMATION SHOW (Demande Client) === */}
-        {/* Affiche le titre du show en cours ou "Loading..." */}
-        <div className="mb-8 text-center max-w-2xl px-4">
-            <div className="text-[10px] text-gray-400 uppercase tracking-widest mb-2">LATEST TRANSMISSION</div>
-            <p className="text-sm md:text-lg uppercase font-bold text-white tracking-wider leading-relaxed">
-                {currentShow ? currentShow.name : "LOADING FREQUENCY..."}
-            </p>
-        </div>
-
-        {/* BOUTON ENTER SITE */}
+        {/* BOUTON D'ENTRÉE */}
         <Link 
           href="/home"
           className="group relative overflow-hidden"
@@ -139,12 +188,12 @@ export default function LandingPage() {
           </div>
         </Link>
 
-        <p className="mt-12 text-[10px] uppercase tracking-widest text-gray-500 opacity-60">
+        <p className="mt-8 text-[10px] uppercase tracking-widest text-gray-400 opacity-70">
           Montreal Underground Radio
         </p>
       </div>
 
-      {/* LECTEUR AUDIO FLOTTANT (Seul endroit pour contrôler le son) */}
+      {/* LECTEUR AUDIO FLOTTANT */}
       <AudioPlayer />
     </div>
   );

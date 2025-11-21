@@ -1,5 +1,4 @@
 'use client';
-
 import React, { createContext, useContext, useState } from 'react';
 
 // Définition du type de Show
@@ -7,6 +6,7 @@ export interface Show {
   key: string;
   name: string;
   url: string;
+  img?: string; // AJOUTÉ: pour l'artwork
 }
 
 interface PlayerContextType {

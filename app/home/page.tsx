@@ -74,7 +74,7 @@ export default function Home() {
                     </div>
                 </div>
                 <nav className="flex h-8 items-stretch">
-                    {['Shows', 'Residents', 'Editorial', 'Shop'].map((item) => (
+                  {['Shows', 'Residents', 'About', 'Shop'].map((item) => (
                         <Link key={item} href={`/${item.toLowerCase()}`} className="flex items-center px-6 border-r border-black hover:bg-black hover:text-white transition-colors cursor-pointer">
                             {item}
                         </Link>

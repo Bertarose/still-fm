@@ -6,50 +6,51 @@ import AudioPlayer from './components/AudioPlayer';
 import { usePlayer } from './context/PlayerContext';
 
 export default function LandingPage() {
-  const { togglePlay } = usePlayer();
-  const [isLive, setIsLive] = useState(false); // On laisse false par défaut, l'API nous dira si c'est vrai
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { isPlaying: isRadioPlaying, togglePlay: toggleRadio } = usePlayer();
   
-  // Référence pour éviter de charger le player deux fois
+  const [isLive, setIsLive] = useState(true); 
+  const [watchMode, setWatchMode] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const playerInitialized = useRef(false);
+  const twitchPlayerRef = useRef<any>(null);
 
-  // --- 1. INTÉGRATION TWITCH API (Le "Force Play") ---
+  // --- 1. INTÉGRATION TWITCH API ---
   useEffect(() => {
-    // Sécurité pour ne pas charger si on quitte la page ou re-render
     if (playerInitialized.current) return;
 
-    // Fonction d'initialisation du player
     const initTwitchPlayer = () => {
       if ((window as any).Twitch && document.getElementById('twitch-embed')) {
         playerInitialized.current = true;
         
+        const parents = ['localhost', '127.0.0.1', 'still-fm.vercel.app', 'www.stillfm.com', 'stillfm.com'];
+        if (typeof window !== 'undefined' && !parents.includes(window.location.hostname)) {
+            parents.push(window.location.hostname);
+        }
+
         const options = {
           width: '100%',
           height: '100%',
-          channel: 'bertarose', // Votre chaîne
-          // LISTE DES DOMAINES AUTORISÉS (Important pour Twitch)
-          parent: ['localhost', 'still-fm.vercel.app', 'www.stillfm.com', 'stillfm.com'], 
-          autoplay: true,   // Demande la lecture auto
-          muted: true,      // OBLIGATOIRE pour l'autoplay
-          controls: false,  // CACHE L'INTERFACE (Le gros bouton play, le volume, etc.)
+          channel: 'bertarose',
+          parent: parents,
+          autoplay: true,
+          muted: true,     
+          controls: false, // On cache les contrôles en mode "fond d'écran"
         };
 
         const player = new (window as any).Twitch.Player('twitch-embed', options);
+        twitchPlayerRef.current = player;
 
-        // Écouteurs d'événements pour automatiser le tout
         player.addEventListener((window as any).Twitch.Player.READY, () => {
           console.log("Twitch Ready");
-          player.setMuted(true); // On insiste sur le mute
-          player.play(); // ON POUSSE LE PLAY ICI
+          player.setMuted(true);
+          player.play();
         });
 
-        // Si le stream commence à jouer, on considère qu'on est LIVE
-        player.addEventListener((window as any).Twitch.Player.PLAY, () => {
-          console.log("Twitch Playing -> LIVE ON");
+        player.addEventListener((window as any).Twitch.Player.ONLINE, () => {
+          console.log("Twitch Online");
           setIsLive(true);
         });
-
-        // Si le stream est offline
+        
         player.addEventListener((window as any).Twitch.Player.OFFLINE, () => {
           console.log("Twitch Offline");
           setIsLive(false);
@@ -57,7 +58,6 @@ export default function LandingPage() {
       }
     };
 
-    // Chargement du script Twitch si pas déjà là
     if (!document.getElementById('twitch-js')) {
       const script = document.createElement('script');
       script.id = 'twitch-js';
@@ -68,11 +68,26 @@ export default function LandingPage() {
     } else {
       initTwitchPlayer();
     }
-
   }, []);
 
+  // Fonction pour activer le mode "Spectateur"
+  const handleWatchStream = () => {
+    if (twitchPlayerRef.current) {
+        // 1. Couper la radio si elle joue
+        if (isRadioPlaying) {
+            toggleRadio();
+        }
+        // 2. Activer le son du stream et forcer la lecture
+        twitchPlayerRef.current.setMuted(false);
+        twitchPlayerRef.current.setVolume(1.0);
+        twitchPlayerRef.current.play(); // Force le play
+        
+        // 3. Changer l'état visuel
+        setWatchMode(true);
+    }
+  };
 
-  // --- 2. Animation des étoiles (Canvas) ---
+  // --- 2. Animation des étoiles ---
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -134,16 +149,19 @@ export default function LandingPage() {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
       
-      {/* === CONTAINER TWITCH (En arrière-plan absolu) === */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        {/* Le div qui recevra le lecteur Twitch via JS */}
+      {/* === CONTAINER TWITCH === */}
+      {/* CORRECTION ICI : Ajout de z-50 quand watchMode est actif pour passer DEVANT tout le reste */}
+      <div className={`absolute inset-0 overflow-hidden transition-all duration-500 ${watchMode ? 'z-50' : 'z-0'}`}>
         <div 
           id="twitch-embed" 
-          className={`w-full h-full object-cover transition-opacity duration-1000 grayscale contrast-125 pointer-events-none ${isLive ? 'opacity-60' : 'opacity-0'}`}
+          className={`w-full h-full object-cover transition-all duration-1000 
+            ${isLive ? 'opacity-100' : 'opacity-0'}
+            ${watchMode ? 'grayscale-0 pointer-events-auto' : 'grayscale contrast-125 opacity-60 pointer-events-none'}
+          `}
         />
       </div>
 
-      {/* === IMAGE DE FOND (Visible si Twitch est Offline ou charge) === */}
+      {/* === IMAGE DE FOND (Backup) === */}
       <div className={`absolute inset-0 z-0 transition-opacity duration-1000 ${isLive ? 'opacity-0' : 'opacity-80'}`}>
         <img 
           src="/bg.jpg" 
@@ -156,16 +174,16 @@ export default function LandingPage() {
       {/* === CANVAS (ÉTOILES) === */}
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 w-full h-full z-1 pointer-events-none mix-blend-screen opacity-50"
+        className={`absolute inset-0 w-full h-full z-1 pointer-events-none mix-blend-screen transition-opacity duration-500 ${watchMode ? 'opacity-0' : 'opacity-50'}`}
       />
 
       {/* Dark Overlay */}
-      <div className="absolute inset-0 bg-black/30 z-3 pointer-events-none" />
+      <div className={`absolute inset-0 bg-black/30 z-3 pointer-events-none transition-opacity duration-500 ${watchMode ? 'opacity-0' : 'opacity-100'}`} />
 
       {/* === CONTENU PRINCIPAL === */}
-      <div className="relative z-10 flex flex-col items-center justify-center h-full text-white font-mono pb-20">
+      <div className={`relative z-10 flex flex-col items-center justify-center h-full text-white font-mono pb-20 transition-all duration-500 ${watchMode ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 scale-100'}`}>
         
-        {/* INDICATEUR LIVE (Automatique maintenant !) */}
+        {/* INDICATEUR LIVE */}
         <div className="mb-8 flex items-center gap-3 backdrop-blur-sm px-4 py-2 rounded-full bg-black/40 border border-white/10">
           <div className={`w-2 h-2 rounded-full ${isLive ? 'bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'bg-red-500'}`} />
           <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-200">
@@ -173,20 +191,34 @@ export default function LandingPage() {
           </span>
         </div>
 
-        {/* TITRE (Sans interaction confuse) */}
+        {/* TITRE */}
         <h1 className="text-7xl md:text-9xl font-bold uppercase tracking-tighter mb-12 drop-shadow-2xl mix-blend-overlay opacity-90 select-none">
           STILL FM
         </h1>
 
-        {/* BOUTON D'ENTRÉE */}
-        <Link 
-          href="/home"
-          className="group relative overflow-hidden"
-        >
-          <div className="border border-white px-16 py-4 text-xs uppercase tracking-[0.2em] transition-all duration-500 hover:bg-white hover:text-black backdrop-blur-md bg-black/30 font-bold">
-            Enter Site
-          </div>
-        </Link>
+        {/* BOUTONS */}
+        <div className="flex flex-col md:flex-row gap-6 items-center">
+            
+            {/* BOUTON ENTER SITE */}
+            <Link 
+            href="/home"
+            className="group relative overflow-hidden"
+            >
+            <div className="border border-white px-12 py-4 text-xs uppercase tracking-[0.2em] transition-all duration-500 hover:bg-white hover:text-black backdrop-blur-md bg-black/30 font-bold">
+                Enter Site
+            </div>
+            </Link>
+
+            {/* BOUTON WATCH STREAM (Seulement si Live) */}
+            {isLive && (
+                <button 
+                    onClick={handleWatchStream}
+                    className="border border-green-500 text-green-400 px-12 py-4 text-xs uppercase tracking-[0.2em] transition-all duration-500 hover:bg-green-500 hover:text-black backdrop-blur-md bg-black/30 font-bold animate-pulse hover:animate-none cursor-pointer z-50"
+                >
+                    Watch Stream
+                </button>
+            )}
+        </div>
 
         <p className="mt-8 text-[10px] uppercase tracking-widest text-gray-400 opacity-70">
           Montreal Underground Radio
@@ -194,7 +226,22 @@ export default function LandingPage() {
       </div>
 
       {/* LECTEUR AUDIO FLOTTANT */}
-      <AudioPlayer />
+      <div className={`transition-opacity duration-500 ${watchMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+          <AudioPlayer />
+      </div>
+
+      {/* BOUTON RETOUR (Pour quitter le mode Watch) */}
+      {watchMode && (
+          <button 
+            onClick={() => {
+                setWatchMode(false);
+                if(twitchPlayerRef.current) twitchPlayerRef.current.setMuted(true);
+            }}
+            className="absolute top-6 right-6 z-[100] border border-white/50 text-white/80 px-6 py-2 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all cursor-pointer"
+          >
+            Close Stream X
+          </button>
+      )}
     </div>
   );
 }

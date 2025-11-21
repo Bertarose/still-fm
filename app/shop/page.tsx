@@ -44,7 +44,7 @@ export default function ShopPage() {
               </div>
           </div>
           <nav className="flex h-8 items-stretch">
-              {['Shows', 'Residents', 'Shop'].map((item) => (
+             {['Shows', 'Residents', 'About', 'Shop'].map((item) => (
                   <Link 
                       key={item} 
                       href={`/${item.toLowerCase()}`} 

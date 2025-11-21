@@ -43,7 +43,7 @@ export default function ResidentsPage() {
 
           {/* Ligne 2 : Navigation */}
           <nav className="flex h-8 items-stretch">
-              {['Shows', 'Residents', 'Shop'].map((item) => (
+             {['Shows', 'Residents', 'About', 'Shop'].map((item) => (
                   <Link 
                       key={item} 
                       href={`/${item.toLowerCase()}`} 

@@ -3,107 +3,84 @@
 import { useState, useEffect, useRef } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 
-// Hook pour charger le script API Mixcloud
-const useMixcloudScript = (onScriptLoad: () => void) => {
-  useEffect(() => {
-    if ((window as any).Mixcloud) {
-      onScriptLoad();
-      return;
-    }
-    const id = 'mixcloud-widget-api-script';
-    if (document.getElementById(id)) return;
+interface AudioPlayerProps {
+  src?: string; // URL de la radio (Oracle Cloud / Icecast)
+}
 
-    const script = document.createElement('script');
-    script.id = id;
-    script.src = 'https://www.mixcloud.com/media/js/widgetApi.js';
-    script.async = true;
-    script.onload = onScriptLoad;
-    document.body.appendChild(script);
-  }, [onScriptLoad]);
-};
-
-export default function AudioPlayer() {
+export default function AudioPlayer({ src }: AudioPlayerProps) {
   const { currentShow, isPlaying, togglePlay, playShow } = usePlayer();
   const [isReady, setIsReady] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  
+  const [radioOnline, setRadioOnline] = useState(true);
+
   const widgetRef = useRef<any>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
-  // Charger un show par défaut
+  // --- Initialisation Mixcloud ---
   useEffect(() => {
-    const fetchLatest = async () => {
-      if (!currentShow) {
-        try {
-          const res = await fetch('https://api.mixcloud.com/StillFM/cloudcasts/?limit=1');
-          const data = await res.json();
+    if (!currentShow) {
+      fetch('https://api.mixcloud.com/StillFM/cloudcasts/?limit=1')
+        .then(res => res.json())
+        .then(data => {
           if (data.data && data.data.length > 0) {
             const latest = data.data[0];
             playShow({
-               key: latest.key,
-               name: latest.name,
-               url: latest.url,
-               img: latest.pictures?.extra_large
-            }); 
+              key: latest.key,
+              name: latest.name,
+              url: latest.url,
+              img: latest.pictures?.extra_large
+            });
           }
-        } catch (e) { 
-          console.error('Error fetching latest show:', e); 
-        }
-      }
-    };
-    fetchLatest();
+        }).catch(console.error);
+    }
   }, [currentShow, playShow]);
 
-  // Initialiser le Widget
-  useMixcloudScript(() => {
+  useEffect(() => {
     if (iframeRef.current && !widgetRef.current && (window as any).Mixcloud) {
       const widget = (window as any).Mixcloud.PlayerWidget(iframeRef.current);
       widgetRef.current = widget;
-      
+
       widget.ready.then(() => {
-        console.log('Mixcloud widget ready!');
         setIsReady(true);
-        
-        // Event listeners
-        widget.events.progress.on((progress: number) => {
-          setCurrentTime(progress);
-        });
-
-        widget.events.ended.on(() => {
-          console.log('Show ended');
-        });
+        widget.events.progress.on((progress: number) => setCurrentTime(progress));
       });
     }
-  });
+  }, []);
 
-  // Changement de Show ou Play/Pause
+  // --- Audio Oracle / Icecast ---
   useEffect(() => {
-    if (widgetRef.current && isReady && currentShow) {
-      console.log('Loading show:', currentShow.key, 'Playing:', isPlaying);
-      
-      widgetRef.current.load(currentShow.key, isPlaying).then(() => {
-        // Récupérer la durée du show
-        widgetRef.current.getDuration().then((d: number) => {
-          setDuration(d);
-        });
-        
-        if (isPlaying) {
-          widgetRef.current.play().then(() => {
-            console.log('Playing...');
-          }).catch((e: any) => {
-            console.error('Play error:', e);
-          });
-        } else {
-          widgetRef.current.pause();
-        }
-      }).catch((e: any) => {
-        console.error('Load error:', e);
-      });
-    }
-  }, [currentShow, isPlaying, isReady]);
+    if (!src) return;
 
-  // Format time helper
+    const audio = new Audio(src);
+    audio.crossOrigin = 'anonymous';
+    audio.autoplay = isPlaying;
+    audio.loop = true;
+    audioRef.current = audio;
+
+    audio.oncanplay = () => setRadioOnline(true);
+    audio.onerror = () => setRadioOnline(false);
+
+    if (isPlaying) audio.play().catch(() => console.warn('Autoplay blocked'));
+
+    return () => {
+      audio.pause();
+      audio.src = '';
+    };
+  }, [src, isPlaying]);
+
+  // --- Play/Pause toggle ---
+  useEffect(() => {
+    if (audioRef.current) {
+      if (isPlaying) audioRef.current.play().catch(() => {});
+      else audioRef.current.pause();
+    }
+    if (widgetRef.current && isReady && currentShow) {
+      isPlaying ? widgetRef.current.play() : widgetRef.current.pause();
+    }
+  }, [isPlaying, currentShow, isReady]);
+
   const formatTime = (seconds: number) => {
     if (!seconds || isNaN(seconds)) return '0:00';
     const mins = Math.floor(seconds / 60);
@@ -111,112 +88,65 @@ export default function AudioPlayer() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Seek to position
-  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!widgetRef.current || !isReady || !duration) return;
-    
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const percentage = x / rect.width;
-    const newTime = percentage * duration;
-    
-    widgetRef.current.seek(newTime).then(() => {
-      setCurrentTime(newTime);
-    }).catch((e: any) => {
-      console.error('Seek error:', e);
-    });
-  };
-
-  if (!currentShow) return null;
-
+  // --- Render ---
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
     <>
-      {/* Widget Invisible */}
-      <iframe
-        ref={iframeRef}
-        src={`https://www.mixcloud.com/widget/iframe/?hide_cover=1&mini=1&light=1&feed=${encodeURIComponent(currentShow.key)}`}
-        className="absolute opacity-0 pointer-events-none"
-        allow="autoplay"
-      />
+      {/* Mixcloud iframe (invisible) */}
+      {currentShow && (
+        <iframe
+          ref={iframeRef}
+          src={`https://www.mixcloud.com/widget/iframe/?hide_cover=1&mini=1&light=1&feed=${encodeURIComponent(currentShow.key)}`}
+          className="absolute opacity-0 pointer-events-none"
+          allow="autoplay"
+        />
+      )}
 
       {/* Player UI */}
-      <div className="fixed bottom-6 left-6 z-50 backdrop-blur-md bg-black/95 border border-white/20 hover:border-white/40 transition-all duration-300 font-mono w-80 group">
+      <div className="fixed bottom-6 left-6 z-50 backdrop-blur-md bg-black/95 border border-white/20 w-80 font-mono p-4">
         
-        {/* Progress Bar */}
-        <div 
-          className="h-1 bg-white/10 cursor-pointer relative overflow-hidden hover:h-2 transition-all"
-          onClick={handleSeek}
-        >
-          <div 
-            className="h-full bg-white/80 transition-all duration-100"
-            style={{ width: `${progress}%` }}
-          />
+        {/* Progress */}
+        <div className="h-1 bg-white/10 relative overflow-hidden mb-3">
+          <div className="h-full bg-white/80" style={{ width: `${progress}%` }} />
         </div>
 
-        {/* Main Content */}
-        <div className="p-4">
-          <div className="flex items-center gap-4 mb-3">
-            
-            {/* Artwork */}
-            {currentShow.img && (
-              <div className="w-12 h-12 shrink-0 border border-white/20 overflow-hidden">
-                <img 
-                  src={currentShow.img} 
-                  alt={currentShow.name}
-                  className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all"
-                />
-              </div>
-            )}
-
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <div className="text-[9px] text-white/50 uppercase tracking-[0.15em] mb-1">
-                Now Playing
-              </div>
-              <div className="text-[11px] text-white truncate leading-tight">
-                {currentShow.name}
-              </div>
+        {/* Content */}
+        <div className="flex items-center gap-4">
+          {/* Artwork */}
+          {currentShow?.img && (
+            <div className="w-12 h-12 border overflow-hidden">
+              <img src={currentShow.img} alt={currentShow.name} className="w-full h-full object-cover" />
             </div>
+          )}
 
-            {/* Live indicator */}
-            <div className={`w-2 h-2 rounded-full shrink-0 ${isPlaying ? 'bg-green-400 animate-pulse' : 'bg-gray-500/50'}`} />
+          {/* Info */}
+          <div className="flex-1 text-white text-[11px] truncate">
+            {currentShow ? currentShow.name : 'Still FM Radio'}
           </div>
 
-          {/* Controls */}
-          <div className="flex items-center gap-3">
-            
-            {/* Play/Pause */}
-            <button
-              onClick={togglePlay}
-              className="w-8 h-8 border border-white/40 hover:border-white hover:bg-white/10 transition-all flex items-center justify-center shrink-0"
-              aria-label={isPlaying ? 'Pause' : 'Play'}
-            >
-              {isPlaying ? (
-                <div className="flex gap-1">
-                  <div className="w-[3px] h-3 bg-white" />
-                  <div className="w-[3px] h-3 bg-white" />
-                </div>
-              ) : (
-                <div className="w-0 h-0 border-l-[8px] border-l-white border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent ml-[2px]" />
-              )}
-            </button>
+          {/* Live / Radio indicator */}
+          <div className={`w-3 h-3 rounded-full ${isPlaying ? 'bg-green-400 animate-pulse' : 'bg-gray-500/50'}`} />
+        </div>
 
-            {/* Time */}
-            <div className="text-[9px] text-white/50 font-mono">
-              {formatTime(currentTime)} / {formatTime(duration)}
-            </div>
+        {/* Controls */}
+        <div className="flex items-center gap-3 mt-3">
+          <button
+            onClick={togglePlay}
+            className="w-8 h-8 border border-white/40 hover:border-white flex items-center justify-center"
+          >
+            {isPlaying ? (
+              <div className="flex gap-1">
+                <div className="w-[3px] h-3 bg-white" />
+                <div className="w-[3px] h-3 bg-white" />
+              </div>
+            ) : (
+              <div className="w-0 h-0 border-l-[8px] border-l-white border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent ml-[2px]" />
+            )}
+          </button>
 
-            {/* Mixcloud Link */}
-            <a 
-              href={currentShow.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ml-auto text-[9px] text-white/40 hover:text-white/70 uppercase tracking-wider transition-colors"
-            >
-              View →
-            </a>
+          <div className="text-[9px] text-white/50">
+            {radioOnline ? 'Radio Online' : 'Offline'}
           </div>
         </div>
       </div>

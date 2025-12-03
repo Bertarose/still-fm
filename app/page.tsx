@@ -34,27 +34,19 @@ export default function LandingPage() {
           parent: parents,
           autoplay: true,
           muted: true,     
-          controls: false, // On cache les contrôles en mode "fond d'écran"
+          controls: false,
         };
 
         const player = new (window as any).Twitch.Player('twitch-embed', options);
         twitchPlayerRef.current = player;
 
         player.addEventListener((window as any).Twitch.Player.READY, () => {
-          console.log("Twitch Ready");
           player.setMuted(true);
           player.play();
         });
 
-        player.addEventListener((window as any).Twitch.Player.ONLINE, () => {
-          console.log("Twitch Online");
-          setIsLive(true);
-        });
-        
-        player.addEventListener((window as any).Twitch.Player.OFFLINE, () => {
-          console.log("Twitch Offline");
-          setIsLive(false);
-        });
+        player.addEventListener((window as any).Twitch.Player.ONLINE, () => setIsLive(true));
+        player.addEventListener((window as any).Twitch.Player.OFFLINE, () => setIsLive(false));
       }
     };
 
@@ -73,16 +65,10 @@ export default function LandingPage() {
   // Fonction pour activer le mode "Spectateur"
   const handleWatchStream = () => {
     if (twitchPlayerRef.current) {
-        // 1. Couper la radio si elle joue
-        if (isRadioPlaying) {
-            toggleRadio();
-        }
-        // 2. Activer le son du stream et forcer la lecture
+        if (isRadioPlaying) toggleRadio();
         twitchPlayerRef.current.setMuted(false);
         twitchPlayerRef.current.setVolume(1.0);
-        twitchPlayerRef.current.play(); // Force le play
-        
-        // 3. Changer l'état visuel
+        twitchPlayerRef.current.play();
         setWatchMode(true);
     }
   };
@@ -127,49 +113,47 @@ export default function LandingPage() {
 
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach(particle => { particle.update(); particle.draw(); });
-      particles.forEach((particleA, indexA) => {
-        particles.slice(indexA + 1).forEach(particleB => {
-          const dx = particleA.x - particleB.x; const dy = particleA.y - particleB.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
+      particles.forEach(p => { p.update(); p.draw(); });
+      particles.forEach((pA, indexA) => {
+        particles.slice(indexA + 1).forEach(pB => {
+          const dx = pA.x - pB.x; const dy = pA.y - pB.y;
+          const distance = Math.sqrt(dx*dx + dy*dy);
           if (distance < 100) {
-            ctx.strokeStyle = `rgba(255, 255, 255, ${0.1 * (1 - distance / 100)})`;
-            ctx.lineWidth = 0.5; ctx.beginPath(); ctx.moveTo(particleA.x, particleA.y);
-            ctx.lineTo(particleB.x, particleB.y); ctx.stroke();
+            ctx.strokeStyle = `rgba(255,255,255,${0.1*(1-distance/100)})`;
+            ctx.lineWidth = 0.5;
+            ctx.beginPath(); ctx.moveTo(pA.x,pA.y); ctx.lineTo(pB.x,pB.y); ctx.stroke();
           }
         });
       });
       requestAnimationFrame(animate);
     };
     animate();
-    return () => { window.removeEventListener('resize', resizeCanvas); };
+    return () => window.removeEventListener('resize', resizeCanvas);
   }, []);
-
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
-      
-      {/* === CONTAINER TWITCH === */}
-      {/* CORRECTION ICI : Ajout de z-50 quand watchMode est actif pour passer DEVANT tout le reste */}
-      <div className={`absolute inset-0 overflow-hidden transition-all duration-500 ${watchMode ? 'z-50' : 'z-0'}`}>
-        <div 
-          id="twitch-embed" 
-          className={`w-full h-full object-cover transition-all duration-1000 
-            ${isLive ? 'opacity-100' : 'opacity-0'}
-            ${watchMode ? 'grayscale-0 pointer-events-auto' : 'grayscale contrast-125 opacity-60 pointer-events-none'}
-          `}
-        />
-      </div>
 
-      {/* === IMAGE DE FOND (Backup) === */}
-      <div className={`absolute inset-0 z-0 transition-opacity duration-1000 ${isLive ? 'opacity-0' : 'opacity-80'}`}>
-        <img 
-          src="/bg.jpg" 
-          alt="Background" 
-          className="w-full h-full object-cover image-vintage-effect" 
+      {/* === TWITCH LIVE OU VIDÉO OFFLINE === */}
+      {isLive ? (
+        <div className={`absolute inset-0 overflow-hidden transition-all duration-500 ${watchMode ? 'z-50' : 'z-0'}`}>
+          <div 
+            id="twitch-embed" 
+            className={`w-full h-full object-cover transition-all duration-1000 
+              ${watchMode ? 'grayscale-0 pointer-events-auto' : 'grayscale contrast-125 opacity-60 pointer-events-none'}
+            `}
+          />
+        </div>
+      ) : (
+        <video
+          className="absolute inset-0 w-full h-full object-cover z-0"
+          src="/video.mov"
+          autoPlay
+          loop
+          muted
+          playsInline
         />
-        <div className="absolute inset-0 tv-noise-overlay pointer-events-none opacity-30" />
-      </div>
+      )}
 
       {/* === CANVAS (ÉTOILES) === */}
       <canvas
@@ -199,25 +183,23 @@ export default function LandingPage() {
         {/* BOUTONS */}
         <div className="flex flex-col md:flex-row gap-6 items-center">
             
-            {/* BOUTON ENTER SITE */}
-            <Link 
+          <Link 
             href="/home"
             className="group relative overflow-hidden"
-            >
+          >
             <div className="border border-white px-12 py-4 text-xs uppercase tracking-[0.2em] transition-all duration-500 hover:bg-white hover:text-black backdrop-blur-md bg-black/30 font-bold">
                 Enter Site
             </div>
-            </Link>
+          </Link>
 
-            {/* BOUTON WATCH STREAM (Seulement si Live) */}
-            {isLive && (
-                <button 
-                    onClick={handleWatchStream}
-                    className="border border-green-500 text-green-400 px-12 py-4 text-xs uppercase tracking-[0.2em] transition-all duration-500 hover:bg-green-500 hover:text-black backdrop-blur-md bg-black/30 font-bold animate-pulse hover:animate-none cursor-pointer z-50"
-                >
-                    Watch Stream
-                </button>
-            )}
+          {isLive && (
+            <button 
+              onClick={handleWatchStream}
+              className="border border-green-500 text-green-400 px-12 py-4 text-xs uppercase tracking-[0.2em] transition-all duration-500 hover:bg-green-500 hover:text-black backdrop-blur-md bg-black/30 font-bold animate-pulse hover:animate-none cursor-pointer z-50"
+            >
+              Watch Stream
+            </button>
+          )}
         </div>
 
         <p className="mt-8 text-[10px] uppercase tracking-widest text-gray-400 opacity-70">
@@ -232,15 +214,15 @@ export default function LandingPage() {
 
       {/* BOUTON RETOUR (Pour quitter le mode Watch) */}
       {watchMode && (
-          <button 
-            onClick={() => {
-                setWatchMode(false);
-                if(twitchPlayerRef.current) twitchPlayerRef.current.setMuted(true);
-            }}
-            className="absolute top-6 right-6 z-[100] border border-white/50 text-white/80 px-6 py-2 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all cursor-pointer"
-          >
-            Close Stream X
-          </button>
+        <button 
+          onClick={() => {
+              setWatchMode(false);
+              if(twitchPlayerRef.current) twitchPlayerRef.current.setMuted(true);
+          }}
+          className="absolute top-6 right-6 z-[100] border border-white/50 text-white/80 px-6 py-2 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all cursor-pointer"
+        >
+          Close Stream X
+        </button>
       )}
     </div>
   );

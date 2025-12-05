@@ -3,9 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 
-const RADIO_STREAM_URL = 'http://localhost:8000/steelfm.mp3'; // ← Change avec ton IP Oracle
+const RADIO_STREAM_URL = 'http://localhost:8000/steelfm.mp3';
 
-// Hook Mixcloud (même que TopAudioPlayer)
 const useMixcloudScript = (onScriptLoad: () => void) => {
   useEffect(() => {
     if ((window as any).Mixcloud) {
@@ -35,7 +34,6 @@ export default function LandingAudioPlayer() {
   const widgetRef = useRef<any>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Check radio status
   useEffect(() => {
     const checkRadio = async () => {
       try {
@@ -56,7 +54,6 @@ export default function LandingAudioPlayer() {
     return () => clearInterval(interval);
   }, []);
 
-  // Init Mixcloud widget
   const initWidget = useCallback(() => {
     if (!iframeRef.current || widgetRef.current || !(window as any).Mixcloud) return;
 
@@ -71,7 +68,6 @@ export default function LandingAudioPlayer() {
 
   useMixcloudScript(initWidget);
 
-  // Load default show
   useEffect(() => {
     if (!currentShow && !useRadio) {
       const fetchLatest = async () => {
@@ -94,14 +90,12 @@ export default function LandingAudioPlayer() {
     }
   }, [currentShow, useRadio, playShow]);
 
-  // Handle Mixcloud show change
   useEffect(() => {
     if (widgetRef.current && currentShow && !useRadio && isReady) {
       widgetRef.current.load(currentShow.key, isPlaying);
     }
   }, [currentShow, useRadio, isReady, isPlaying]);
 
-  // Handle play/pause for Mixcloud
   useEffect(() => {
     if (widgetRef.current && isReady && !useRadio) {
       if (isPlaying) widgetRef.current.play();
@@ -109,7 +103,6 @@ export default function LandingAudioPlayer() {
     }
   }, [isPlaying, isReady, useRadio]);
 
-  // Switch Radio/Mixcloud
   const handleSwitch = (toRadio: boolean) => {
     setUseRadio(toRadio);
 
@@ -131,7 +124,6 @@ export default function LandingAudioPlayer() {
     }
   };
 
-  // Toggle play/pause
   const handleToggle = () => {
     if (useRadio && radioRef.current) {
       if (isPlaying) radioRef.current.pause();
@@ -149,10 +141,8 @@ export default function LandingAudioPlayer() {
 
   return (
     <>
-      {/* Radio audio */}
       <audio ref={radioRef} src={RADIO_STREAM_URL} preload="none" className="hidden" />
 
-      {/* Mixcloud iframe */}
       <iframe
         ref={iframeRef}
         src={`https://www.mixcloud.com/widget/iframe/?hide_cover=1&mini=1&light=1&feed=${encodeURIComponent(currentShow?.key || '/StillFM/')}`}
@@ -160,39 +150,39 @@ export default function LandingAudioPlayer() {
         allow="autoplay; encrypted-media"
       />
 
-      {/* UI Player */}
-      <div className="fixed bottom-6 left-6 z-50 backdrop-blur-md bg-black/90 border border-white/20 hover:border-white/40 transition-all duration-300 font-mono w-96 rounded-lg">
+      {/* UI Player - Plus compact sur mobile */}
+      <div className="backdrop-blur-md bg-black/95 border-t md:border border-white/20 hover:border-white/40 transition-all duration-300 font-mono w-full md:w-96 md:rounded-lg overflow-hidden">
         
-        <div className="p-4">
+        <div className="p-3 md:p-4">
           
-          {/* Titre */}
-          <div className="mb-3">
-            <div className="text-[9px] text-white/50 uppercase tracking-[0.15em] mb-1">
+          {/* Titre - Une seule ligne sur mobile */}
+          <div className="mb-2">
+            <div className="text-[8px] md:text-[9px] text-white/50 uppercase tracking-[0.15em] mb-1">
               Now Playing
             </div>
-            <div className="text-[11px] text-white leading-tight line-clamp-2">
+            <div className="text-[10px] md:text-[11px] text-white leading-tight line-clamp-1">
               {currentName}
             </div>
           </div>
 
-          {/* Contrôles */}
-          <div className="flex items-center gap-3 mb-3">
+          {/* Contrôles - Plus compacts */}
+          <div className="flex items-center gap-2 mb-2">
             <button
               onClick={handleToggle}
               disabled={(useRadio && !isRadioOnline) || (!useRadio && !isReady)}
-              className="w-10 h-10 border border-white/40 hover:border-white hover:bg-white/10 transition-all flex items-center justify-center disabled:opacity-30"
+              className="w-8 h-8 md:w-10 md:h-10 border border-white/40 hover:border-white hover:bg-white/10 transition-all flex items-center justify-center disabled:opacity-30 shrink-0"
             >
               {isPlaying ? (
                 <div className="flex gap-1">
-                  <div className="w-[3px] h-4 bg-white" />
-                  <div className="w-[3px] h-4 bg-white" />
+                  <div className="w-[2px] md:w-[3px] h-3 md:h-4 bg-white" />
+                  <div className="w-[2px] md:w-[3px] h-3 md:h-4 bg-white" />
                 </div>
               ) : (
-                <div className="w-0 h-0 border-l-[10px] border-l-white border-t-[7px] border-t-transparent border-b-[7px] border-b-transparent ml-[2px]" />
+                <div className="w-0 h-0 border-l-[8px] md:border-l-[10px] border-l-white border-t-[6px] md:border-t-[7px] border-t-transparent border-b-[6px] md:border-b-[7px] border-b-transparent ml-[2px]" />
               )}
             </button>
 
-            <div className="flex-1 text-[9px] text-white/50">
+            <div className="flex-1 text-[8px] md:text-[9px] text-white/50">
               {useRadio ? (isRadioOnline ? '● Live' : '⚠ Offline') : (isReady ? '● Mixcloud' : 'Loading...')}
             </div>
 
@@ -201,39 +191,39 @@ export default function LandingAudioPlayer() {
                 href={currentShow.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[9px] text-white/40 hover:text-white/70 uppercase"
+                className="text-[8px] md:text-[9px] text-white/40 hover:text-white/70 uppercase hidden sm:block"
               >
                 View →
               </a>
             )}
           </div>
 
-          {/* Switch */}
-          <div className="flex items-center justify-between pt-3 border-t border-white/10">
+          {/* Switch - Plus compact */}
+          <div className="flex items-center justify-between pt-2 border-t border-white/10">
             
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${!useRadio ? 'bg-green-400 animate-pulse' : 'bg-white/20'}`} />
-              <span className={`text-[10px] uppercase ${!useRadio ? 'text-white font-bold' : 'text-white/40'}`}>
+            <div className="flex items-center gap-1.5">
+              <div className={`w-1.5 h-1.5 rounded-full ${!useRadio ? 'bg-green-400 animate-pulse' : 'bg-white/20'}`} />
+              <span className={`text-[9px] md:text-[10px] uppercase ${!useRadio ? 'text-white font-bold' : 'text-white/40'}`}>
                 Mixcloud
               </span>
             </div>
 
-            <label className="relative inline-flex items-center cursor-pointer mx-4">
+            <label className="relative inline-flex items-center cursor-pointer mx-2">
               <input
                 type="checkbox"
                 className="sr-only peer"
                 checked={useRadio}
                 onChange={(e) => handleSwitch(e.target.checked)}
               />
-              <div className="w-14 h-7 bg-white/20 rounded-full peer transition-all peer-checked:bg-white/30"></div>
-              <span className="absolute left-1 top-1 w-5 h-5 bg-white rounded-full shadow-lg transform transition-transform peer-checked:translate-x-7"></span>
+              <div className="w-12 h-6 md:w-14 md:h-7 bg-white/20 rounded-full peer transition-all peer-checked:bg-white/30"></div>
+              <span className="absolute left-1 top-1 w-4 h-4 md:w-5 md:h-5 bg-white rounded-full shadow-lg transform transition-transform peer-checked:translate-x-6 md:peer-checked:translate-x-7"></span>
             </label>
 
-            <div className="flex items-center gap-2">
-              <span className={`text-[10px] uppercase ${useRadio ? 'text-white font-bold' : 'text-white/40'}`}>
+            <div className="flex items-center gap-1.5">
+              <span className={`text-[9px] md:text-[10px] uppercase ${useRadio ? 'text-white font-bold' : 'text-white/40'}`}>
                 Radio
               </span>
-              <div className={`w-2 h-2 rounded-full ${useRadio ? (isRadioOnline ? 'bg-green-400 animate-pulse' : 'bg-red-500') : 'bg-white/20'}`} />
+              <div className={`w-1.5 h-1.5 rounded-full ${useRadio ? (isRadioOnline ? 'bg-green-400 animate-pulse' : 'bg-red-500') : 'bg-white/20'}`} />
             </div>
           </div>
         </div>

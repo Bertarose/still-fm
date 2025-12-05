@@ -31,13 +31,14 @@ export default function ShopPage() {
             </div>
           </div>
 
-          {/* Info - Côté droit - ALIGNÉ EN HAUT */}
-          <div className="flex flex-col p-8 lg:p-12 h-full">
+          {/* Info - Côté droit */}
+          <div className="flex flex-col justify-between p-8 lg:p-12 h-full">
             
-            <div className="flex-1 flex flex-col">
+            {/* Contenu principal */}
+            <div>
               
               {/* Titre et description */}
-              <div className="mb-8">
+              <div className="mb-6">
                 <h1 className="text-4xl lg:text-5xl font-bold uppercase mb-2 tracking-tight leading-none">
                   Still FM Tee
                 </h1>
@@ -85,7 +86,7 @@ export default function ShopPage() {
               {/* Bouton d'achat */}
               <button 
                 disabled={!selectedSize}
-                className={`w-full border-2 py-3 text-sm uppercase tracking-wider transition-all font-bold mb-6 ${
+                className={`w-full border-2 py-3 text-sm uppercase tracking-wider transition-all font-bold ${
                   selectedSize
                     ? 'border-white hover:bg-white hover:text-black cursor-pointer'
                     : 'border-white/20 text-white/20 cursor-not-allowed'
@@ -93,14 +94,14 @@ export default function ShopPage() {
               >
                 {selectedSize ? `Add to Cart — $35` : 'Select a Size'}
               </button>
+            </div>
 
-              {/* Shipping info - En bas */}
-              <div className="mt-auto pt-6 border-t border-white/10">
-                <div className="space-y-1 text-[10px] opacity-50">
-                  <p>✓ Free shipping over $100 CAD</p>
-                  <p>✓ Local pickup in Montreal</p>
-                  <p>✓ 30 days exchange policy</p>
-                </div>
+            {/* Shipping info - Plus haut, visible */}
+            <div className="pt-6 border-t border-white/10">
+              <div className="space-y-1 text-[10px] opacity-50">
+                <p>✓ Free shipping over $100 CAD</p>
+                <p>✓ Local pickup in Montreal</p>
+                <p>✓ 30 days exchange policy</p>
               </div>
             </div>
 

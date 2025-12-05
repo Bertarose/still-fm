@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 export default function SchedulePage() {
-  const [activeTab, setActiveTab] = useState<'live' | 'replays'>('live');
+  const {activeTab === 'live' && 'status' in show && show.status === 'LIVE' && (
 
   // LIVE SHOWS (émissions en direct programmées)
   const liveShows = [

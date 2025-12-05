@@ -21,7 +21,6 @@ export default function ShowsPage() {
         const data = await res.json();
         
         const formatted = data.data.map((show: any) => {
-          // Parser le resident depuis le titre
           const title = show.name.toLowerCase();
           let resident = 'VARIOUS';
           
@@ -33,7 +32,6 @@ export default function ShowsPage() {
           else if (title.includes('dark') || title.includes('matter')) resident = 'DARK MATTER';
           else if (title.includes('cosmic') || title.includes('noise')) resident = 'COSMIC NOISE';
           
-          // Parser le style depuis les tags
           let style = 'ELECTRONIC';
           if (show.tags && show.tags.length > 0) {
             const tag = show.tags[0].name.toLowerCase();
@@ -47,7 +45,6 @@ export default function ShowsPage() {
             else style = tag.toUpperCase();
           }
           
-          // Formatter la date
           const date = new Date(show.created_time);
           const month = date.toLocaleDateString('en-US', { 
             month: 'short', 
@@ -77,12 +74,10 @@ export default function ShowsPage() {
     fetchShows();
   }, []);
 
-  // Extraire les valeurs uniques pour les filtres
   const residents = ['ALL', ...Array.from(new Set(allShows.map(s => s.resident))).sort()];
   const styles = ['ALL', ...Array.from(new Set(allShows.map(s => s.style))).sort()];
   const months = ['ALL', ...Array.from(new Set(allShows.map(s => s.month))).sort().reverse()];
 
-  // Filtrer les shows
   const filteredShows = allShows.filter(show => {
     const matchResident = selectedResident === 'ALL' || show.resident === selectedResident;
     const matchStyle = selectedStyle === 'ALL' || show.style === selectedStyle;
@@ -90,14 +85,12 @@ export default function ShowsPage() {
     return matchResident && matchStyle && matchMonth;
   });
 
-  // Reset filters
   const resetFilters = () => {
     setSelectedResident('ALL');
     setSelectedStyle('ALL');
     setSelectedMonth('ALL');
   };
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-black text-white font-mono flex items-center justify-center">
@@ -118,78 +111,66 @@ export default function ShowsPage() {
       
       <main className="max-w-full">
         
-        {/* Header */}
-        <div className="border-b border-white px-6 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold uppercase tracking-wider">
+        {/* Header + Filtres compacts sur une ligne */}
+        <div className="border-b border-white px-4 py-3">
+          
+          {/* Première ligne : Titre + Reset */}
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-base md:text-xl font-bold uppercase tracking-wider">
               Shows ({filteredShows.length})
             </h1>
             
             {(selectedResident !== 'ALL' || selectedStyle !== 'ALL' || selectedMonth !== 'ALL') && (
               <button
                 onClick={resetFilters}
-                className="text-xs uppercase tracking-wider px-4 py-2 border border-white hover:bg-white hover:text-black transition-all"
+                className="text-[9px] md:text-xs uppercase tracking-wider px-3 py-1 border border-white hover:bg-white hover:text-black transition-all"
               >
-                Reset Filters
+                Reset
               </button>
             )}
           </div>
-        </div>
 
-        {/* Filtres */}
-        <div className="border-b border-white p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Deuxième ligne : 3 filtres minimalistes */}
+          <div className="grid grid-cols-3 gap-2">
             
-            <div>
-              <label className="block text-[10px] uppercase tracking-wider mb-2 opacity-50">
-                Resident
-              </label>
-              <select
-                value={selectedResident}
-                onChange={(e) => setSelectedResident(e.target.value)}
-                className="w-full bg-black border border-white px-4 py-2 text-sm uppercase cursor-pointer hover:bg-white hover:text-black transition-all"
-              >
-                {residents.map(resident => (
-                  <option key={resident} value={resident}>
-                    {resident}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <select
+              value={selectedResident}
+              onChange={(e) => setSelectedResident(e.target.value)}
+              className="w-full bg-black border border-white px-2 py-1 text-[10px] md:text-xs uppercase cursor-pointer hover:bg-white hover:text-black transition-all"
+            >
+              <option value="ALL">All Residents</option>
+              {residents.filter(r => r !== 'ALL').map(resident => (
+                <option key={resident} value={resident}>
+                  {resident}
+                </option>
+              ))}
+            </select>
 
-            <div>
-              <label className="block text-[10px] uppercase tracking-wider mb-2 opacity-50">
-                Style
-              </label>
-              <select
-                value={selectedStyle}
-                onChange={(e) => setSelectedStyle(e.target.value)}
-                className="w-full bg-black border border-white px-4 py-2 text-sm uppercase cursor-pointer hover:bg-white hover:text-black transition-all"
-              >
-                {styles.map(style => (
-                  <option key={style} value={style}>
-                    {style}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <select
+              value={selectedStyle}
+              onChange={(e) => setSelectedStyle(e.target.value)}
+              className="w-full bg-black border border-white px-2 py-1 text-[10px] md:text-xs uppercase cursor-pointer hover:bg-white hover:text-black transition-all"
+            >
+              <option value="ALL">All Styles</option>
+              {styles.filter(s => s !== 'ALL').map(style => (
+                <option key={style} value={style}>
+                  {style}
+                </option>
+              ))}
+            </select>
 
-            <div>
-              <label className="block text-[10px] uppercase tracking-wider mb-2 opacity-50">
-                Month
-              </label>
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="w-full bg-black border border-white px-4 py-2 text-sm uppercase cursor-pointer hover:bg-white hover:text-black transition-all"
-              >
-                {months.map(month => (
-                  <option key={month} value={month}>
-                    {month}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="w-full bg-black border border-white px-2 py-1 text-[10px] md:text-xs uppercase cursor-pointer hover:bg-white hover:text-black transition-all"
+            >
+              <option value="ALL">All Months</option>
+              {months.filter(m => m !== 'ALL').map(month => (
+                <option key={month} value={month}>
+                  {month}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 

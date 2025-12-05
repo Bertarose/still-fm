@@ -1,12 +1,12 @@
 'use client';
+
 import React, { createContext, useContext, useState } from 'react';
 
-// Définition du type de Show
 export interface Show {
   key: string;
   name: string;
   url: string;
-  img?: string; // AJOUTÉ: pour l'artwork
+  img?: string;
 }
 
 interface PlayerContextType {
@@ -23,17 +23,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
 
   const playShow = (show: Show) => {
-    // Si c'est déjà le même show, on ne fait rien ou on toggle
-    if (currentShow?.key === show.key) {
-      setIsPlaying(true); 
-    } else {
-      setCurrentShow(show);
-      setIsPlaying(true);
-    }
+    setCurrentShow(show);
+    setIsPlaying(true);
   };
 
   const togglePlay = () => {
-    setIsPlaying(!isPlaying);
+    setIsPlaying(prev => !prev);
   };
 
   return (
@@ -46,7 +41,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 export function usePlayer() {
   const context = useContext(PlayerContext);
   if (context === undefined) {
-    throw new Error('usePlayer must be used within a PlayerProvider');
+    throw new Error('usePlayer must be used within PlayerProvider');
   }
   return context;
 }

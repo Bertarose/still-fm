@@ -1,6 +1,10 @@
 'use client';
 
+import { useState } from 'react';
+
 export default function ShopPage() {
+  const [selectedSize, setSelectedSize] = useState<string>('');
+
   return (
     <div className="min-h-screen bg-black text-white font-mono selection:bg-white selection:text-black">
       
@@ -32,11 +36,11 @@ export default function ShopPage() {
             
             {/* Détails produit */}
             <div>
-              <h1 className="text-4xl lg:text-6xl font-bold uppercase mb-4 tracking-tight">
+              <h1 className="text-4xl lg:text-6xl font-bold uppercase mb-4 tracking-tight leading-none">
                 Still FM Tee
               </h1>
               
-              <p className="text-sm uppercase tracking-wider opacity-50 mb-8 border-b border-white/10 pb-6">
+              <p className="text-sm uppercase tracking-wider opacity-50 mb-8 pb-6 border-b border-white/10">
                 Official Merchandise
               </p>
 
@@ -56,7 +60,7 @@ export default function ShopPage() {
 
                 <div>
                   <h3 className="text-xs uppercase tracking-wider opacity-50 mb-2">Price</h3>
-                  <p className="text-3xl font-bold">$35 <span className="text-sm opacity-50">CAD</span></p>
+                  <p className="text-3xl font-bold">$35 <span className="text-sm font-normal opacity-50">CAD</span></p>
                 </div>
               </div>
 
@@ -69,7 +73,12 @@ export default function ShopPage() {
                   {['S', 'M', 'L', 'XL', 'XXL'].map((size) => (
                     <button
                       key={size}
-                      className="border border-white py-3 text-sm uppercase tracking-wider hover:bg-white hover:text-black transition-all font-bold"
+                      onClick={() => setSelectedSize(size)}
+                      className={`border py-3 text-sm uppercase tracking-wider transition-all font-bold ${
+                        selectedSize === size
+                          ? 'bg-white text-black border-white'
+                          : 'border-white hover:bg-white hover:text-black'
+                      }`}
                     >
                       {size}
                     </button>
@@ -78,8 +87,15 @@ export default function ShopPage() {
               </div>
 
               {/* Bouton d'achat */}
-              <button className="w-full border-2 border-white py-4 text-sm uppercase tracking-wider hover:bg-white hover:text-black transition-all font-bold mb-8">
-                Add to Cart — $35
+              <button 
+                disabled={!selectedSize}
+                className={`w-full border-2 py-4 text-sm uppercase tracking-wider transition-all font-bold mb-8 ${
+                  selectedSize
+                    ? 'border-white hover:bg-white hover:text-black cursor-pointer'
+                    : 'border-white/20 text-white/20 cursor-not-allowed'
+                }`}
+              >
+                {selectedSize ? `Add to Cart — $35` : 'Select a Size'}
               </button>
 
               {/* Shipping info */}

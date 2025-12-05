@@ -14,7 +14,7 @@ export default function LandingPage() {
   const playerInitialized = useRef(false);
   const twitchPlayerRef = useRef<any>(null);
 
-  // Twitch API (même code que avant)
+  // Twitch Player Init
   useEffect(() => {
     if (playerInitialized.current) return;
 
@@ -119,10 +119,11 @@ export default function LandingPage() {
     setWatchMode(false);
     if (twitchPlayerRef.current) {
       twitchPlayerRef.current.setMuted(true);
+      twitchPlayerRef.current.setVolume(0.5);
     }
   };
 
-  // Animation étoiles (même code)
+  // Animation étoiles
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -183,24 +184,8 @@ export default function LandingPage() {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
 
-      {/* 🎬 TWITCH EMBED - Toujours présent */}
-      <div 
-        className={`absolute inset-0 overflow-hidden transition-all duration-500 ${
-          watchMode ? 'z-[60] bg-black' : 'z-0'
-        }`}
-      >
-        <div 
-          id="twitch-embed" 
-          className={`w-full h-full transition-all duration-1000 ${
-            watchMode 
-              ? 'grayscale-0 opacity-100 pointer-events-auto' 
-              : 'grayscale contrast-125 opacity-60 pointer-events-none'
-          }`}
-        />
-      </div>
-
-      {/* VIDÉO OFFLINE - Seulement si pas live */}
-      {!isLive && !watchMode && (
+      {/* 🎥 BACKGROUND VIDEO - Seulement si OFFLINE */}
+      {!isLive && (
         <video
           className="absolute inset-0 w-full h-full object-cover z-0"
           src="/video.mov"
@@ -211,7 +196,25 @@ export default function LandingPage() {
         />
       )}
 
-      {/* CANVAS ÉTOILES - Caché en watch mode */}
+      {/* 🔴 TWITCH EMBED - Seulement si LIVE */}
+      {isLive && (
+        <div 
+          className={`absolute inset-0 overflow-hidden transition-all duration-500 ${
+            watchMode ? 'z-[60]' : 'z-0'
+          }`}
+        >
+          <div 
+            id="twitch-embed" 
+            className={`w-full h-full transition-all duration-1000 ${
+              watchMode 
+                ? 'grayscale-0 opacity-100 pointer-events-auto' 
+                : 'grayscale contrast-125 opacity-60 pointer-events-none'
+            }`}
+          />
+        </div>
+      )}
+
+      {/* ✨ CANVAS ÉTOILES - Caché en watch mode */}
       {!watchMode && (
         <canvas
           ref={canvasRef}
@@ -219,12 +222,12 @@ export default function LandingPage() {
         />
       )}
 
-      {/* Dark Overlay - Caché en watch mode */}
+      {/* 🌑 Dark Overlay - Caché en watch mode */}
       {!watchMode && (
         <div className="absolute inset-0 bg-black/30 z-3 pointer-events-none" />
       )}
 
-      {/* CONTENU PRINCIPAL - Caché en watch mode */}
+      {/* 📄 CONTENU PRINCIPAL - Caché en watch mode */}
       {!watchMode && (
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-white font-mono px-4">
           
@@ -269,20 +272,20 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* AUDIO PLAYER - Caché en watch mode */}
+      {/* 🎵 AUDIO PLAYER - Caché en watch mode */}
       {!watchMode && (
         <div className="fixed bottom-0 left-0 right-0 md:bottom-6 md:left-6 md:right-auto z-50">
           <LandingAudioPlayer />
         </div>
       )}
 
-      {/* BOUTON FERMER - Visible SEULEMENT en watch mode */}
+      {/* ❌ BOUTON FERMER - Visible SEULEMENT en watch mode */}
       {watchMode && (
         <button 
           onClick={handleCloseWatch}
           className="fixed top-4 right-4 md:top-6 md:right-6 z-[100] border-2 border-white/50 text-white px-6 py-3 text-sm uppercase tracking-widest hover:bg-white hover:text-black transition-all cursor-pointer backdrop-blur-sm bg-black/30 font-bold"
         >
-          ✕ Close Stream
+          ✕ Close
         </button>
       )}
     </div>

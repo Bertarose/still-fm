@@ -1,136 +1,191 @@
 'use client';
 
 export default function ShopPage() {
-  const products = [
-    {
-      id: 1,
-      name: "STILL FM TEE",
-      price: "35",
-      image: "/t2.png",
-      size: "S / M / L / XL"
-    },
-    {
-      id: 2,
-      name: "RESIDENTS CAP",
-      price: "30",
-      image: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800&h=800&fit=crop",
-      size: "ONE SIZE"
-    },
-    {
-      id: 3,
-      name: "LOGO HOODIE",
-      price: "75",
-      image: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=800&h=800&fit=crop",
-      size: "S / M / L / XL / XXL"
-    }
-  ];
-
   return (
-    <div className="min-h-screen bg-black text-white font-mono selection:bg-white selection:text-black pb-24">
+    <div className="min-h-screen bg-black text-white font-mono selection:bg-white selection:text-black">
       
       <div className="crt-screen" />
 
-      {/* Header minimal */}
-      <div className="border-b border-white px-6 py-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold uppercase tracking-wider">
-            Shop
-          </h1>
-          <span className="text-[10px] uppercase tracking-wider opacity-50">
-            Worldwide Shipping
-          </span>
-        </div>
-      </div>
-
-      {/* Grid produits */}
       <main className="max-w-full">
-        <div className="grid grid-cols-1 md:grid-cols-3">
-          {products.map((product) => (
-            <div 
-              key={product.id}
-              className="border-b border-r border-white group cursor-pointer"
-            >
-              {/* Image */}
-              <div className="aspect-square relative overflow-hidden bg-black">
-                <img 
-                  src={product.image} 
-                  alt={product.name} 
-                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
-                />
-                
-                {/* Overlay hover */}
-                <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity" />
+        
+        {/* Layout 50/50 : Image gauche / Info droite */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen">
+          
+          {/* Image - Côté gauche */}
+          <div className="relative border-b lg:border-b-0 lg:border-r border-white group">
+            <div className="sticky top-0 aspect-square lg:h-screen relative overflow-hidden bg-black">
+              <img 
+                src="/t2.png" 
+                alt="Still FM T-Shirt" 
+                className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+              />
+              
+              {/* Badge "Available Now" */}
+              <div className="absolute top-6 right-6 bg-white text-black px-4 py-2 text-[10px] font-bold uppercase tracking-wider">
+                Available Now
               </div>
+            </div>
+          </div>
 
-              {/* Info produit */}
-              <div className="p-6 border-t border-white">
-                
-                {/* Nom + Prix */}
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-base font-bold uppercase tracking-wide mb-1">
-                      {product.name}
-                    </h3>
-                    <p className="text-[10px] uppercase tracking-wider opacity-50">
-                      {product.size}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold">
-                      ${product.price}
-                    </div>
-                    <div className="text-[9px] uppercase opacity-50">
-                      CAD
-                    </div>
-                  </div>
+          {/* Info - Côté droit */}
+          <div className="flex flex-col justify-between p-8 lg:p-12">
+            
+            {/* Détails produit */}
+            <div>
+              <h1 className="text-4xl lg:text-6xl font-bold uppercase mb-4 tracking-tight">
+                Still FM Tee
+              </h1>
+              
+              <p className="text-sm uppercase tracking-wider opacity-50 mb-8 border-b border-white/10 pb-6">
+                Official Merchandise
+              </p>
+
+              <div className="space-y-6 mb-12">
+                <div>
+                  <h3 className="text-xs uppercase tracking-wider opacity-50 mb-2">Description</h3>
+                  <p className="text-sm leading-relaxed opacity-80">
+                    100% heavyweight cotton. Screen printed locally in Montreal. 
+                    Official Still FM radio branding. Limited edition drop.
+                  </p>
                 </div>
 
-                {/* Bouton */}
-                <button className="w-full border border-white py-3 text-xs uppercase tracking-wider hover:bg-white hover:text-black transition-all font-bold">
-                  Add to Cart
+                <div>
+                  <h3 className="text-xs uppercase tracking-wider opacity-50 mb-2">Sizes Available</h3>
+                  <p className="text-sm opacity-80">S / M / L / XL / XXL</p>
+                </div>
+
+                <div>
+                  <h3 className="text-xs uppercase tracking-wider opacity-50 mb-2">Price</h3>
+                  <p className="text-3xl font-bold">$35 <span className="text-sm opacity-50">CAD</span></p>
+                </div>
+              </div>
+
+              {/* Sélecteur de taille */}
+              <div className="mb-8">
+                <label className="block text-xs uppercase tracking-wider mb-3 opacity-50">
+                  Select Size
+                </label>
+                <div className="grid grid-cols-5 gap-2">
+                  {['S', 'M', 'L', 'XL', 'XXL'].map((size) => (
+                    <button
+                      key={size}
+                      className="border border-white py-3 text-sm uppercase tracking-wider hover:bg-white hover:text-black transition-all font-bold"
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bouton d'achat */}
+              <button className="w-full border-2 border-white py-4 text-sm uppercase tracking-wider hover:bg-white hover:text-black transition-all font-bold mb-8">
+                Add to Cart — $35
+              </button>
+
+              {/* Shipping info */}
+              <div className="space-y-2 text-xs opacity-50 border-t border-white/10 pt-6">
+                <p>✓ Free shipping on orders over $100 CAD</p>
+                <p>✓ Local pickup available in Montreal</p>
+                <p>✓ 30 days exchange policy</p>
+              </div>
+            </div>
+
+            {/* Contact / Newsletter */}
+            <div className="border-t border-white/10 pt-8 mt-8">
+              <h3 className="text-xs uppercase tracking-wider mb-4 opacity-50">
+                Stay Updated
+              </h3>
+              <div className="flex gap-2">
+                <input 
+                  type="email" 
+                  placeholder="YOUR EMAIL"
+                  className="flex-1 bg-transparent border border-white px-4 py-3 text-xs uppercase tracking-wider placeholder:text-gray-600 focus:outline-none focus:bg-white focus:text-black transition-all"
+                />
+                <button className="border border-white px-6 py-3 text-xs uppercase tracking-wider hover:bg-white hover:text-black transition-all font-bold">
+                  Join
                 </button>
               </div>
             </div>
-          ))}
-        </div>
 
-        {/* Info section */}
-        <div className="border-t border-white p-12 text-center">
-          <h2 className="text-2xl font-bold uppercase mb-6 tracking-wider">
-            Coming Soon
-          </h2>
-          <p className="text-sm opacity-70 mb-6 max-w-2xl mx-auto leading-relaxed">
-            Limited edition merchandise drop. Screen printed locally in Montreal. 
-            First batch shipping December 2024. Sign up for restock notifications.
-          </p>
-          <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-            <input 
-              type="email" 
-              placeholder="YOUR EMAIL"
-              className="bg-transparent border border-white px-6 py-3 text-xs uppercase tracking-wider placeholder:text-gray-600 focus:outline-none focus:bg-white focus:text-black transition-all w-full md:w-64"
-            />
-            <button className="border border-white px-8 py-3 text-xs uppercase tracking-wider hover:bg-white hover:text-black transition-all font-bold w-full md:w-auto">
-              Notify Me
-            </button>
           </div>
         </div>
 
-        {/* Shipping info */}
-        <div className="grid grid-cols-1 md:grid-cols-3 border-t border-white">
-          <div className="p-8 border-b md:border-b-0 md:border-r border-white text-center">
-            <div className="text-xs font-bold uppercase mb-2">Free Shipping</div>
-            <div className="text-[10px] opacity-50">Orders over $100 CAD</div>
-          </div>
-          <div className="p-8 border-b md:border-b-0 md:border-r border-white text-center">
-            <div className="text-xs font-bold uppercase mb-2">Local Pickup</div>
-            <div className="text-[10px] opacity-50">Montreal area only</div>
-          </div>
-          <div className="p-8 text-center">
-            <div className="text-xs font-bold uppercase mb-2">Returns</div>
-            <div className="text-[10px] opacity-50">30 days exchange policy</div>
-          </div>
-        </div>
       </main>
     </div>
   );
 }
+```
+
+---
+
+## 🎨 Design Minimaliste
+
+### Layout 50/50
+```
+┌─────────────────────┬─────────────────────┐
+│                     │                     │
+│                     │  STILL FM TEE       │
+│                     │  Official Merch     │
+│   [T2.PNG]          │                     │
+│   Grande image      │  Description        │
+│   Grayscale         │  Sizes: S M L XL    │
+│   (couleur hover)   │  Price: $35 CAD     │
+│                     │                     │
+│                     │  [Size selector]    │
+│                     │  [Add to Cart]      │
+│                     │                     │
+│                     │  Newsletter         │
+└─────────────────────┴─────────────────────┘
+```
+
+---
+
+## ✨ Features
+
+### ✅ Côté gauche (Image)
+- **Grande image sticky** qui reste fixe au scroll
+- **Grayscale** par défaut
+- **Couleur** au hover
+- **Badge "Available Now"** en haut à droite
+
+### ✅ Côté droit (Info)
+- **Titre grand format** : "Still FM Tee"
+- **Description** du produit
+- **Sélecteur de taille** (5 boutons)
+- **Bouton d'achat** avec prix
+- **Shipping info** (3 points)
+- **Newsletter** en bas
+
+### ✅ Responsive
+- **Desktop** : 50/50 côte à côte
+- **Mobile** : Stack vertical (image en haut)
+
+---
+
+## 🎯 Style Avant-Gardiste
+
+- Noir & blanc strict
+- Typographie mono
+- Pas de couleurs sauf au hover
+- Espacements généreux
+- Borders minimalistes
+- Badge "Available Now" comme seul accent
+
+---
+
+## 🚀 Alternative : Version encore plus minimaliste
+
+Si tu veux quelque chose d'encore plus radical, je peux faire :
+
+### Option A : Fullscreen image avec overlay
+```
+[Grande image plein écran]
+  ↓
+[Infos en overlay au centre]
+```
+
+### Option B : Image + prix seulement
+```
+[Image]  |  STILL FM TEE
+         |  $35 CAD
+         |  [Buy Now]

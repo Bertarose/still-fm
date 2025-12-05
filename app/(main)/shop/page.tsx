@@ -96,8 +96,8 @@ export default function ShopPage() {
               </button>
             </div>
 
-            {/* Shipping info - Plus haut, visible */}
-            <div className="pt-6 border-t border-white/10">
+            {/* Shipping info - Border fixe et visible */}
+            <div className="pt-6 mt-6 border-t border-white" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
               <div className="space-y-1 text-[10px] opacity-50">
                 <p>✓ Free shipping over $100 CAD</p>
                 <p>✓ Local pickup in Montreal</p>

@@ -21,7 +21,6 @@ export default function LandingPage() {
     const initTwitchPlayer = () => {
       if (playerInitialized.current) return; 
 
-      // L'élément est maintenant toujours dans le DOM, donc cette vérification devrait passer
       if ((window as any).Twitch && document.getElementById('twitch-embed')) { 
         playerInitialized.current = true;
           
@@ -51,7 +50,13 @@ export default function LandingPage() {
             player.addEventListener((window as any).Twitch.Player.READY, () => {
               console.log('✅ Twitch player ready.');
               player.setMuted(true);
-              player.play().catch((err: any) => console.warn('Twitch play failed (autoplay restriction):', err));
+              
+              // *** CORRECTION 1 : Vérification de la promesse play() ***
+              const playPromise = player.play();
+              if (playPromise && typeof playPromise.catch === 'function') {
+                  playPromise.catch((err: any) => console.warn('Twitch play failed (autoplay restriction):', err));
+              }
+              // ********************************************************
             });
 
             player.addEventListener((window as any).Twitch.Player.ONLINE, () => {
@@ -61,9 +66,6 @@ export default function LandingPage() {
             
             player.addEventListener((window as any).Twitch.Player.OFFLINE, () => {
               console.log('⚫ Twitch est OFFLINE (via Player Event).');
-              // On ne met pas nécessairement à false ici pour laisser l'API décider,
-              // mais on garde la logique si l'événement est le seul à changer l'état.
-              // setIsLive(false); 
             });
 
         } catch (error) {
@@ -71,12 +73,10 @@ export default function LandingPage() {
             playerInitialized.current = false;
         }
       } else {
-        // Ce log est maintenant plus précis: soit le script manque, soit le DOM n'est pas encore prêt.
         console.log('⚠️ Attente: Le script Twitch ou l\'élément DOM #twitch-embed n\'est pas prêt.');
       }
     };
 
-    // Logique de chargement du script Twitch
     if (!(window as any).Twitch) {
       if (!document.getElementById('twitch-js')) {
         const script = document.createElement('script');
@@ -88,7 +88,6 @@ export default function LandingPage() {
       }
     } else {
       initTwitchPlayer(); 
-      // Tentative de réinitialisation pour le cas où l'élément DOM était là mais pas le script
       setTimeout(() => {
           if (!playerInitialized.current) {
               console.log('🔄 Tentative de réinitialisation Twitch après 500ms...');
@@ -139,7 +138,14 @@ export default function LandingPage() {
     
     twitchPlayerRef.current.setMuted(false);
     twitchPlayerRef.current.setVolume(1.0);
-    twitchPlayerRef.current.play().catch((err: any) => console.warn('Twitch play failed (user interaction failed):', err));
+    
+    // *** CORRECTION 2 : Vérification de la promesse play() ***
+    const userPlayPromise = twitchPlayerRef.current.play();
+    if (userPlayPromise && typeof userPlayPromise.catch === 'function') {
+        userPlayPromise.catch((err: any) => console.warn('Twitch play failed (user interaction failed):', err));
+    }
+    // ********************************************************
+    
     setWatchMode(true);
     console.log('✅ Watch mode activé.');
   };
@@ -210,15 +216,14 @@ export default function LandingPage() {
     return () => window.removeEventListener('resize', resizeCanvas);
   }, []);
 
-  // --- 5. RENDU JSX (Structure modifiée) ---
+  // --- 5. RENDU JSX ---
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
 
       {/* 🔴 TWITCH EMBED (CONTENEUR PERSISTANT) */}
-      {/* On le rend toujours, mais on contrôle sa visibilité/z-index via les classes */}
       <div 
         className={`absolute inset-0 overflow-hidden transition-all duration-500 ${
-          watchMode ? 'z-[60]' : (isLive ? 'z-0' : 'z-[-1]') // z-[-1] pour être sous la vidéo OFF
+          watchMode ? 'z-[60]' : (isLive ? 'z-0' : 'z-[-1]')
         }`}
       >
         <div 
@@ -229,7 +234,7 @@ export default function LandingPage() {
         />
       </div>
 
-      {/* 🎥 VIDEO OFFLINE (Rendu uniquement si la radio n'est pas LIVE) */}
+      {/* 🎥 VIDEO OFFLINE */}
       {!isLive && (
         <video
           className="absolute inset-0 w-full h-full object-cover z-0"

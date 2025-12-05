@@ -41,12 +41,12 @@ export default function FixedHeader({ currentPage: propCurrentPage }: FixedHeade
         {navItems.map((item) => (
           <Link
             key={item}
-            href={`/${item.toLowerCase()}`}  {/* ← FIX: Ajouté les accolades {} */}
-            className={`flex items-center px-6 border-r border-black text-[11px] font-bold uppercase tracking-wide transition-colors
-              ${item.toLowerCase() === currentPage 
+            href={`/${item.toLowerCase()}`}
+            className={`flex items-center px-6 border-r border-black text-[11px] font-bold uppercase tracking-wide transition-colors ${
+              item.toLowerCase() === currentPage 
                 ? 'bg-black text-white' 
                 : 'bg-white text-black hover:bg-gray-100'
-              }`}
+            }`}
           >
             {item}
           </Link>

@@ -14,11 +14,15 @@ export default function LandingPage() {
   const playerInitialized = useRef(false);
   const twitchPlayerRef = useRef<any>(null);
 
-  // --- 1. INITIALISATION DU PLAYER TWITCH ET VÉRIFICATION DES PARENTS ---
+  // --- 1. INITIALISATION DU PLAYER TWITCH ET GESTION DES PARENTS ---
   useEffect(() => {
+    // Si le player est déjà initialisé, on ne fait rien.
     if (playerInitialized.current) return;
 
     const initTwitchPlayer = () => {
+      // Si on essaie de l'initialiser et qu'il l'est déjà, on sort.
+      if (playerInitialized.current) return; 
+
       // S'assurer que l'objet Twitch global et l'élément d'ancrage sont disponibles
       if ((window as any).Twitch && document.getElementById('twitch-embed')) {
         playerInitialized.current = true;
@@ -46,7 +50,7 @@ export default function LandingPage() {
         try {
             const player = new (window as any).Twitch.Player('twitch-embed', options);
             twitchPlayerRef.current = player;
-            console.log('☑️ Twitch Player instance créée.', player);
+            console.log('☑️ Twitch Player instance créée.');
 
             player.addEventListener((window as any).Twitch.Player.READY, () => {
               console.log('✅ Twitch player ready.');
@@ -71,7 +75,7 @@ export default function LandingPage() {
 
         } catch (error) {
             console.error('❌ ERREUR FATALE: La création de Twitch.Player a échoué. Vérifiez le domaine "parent".', error);
-            playerInitialized.current = false; // Permettre une nouvelle tentative
+            playerInitialized.current = false; // Réinitialise l'état pour permettre une nouvelle tentative
         }
       } else {
         console.log('⚠️ En attente du script Twitch ou de l\'élément "twitch-embed"...');
@@ -89,7 +93,16 @@ export default function LandingPage() {
         document.body.appendChild(script);
       }
     } else {
-      initTwitchPlayer();
+      initTwitchPlayer(); 
+      // --- NOUVELLE LOGIQUE DE TENTATIVE ---
+      // Si le script est déjà là mais l'élément "twitch-embed" n'est pas encore rendu
+      setTimeout(() => {
+          if (!playerInitialized.current) {
+              console.log('🔄 Tentative de réinitialisation Twitch après 500ms...');
+              initTwitchPlayer();
+          }
+      }, 500);
+      // ------------------------------------
     }
   }, []);
 
@@ -108,7 +121,6 @@ export default function LandingPage() {
         } else {
           console.log('🔴 API confirme: ONLINE. (Durée: ' + text + ')');
           setIsLive(true);
-          // Ajouté un log pour confirmer que l'état est mis à jour
           console.log('✨ setIsLive(true) appelé via API.'); 
         }
       } catch (e) {

@@ -2,16 +2,19 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import LandingAudioPlayer from './components/LandingAudioPlayer'; // ← Nouveau
+import LandingAudioPlayer from './components/LandingAudioPlayer';
+import { usePlayer } from './context/PlayerContext';
 
 export default function LandingPage() {
+  const { isPlaying: isRadioPlaying, togglePlay: toggleRadio } = usePlayer();
+  
   const [isLive, setIsLive] = useState(false); 
   const [watchMode, setWatchMode] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const playerInitialized = useRef(false);
   const twitchPlayerRef = useRef<any>(null);
 
-  // --- TWITCH API ---
+  // Twitch API
   useEffect(() => {
     if (playerInitialized.current) return;
 
@@ -61,6 +64,7 @@ export default function LandingPage() {
 
   const handleWatchStream = () => {
     if (twitchPlayerRef.current) {
+        if (isRadioPlaying) toggleRadio();
         twitchPlayerRef.current.setMuted(false);
         twitchPlayerRef.current.setVolume(1.0);
         twitchPlayerRef.current.play();
@@ -68,7 +72,7 @@ export default function LandingPage() {
     }
   };
 
-  // --- Animation étoiles ---
+  // Animation étoiles
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -160,29 +164,29 @@ export default function LandingPage() {
       <div className={`absolute inset-0 bg-black/30 z-3 pointer-events-none transition-opacity duration-500 ${watchMode ? 'opacity-0' : 'opacity-100'}`} />
 
       {/* CONTENU PRINCIPAL */}
-      <div className={`relative z-10 flex flex-col items-center justify-center h-full text-white font-mono pb-20 transition-all duration-500 ${watchMode ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 scale-100'}`}>
+      <div className={`relative z-10 flex flex-col items-center justify-center h-full text-white font-mono px-4 transition-all duration-500 ${watchMode ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 scale-100'}`}>
         
         {/* INDICATEUR LIVE */}
-        <div className="mb-8 flex items-center gap-3 backdrop-blur-sm px-4 py-2 rounded-full bg-black/40 border border-white/10">
+        <div className="mb-6 flex items-center gap-3 backdrop-blur-sm px-4 py-2 rounded-full bg-black/40 border border-white/10">
           <div className={`w-2 h-2 rounded-full ${isLive ? 'bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'bg-red-500'}`} />
           <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-200">
             {isLive ? 'LIVE ON AIR' : 'OFFLINE'}
           </span>
         </div>
 
-        {/* TITRE */}
-        <h1 className="text-7xl md:text-9xl font-bold uppercase tracking-tighter mb-12 drop-shadow-2xl mix-blend-overlay opacity-90 select-none">
+        {/* TITRE - Plus gros sur mobile */}
+        <h1 className="text-6xl sm:text-7xl md:text-9xl font-bold uppercase tracking-tighter mb-8 md:mb-12 drop-shadow-2xl mix-blend-overlay opacity-90 select-none text-center">
           STILL FM
         </h1>
 
-        {/* BOUTONS */}
-        <div className="flex flex-col md:flex-row gap-6 items-center">
+        {/* BOUTONS - Stack vertical sur mobile */}
+        <div className="flex flex-col gap-4 items-center w-full max-w-sm">
             
           <Link 
             href="/home"
-            className="group relative overflow-hidden"
+            className="w-full group relative overflow-hidden"
           >
-            <div className="border border-white px-12 py-4 text-xs uppercase tracking-[0.2em] transition-all duration-500 hover:bg-white hover:text-black backdrop-blur-md bg-black/30 font-bold">
+            <div className="border-2 border-white px-8 py-4 text-sm uppercase tracking-[0.2em] text-center transition-all duration-500 hover:bg-white hover:text-black backdrop-blur-md bg-black/30 font-bold">
                 Enter Site
             </div>
           </Link>
@@ -190,20 +194,20 @@ export default function LandingPage() {
           {isLive && (
             <button 
               onClick={handleWatchStream}
-              className="border border-green-500 text-green-400 px-12 py-4 text-xs uppercase tracking-[0.2em] transition-all duration-500 hover:bg-green-500 hover:text-black backdrop-blur-md bg-black/30 font-bold animate-pulse hover:animate-none cursor-pointer z-50"
+              className="w-full border-2 border-green-500 text-green-400 px-8 py-4 text-sm uppercase tracking-[0.2em] text-center transition-all duration-500 hover:bg-green-500 hover:text-black backdrop-blur-md bg-black/30 font-bold animate-pulse hover:animate-none cursor-pointer z-50"
             >
               Watch Stream
             </button>
           )}
         </div>
 
-        <p className="mt-8 text-[10px] uppercase tracking-widest text-gray-400 opacity-70">
+        <p className="mt-6 text-[10px] uppercase tracking-widest text-gray-400 opacity-70 text-center">
           Montreal Underground Radio
         </p>
       </div>
 
-      {/* ✅ AUDIO PLAYER REMIS ICI */}
-      <div className={`transition-opacity duration-500 ${watchMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+      {/* AUDIO PLAYER - Repositionné en bas, plus compact sur mobile */}
+      <div className={`fixed bottom-0 left-0 right-0 md:bottom-6 md:left-6 md:right-auto z-50 transition-opacity duration-500 ${watchMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <LandingAudioPlayer />
       </div>
 
@@ -214,9 +218,9 @@ export default function LandingPage() {
               setWatchMode(false);
               if(twitchPlayerRef.current) twitchPlayerRef.current.setMuted(true);
           }}
-          className="absolute top-6 right-6 z-[100] border border-white/50 text-white/80 px-6 py-2 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all cursor-pointer"
+          className="absolute top-4 right-4 md:top-6 md:right-6 z-[100] border border-white/50 text-white/80 px-4 py-2 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all cursor-pointer"
         >
-          Close Stream X
+          Close X
         </button>
       )}
     </div>

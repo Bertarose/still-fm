@@ -2,13 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-// Import crucial du PlayerContext
 import LandingAudioPlayer from './components/LandingAudioPlayer'; 
-import { usePlayer } from './context/PlayerContext'; // <--- IMPORT AJOUTÉ
+import { usePlayer } from './context/PlayerContext';
 
 export default function LandingPage() {
-  // L'accès au contexte Player est nécessaire pour arrêter la radio
-  const { isPlaying: isRadioPlaying, togglePlay: toggleRadio } = usePlayer(); 
+  const { isPlaying: isRadioPlaying, togglePlay: toggleRadio } = usePlayer();
     
   const [isLive, setIsLive] = useState(false);  
   const [watchMode, setWatchMode] = useState(false);
@@ -18,17 +16,15 @@ export default function LandingPage() {
 
   // --- 1. INITIALISATION DU PLAYER TWITCH ET GESTION DES PARENTS ---
   useEffect(() => {
-    // Si le player est déjà initialisé, on ne fait rien.
     if (playerInitialized.current) return;
 
     const initTwitchPlayer = () => {
-      // Si on essaie de l'initialiser et qu'il l'est déjà, on sort.
       if (playerInitialized.current) return; 
 
-      if ((window as any).Twitch && document.getElementById('twitch-embed')) {
+      // L'élément est maintenant toujours dans le DOM, donc cette vérification devrait passer
+      if ((window as any).Twitch && document.getElementById('twitch-embed')) { 
         playerInitialized.current = true;
           
-        // --- LOGIQUE DE VÉRIFICATION DES PARENTS (CRITIQUE) ---
         const parents = ['localhost', '127.0.0.1', 'still-fm.vercel.app', 'www.stillfm.com', 'stillfm.com'];
         if (typeof window !== 'undefined' && !parents.includes(window.location.hostname)) {
             parents.push(window.location.hostname);
@@ -36,7 +32,6 @@ export default function LandingPage() {
 
         console.log('🔗 Parents autorisés pour Twitch:', parents);
         console.log('💻 Hôte actuel:', window.location.hostname);
-        // --------------------------------------------------------
 
         const options = {
           width: '100%',
@@ -66,12 +61,9 @@ export default function LandingPage() {
             
             player.addEventListener((window as any).Twitch.Player.OFFLINE, () => {
               console.log('⚫ Twitch est OFFLINE (via Player Event).');
-              setIsLive(false);
-            });
-            
-            player.addEventListener((window as any).Twitch.Player.PLAYING, () => {
-              console.log('▶️ Twitch est PLAYING (via Player Event).');
-              setIsLive(true);
+              // On ne met pas nécessairement à false ici pour laisser l'API décider,
+              // mais on garde la logique si l'événement est le seul à changer l'état.
+              // setIsLive(false); 
             });
 
         } catch (error) {
@@ -79,11 +71,12 @@ export default function LandingPage() {
             playerInitialized.current = false;
         }
       } else {
-        console.log('⚠️ En attente du script Twitch ou de l\'élément "twitch-embed"...');
+        // Ce log est maintenant plus précis: soit le script manque, soit le DOM n'est pas encore prêt.
+        console.log('⚠️ Attente: Le script Twitch ou l\'élément DOM #twitch-embed n\'est pas prêt.');
       }
     };
 
-    // Logique de chargement du script Twitch avec réinitialisation de sécurité
+    // Logique de chargement du script Twitch
     if (!(window as any).Twitch) {
       if (!document.getElementById('twitch-js')) {
         const script = document.createElement('script');
@@ -95,7 +88,7 @@ export default function LandingPage() {
       }
     } else {
       initTwitchPlayer(); 
-      // Nouvelle tentative en cas de latence DOM
+      // Tentative de réinitialisation pour le cas où l'élément DOM était là mais pas le script
       setTimeout(() => {
           if (!playerInitialized.current) {
               console.log('🔄 Tentative de réinitialisation Twitch après 500ms...');
@@ -105,7 +98,7 @@ export default function LandingPage() {
     }
   }, []);
 
-  // --- 2. VÉRIFICATION API (Source de secours, manquante dans votre ancien code) ---
+  // --- 2. VÉRIFICATION API (Source de secours) ---
   useEffect(() => {
     const checkTwitchViaAPI = async () => {
       try {
@@ -130,16 +123,15 @@ export default function LandingPage() {
     };
   }, []);
 
-  // --- 3. GESTION DU MODE WATCH STREAM (Logique de radio ajoutée) ---
+  // --- 3. GESTION DU MODE WATCH STREAM ---
   const handleWatchStream = () => {
     console.log('🎬 Activating watch mode');
 
     if (!twitchPlayerRef.current) {
-        console.error('❌ Twitch Player non initialisé. Impossible d\'activer le mode Watch.');
+        console.error('❌ Twitch Player non initialisé. Impossible d\'activer le mode Watch. Vérifiez les logs "parent".');
         return;
     }
     
-    // NOUVEAU : Arrêter le flux radio si il joue
     if (isRadioPlaying) { 
         toggleRadio();
         console.log('Stopping radio...');
@@ -218,21 +210,27 @@ export default function LandingPage() {
     return () => window.removeEventListener('resize', resizeCanvas);
   }, []);
 
-  // --- 5. RENDU JSX ---
+  // --- 5. RENDU JSX (Structure modifiée) ---
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
 
-      {/* 🔴 TWITCH EMBED / 🎥 VIDEO OFFLINE */}
-      {isLive ? (
-        <div className={`absolute inset-0 overflow-hidden transition-all duration-500 ${watchMode ? 'z-[60]' : 'z-0'}`}>
-          <div 
-            id="twitch-embed" 
-            className={`w-full h-full object-cover transition-all duration-1000 
-              ${watchMode ? 'grayscale-0 pointer-events-auto' : 'grayscale contrast-125 opacity-60 pointer-events-none'}
-            `}
-          />
-        </div>
-      ) : (
+      {/* 🔴 TWITCH EMBED (CONTENEUR PERSISTANT) */}
+      {/* On le rend toujours, mais on contrôle sa visibilité/z-index via les classes */}
+      <div 
+        className={`absolute inset-0 overflow-hidden transition-all duration-500 ${
+          watchMode ? 'z-[60]' : (isLive ? 'z-0' : 'z-[-1]') // z-[-1] pour être sous la vidéo OFF
+        }`}
+      >
+        <div 
+          id="twitch-embed" 
+          className={`w-full h-full object-cover transition-all duration-1000 
+            ${watchMode ? 'grayscale-0 pointer-events-auto' : 'grayscale contrast-125 opacity-60 pointer-events-none'}
+          `}
+        />
+      </div>
+
+      {/* 🎥 VIDEO OFFLINE (Rendu uniquement si la radio n'est pas LIVE) */}
+      {!isLive && (
         <video
           className="absolute inset-0 w-full h-full object-cover z-0"
           src="/video.mov"
@@ -283,7 +281,6 @@ export default function LandingPage() {
           {isLive && (
             <button 
               onClick={handleWatchStream}
-              // Assure que le bouton est au-dessus des overlays en mode normal (z-10)
               className="border border-green-500 text-green-400 px-12 py-4 text-xs uppercase tracking-[0.2em] transition-all duration-500 hover:bg-green-500 hover:text-black backdrop-blur-md bg-black/30 font-bold animate-pulse hover:animate-none cursor-pointer z-10"
             >
               Watch Stream

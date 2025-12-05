@@ -14,7 +14,7 @@ export default function LandingPage() {
   const playerInitialized = useRef(false);
   const twitchPlayerRef = useRef<any>(null);
 
-  // Twitch API
+  // 🔥 AMÉLIORATION : Twitch API avec meilleure détection
   useEffect(() => {
     if (playerInitialized.current) return;
 
@@ -40,13 +40,32 @@ export default function LandingPage() {
         const player = new (window as any).Twitch.Player('twitch-embed', options);
         twitchPlayerRef.current = player;
 
+        // 🔥 Logs de debug
         player.addEventListener((window as any).Twitch.Player.READY, () => {
+          console.log('✅ Twitch player ready');
           player.setMuted(true);
           player.play();
         });
 
-        player.addEventListener((window as any).Twitch.Player.ONLINE, () => setIsLive(true));
-        player.addEventListener((window as any).Twitch.Player.OFFLINE, () => setIsLive(false));
+        player.addEventListener((window as any).Twitch.Player.ONLINE, () => {
+          console.log('🔴 Twitch is ONLINE');
+          setIsLive(true);
+        });
+        
+        player.addEventListener((window as any).Twitch.Player.OFFLINE, () => {
+          console.log('⚫ Twitch is OFFLINE');
+          setIsLive(false);
+        });
+
+        // 🔥 Écouter d'autres événements
+        player.addEventListener((window as any).Twitch.Player.PLAYING, () => {
+          console.log('▶️ Twitch is PLAYING');
+          setIsLive(true);
+        });
+
+        player.addEventListener((window as any).Twitch.Player.PAUSE, () => {
+          console.log('⏸️ Twitch is PAUSED');
+        });
       }
     };
 
@@ -60,6 +79,35 @@ export default function LandingPage() {
     } else {
       initTwitchPlayer();
     }
+  }, []);
+
+  // 🔥 NOUVEAU : Vérification alternative via API publique
+  useEffect(() => {
+    const checkTwitchViaAPI = async () => {
+      try {
+        const res = await fetch('https://decapi.me/twitch/uptime/bertarose');
+        const text = await res.text();
+        
+        console.log('📡 Twitch API check:', text);
+        
+        if (text.includes('offline') || text.includes('error')) {
+          console.log('⚫ API confirms: OFFLINE');
+          setIsLive(false);
+        } else {
+          console.log('🔴 API confirms: ONLINE');
+          setIsLive(true);
+        }
+      } catch (e) {
+        console.error('❌ Error checking Twitch API:', e);
+      }
+    };
+
+    // Check immédiatement au chargement
+    setTimeout(checkTwitchViaAPI, 3000);
+    
+    // Puis check toutes les 60 secondes
+    const interval = setInterval(checkTwitchViaAPI, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleWatchStream = () => {
@@ -174,12 +222,12 @@ export default function LandingPage() {
           </span>
         </div>
 
-        {/* TITRE - Plus gros sur mobile */}
+        {/* TITRE */}
         <h1 className="text-6xl sm:text-7xl md:text-9xl font-bold uppercase tracking-tighter mb-8 md:mb-12 drop-shadow-2xl mix-blend-overlay opacity-90 select-none text-center">
           STILL FM
         </h1>
 
-        {/* BOUTONS - Stack vertical sur mobile */}
+        {/* BOUTONS */}
         <div className="flex flex-col gap-4 items-center w-full max-w-sm">
             
           <Link 
@@ -206,7 +254,7 @@ export default function LandingPage() {
         </p>
       </div>
 
-      {/* AUDIO PLAYER - Repositionné en bas, plus compact sur mobile */}
+      {/* AUDIO PLAYER */}
       <div className={`fixed bottom-0 left-0 right-0 md:bottom-6 md:left-6 md:right-auto z-50 transition-opacity duration-500 ${watchMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <LandingAudioPlayer />
       </div>

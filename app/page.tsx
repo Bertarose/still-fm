@@ -7,25 +7,32 @@ import { usePlayer } from './context/PlayerContext';
 
 export default function LandingPage() {
   const { isPlaying: isRadioPlaying, togglePlay: toggleRadio } = usePlayer();
-  
-  const [isLive, setIsLive] = useState(false); 
+    
+  const [isLive, setIsLive] = useState(false);  
   const [watchMode, setWatchMode] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const playerInitialized = useRef(false);
   const twitchPlayerRef = useRef<any>(null);
 
-  // Twitch Player Init
+  // Initialisation du Player Twitch
   useEffect(() => {
+    // Vérifie si le player a déjà été initialisé ou si le script Twitch est prêt
     if (playerInitialized.current) return;
 
     const initTwitchPlayer = () => {
+      // S'assurer que l'objet Twitch global et l'élément d'ancrage sont disponibles
       if ((window as any).Twitch && document.getElementById('twitch-embed')) {
         playerInitialized.current = true;
-        
+          
+        // --- LOGIQUE DE VÉRIFICATION DES PARENTS (CORRECTION CRITIQUE) ---
         const parents = ['localhost', '127.0.0.1', 'still-fm.vercel.app', 'www.stillfm.com', 'stillfm.com'];
         if (typeof window !== 'undefined' && !parents.includes(window.location.hostname)) {
             parents.push(window.location.hostname);
         }
+
+        console.log('🔗 Parents autorisés pour Twitch:', parents);
+        console.log('💻 Hôte actuel:', window.location.hostname);
+        // ------------------------------------------------------------------
 
         const options = {
           width: '100%',
@@ -33,7 +40,7 @@ export default function LandingPage() {
           channel: 'bertarose',
           parent: parents,
           autoplay: true,
-          muted: true,     
+          muted: true,      
           controls: false,
         };
 
@@ -41,77 +48,104 @@ export default function LandingPage() {
         twitchPlayerRef.current = player;
 
         player.addEventListener((window as any).Twitch.Player.READY, () => {
-          console.log('✅ Twitch player ready');
+          console.log('✅ Twitch player ready. Player Object:', twitchPlayerRef.current);
           player.setMuted(true);
-          player.play();
+          // La lecture automatique peut parfois échouer sans interaction utilisateur,
+          // mais on tente quand même pour le fond.
+          player.play().catch((err: any) => console.log('Twitch play failed (autoplay restriction):', err));
         });
 
         player.addEventListener((window as any).Twitch.Player.ONLINE, () => {
-          console.log('🔴 Twitch is ONLINE');
+          console.log('🔴 Twitch est ONLINE (via Player Event)');
           setIsLive(true);
         });
-        
+          
         player.addEventListener((window as any).Twitch.Player.OFFLINE, () => {
-          console.log('⚫ Twitch is OFFLINE');
+          console.log('⚫ Twitch est OFFLINE (via Player Event)');
           setIsLive(false);
         });
 
         player.addEventListener((window as any).Twitch.Player.PLAYING, () => {
-          console.log('▶️ Twitch is PLAYING');
+          console.log('▶️ Twitch est PLAYING (via Player Event)');
           setIsLive(true);
         });
+      } else {
+        console.log('⚠️ En attente du script Twitch ou de l\'élément "twitch-embed"...');
       }
     };
 
-    if (!document.getElementById('twitch-js')) {
-      const script = document.createElement('script');
-      script.id = 'twitch-js';
-      script.src = 'https://player.twitch.tv/js/embed/v1.js';
-      script.async = true;
-      script.onload = initTwitchPlayer;
-      document.body.appendChild(script);
+    // Logique de chargement du script Twitch
+    if (!(window as any).Twitch) {
+      if (!document.getElementById('twitch-js')) {
+        const script = document.createElement('script');
+        script.id = 'twitch-js';
+        script.src = 'https://player.twitch.tv/js/embed/v1.js';
+        script.async = true;
+        script.onload = initTwitchPlayer; // Initialise après le chargement du script
+        document.body.appendChild(script);
+      }
     } else {
-      initTwitchPlayer();
+      initTwitchPlayer(); // Le script est déjà là, on initialise immédiatement
     }
   }, []);
 
-  // API Check
+  // API Check (utilisé comme source de secours fiable)
   useEffect(() => {
     const checkTwitchViaAPI = async () => {
       try {
+        // NOTE: Utiliser decapi.me/twitch/uptime est un moyen rapide mais non-officiel
         const res = await fetch('https://decapi.me/twitch/uptime/bertarose');
         const text = await res.text();
-        
+          
         console.log('📡 Twitch API check:', text);
-        
+          
         if (text.includes('offline') || text.includes('error')) {
-          console.log('⚫ API confirms: OFFLINE');
-          setIsLive(false);
+          console.log('⚫ API confirme: OFFLINE');
+          // On ne force le passage à OFF LINE que si le player n'est pas encore en PLAYING.
+          // Pour éviter un flash en cas de latence.
+          if (!twitchPlayerRef.current || !twitchPlayerRef.current.getPlaybackStats()?.isLive) {
+             setIsLive(false);
+          }
         } else {
-          console.log('🔴 API confirms: ONLINE');
+          console.log('🔴 API confirme: ONLINE');
           setIsLive(true);
         }
       } catch (e) {
-        console.error('❌ Error checking Twitch API:', e);
+        console.error('❌ Erreur lors de la vérification de l\'API Twitch:', e);
       }
     };
 
-    setTimeout(checkTwitchViaAPI, 3000);
+    // Démarrer la vérification API après une courte attente et définir l'intervalle
+    const initialTimeout = setTimeout(checkTwitchViaAPI, 3000);
     const interval = setInterval(checkTwitchViaAPI, 60000);
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
   }, []);
 
+  // Gestion du mode "Watch Stream"
   const handleWatchStream = () => {
     console.log('🎬 Activating watch mode');
-    if (twitchPlayerRef.current) {
-        if (isRadioPlaying) {
-          toggleRadio();
-        }
-        twitchPlayerRef.current.setMuted(false);
-        twitchPlayerRef.current.setVolume(1.0);
-        twitchPlayerRef.current.play();
-        setWatchMode(true);
+
+    // --- CORRECTION DU DÉBOGAGE : VÉRIFICATION DU PLAYER ---
+    if (!twitchPlayerRef.current) {
+        console.error('❌ Twitch Player non initialisé. Impossible d\'activer le mode Watch.');
+        return;
     }
+    // ----------------------------------------------------
+
+    if (isRadioPlaying) {
+        console.log('Stopping radio...');
+        toggleRadio();
+    }
+    
+    // Si le player existe, on le dé-mute et on bascule en mode Watch
+    twitchPlayerRef.current.setMuted(false);
+    twitchPlayerRef.current.setVolume(1.0);
+    twitchPlayerRef.current.play().catch((err: any) => console.log('Twitch play failed (user interaction):', err));
+    setWatchMode(true);
+    console.log('✅ Watch mode activé. Mute: OFF, Volume: 1.0');
   };
 
   const handleCloseWatch = () => {
@@ -119,12 +153,13 @@ export default function LandingPage() {
     setWatchMode(false);
     if (twitchPlayerRef.current) {
       twitchPlayerRef.current.setMuted(true);
-      twitchPlayerRef.current.setVolume(0.5);
+      twitchPlayerRef.current.setVolume(0.5); // On remet un volume faible ou nul si vous voulez
     }
   };
 
-  // Animation étoiles
+  // Animation étoiles (aucune modification)
   useEffect(() => {
+    // ... (Votre code pour les étoiles ici) ...
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -180,6 +215,7 @@ export default function LandingPage() {
     animate();
     return () => window.removeEventListener('resize', resizeCanvas);
   }, []);
+
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
@@ -252,7 +288,7 @@ export default function LandingPage() {
               className="w-full group relative overflow-hidden"
             >
               <div className="border-2 border-white px-8 py-4 text-sm uppercase tracking-[0.2em] text-center transition-all duration-500 hover:bg-white hover:text-black backdrop-blur-md bg-black/30 font-bold">
-                  Enter Site
+                Enter Site
               </div>
             </Link>
 

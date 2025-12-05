@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import LandingAudioPlayer from './components/LandingAudioPlayer';
-import { usePlayer } from './context/PlayerContext';
+// Import crucial du PlayerContext
+import LandingAudioPlayer from './components/LandingAudioPlayer'; 
+import { usePlayer } from './context/PlayerContext'; // <--- IMPORT AJOUTÉ
 
 export default function LandingPage() {
-  const { isPlaying: isRadioPlaying, togglePlay: toggleRadio } = usePlayer();
+  // L'accès au contexte Player est nécessaire pour arrêter la radio
+  const { isPlaying: isRadioPlaying, togglePlay: toggleRadio } = usePlayer(); 
     
   const [isLive, setIsLive] = useState(false);  
   const [watchMode, setWatchMode] = useState(false);
@@ -23,7 +25,6 @@ export default function LandingPage() {
       // Si on essaie de l'initialiser et qu'il l'est déjà, on sort.
       if (playerInitialized.current) return; 
 
-      // S'assurer que l'objet Twitch global et l'élément d'ancrage sont disponibles
       if ((window as any).Twitch && document.getElementById('twitch-embed')) {
         playerInitialized.current = true;
           
@@ -75,14 +76,14 @@ export default function LandingPage() {
 
         } catch (error) {
             console.error('❌ ERREUR FATALE: La création de Twitch.Player a échoué. Vérifiez le domaine "parent".', error);
-            playerInitialized.current = false; // Réinitialise l'état pour permettre une nouvelle tentative
+            playerInitialized.current = false;
         }
       } else {
         console.log('⚠️ En attente du script Twitch ou de l\'élément "twitch-embed"...');
       }
     };
 
-    // Logique de chargement du script Twitch
+    // Logique de chargement du script Twitch avec réinitialisation de sécurité
     if (!(window as any).Twitch) {
       if (!document.getElementById('twitch-js')) {
         const script = document.createElement('script');
@@ -94,34 +95,27 @@ export default function LandingPage() {
       }
     } else {
       initTwitchPlayer(); 
-      // --- NOUVELLE LOGIQUE DE TENTATIVE ---
-      // Si le script est déjà là mais l'élément "twitch-embed" n'est pas encore rendu
+      // Nouvelle tentative en cas de latence DOM
       setTimeout(() => {
           if (!playerInitialized.current) {
               console.log('🔄 Tentative de réinitialisation Twitch après 500ms...');
               initTwitchPlayer();
           }
       }, 500);
-      // ------------------------------------
     }
   }, []);
 
-  // --- 2. VÉRIFICATION API (Source de secours) ---
+  // --- 2. VÉRIFICATION API (Source de secours, manquante dans votre ancien code) ---
   useEffect(() => {
     const checkTwitchViaAPI = async () => {
       try {
         const res = await fetch('https://decapi.me/twitch/uptime/bertarose');
         const text = await res.text();
           
-        console.log('📡 Twitch API check:', text);
-          
         if (text.includes('offline') || text.includes('error')) {
-          console.log('⚫ API confirme: OFFLINE');
           setIsLive(false);
         } else {
-          console.log('🔴 API confirme: ONLINE. (Durée: ' + text + ')');
           setIsLive(true);
-          console.log('✨ setIsLive(true) appelé via API.'); 
         }
       } catch (e) {
         console.error('❌ Erreur lors de la vérification de l\'API Twitch:', e);
@@ -136,7 +130,7 @@ export default function LandingPage() {
     };
   }, []);
 
-  // --- 3. GESTION DU MODE WATCH STREAM ---
+  // --- 3. GESTION DU MODE WATCH STREAM (Logique de radio ajoutée) ---
   const handleWatchStream = () => {
     console.log('🎬 Activating watch mode');
 
@@ -145,7 +139,8 @@ export default function LandingPage() {
         return;
     }
     
-    if (isRadioPlaying) {
+    // NOUVEAU : Arrêter le flux radio si il joue
+    if (isRadioPlaying) { 
         toggleRadio();
         console.log('Stopping radio...');
     }
@@ -154,7 +149,7 @@ export default function LandingPage() {
     twitchPlayerRef.current.setVolume(1.0);
     twitchPlayerRef.current.play().catch((err: any) => console.warn('Twitch play failed (user interaction failed):', err));
     setWatchMode(true);
-    console.log('✅ Watch mode activé. Mute: OFF, Volume: 1.0');
+    console.log('✅ Watch mode activé.');
   };
 
   const handleCloseWatch = () => {
@@ -162,7 +157,6 @@ export default function LandingPage() {
     setWatchMode(false);
     if (twitchPlayerRef.current) {
       twitchPlayerRef.current.setMuted(true);
-      twitchPlayerRef.current.setVolume(0.5);
     }
   };
 
@@ -228,8 +222,17 @@ export default function LandingPage() {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
 
-      {/* 🎥 BACKGROUND VIDEO - Seulement si OFFLINE */}
-      {!isLive && (
+      {/* 🔴 TWITCH EMBED / 🎥 VIDEO OFFLINE */}
+      {isLive ? (
+        <div className={`absolute inset-0 overflow-hidden transition-all duration-500 ${watchMode ? 'z-[60]' : 'z-0'}`}>
+          <div 
+            id="twitch-embed" 
+            className={`w-full h-full object-cover transition-all duration-1000 
+              ${watchMode ? 'grayscale-0 pointer-events-auto' : 'grayscale contrast-125 opacity-60 pointer-events-none'}
+            `}
+          />
+        </div>
+      ) : (
         <video
           className="absolute inset-0 w-full h-full object-cover z-0"
           src="/video.mov"
@@ -240,96 +243,71 @@ export default function LandingPage() {
         />
       )}
 
-      {/* 🔴 TWITCH EMBED - Seulement si LIVE */}
-      {isLive && (
-        <div 
-          className={`absolute inset-0 overflow-hidden transition-all duration-500 ${
-            watchMode ? 'z-[60]' : 'z-0'
-          }`}
-        >
-          <div 
-            id="twitch-embed" 
-            className={`w-full h-full transition-all duration-1000 ${
-              watchMode 
-                ? 'grayscale-0 opacity-100 pointer-events-auto' 
-                : 'grayscale contrast-125 opacity-60 pointer-events-none'
-            }`}
-          />
+      {/* CANVAS ÉTOILES */}
+      <canvas
+        ref={canvasRef}
+        className={`absolute inset-0 w-full h-full z-1 pointer-events-none mix-blend-screen transition-opacity duration-500 ${watchMode ? 'opacity-0' : 'opacity-50'}`}
+      />
+
+      {/* Dark Overlay */}
+      <div className={`absolute inset-0 bg-black/30 z-3 pointer-events-none transition-opacity duration-500 ${watchMode ? 'opacity-0' : 'opacity-100'}`} />
+
+      {/* CONTENU PRINCIPAL */}
+      <div className={`relative z-10 flex flex-col items-center justify-center h-full text-white font-mono pb-20 transition-all duration-500 ${watchMode ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 scale-100'}`}>
+        
+        {/* INDICATEUR LIVE */}
+        <div className="mb-8 flex items-center gap-3 backdrop-blur-sm px-4 py-2 rounded-full bg-black/40 border border-white/10">
+          <div className={`w-2 h-2 rounded-full ${isLive ? 'bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'bg-red-500'}`} />
+          <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-200">
+            {isLive ? 'LIVE ON AIR' : 'OFFLINE'}
+          </span>
         </div>
-      )}
 
-      {/* ✨ CANVAS ÉTOILES - Caché en watch mode */}
-      {!watchMode && (
-        <canvas
-          ref={canvasRef}
-          className="absolute inset-0 w-full h-full z-1 pointer-events-none mix-blend-screen opacity-50"
-        />
-      )}
+        {/* TITRE */}
+        <h1 className="text-7xl md:text-9xl font-bold uppercase tracking-tighter mb-12 drop-shadow-2xl mix-blend-overlay opacity-90 select-none">
+          STILL FM
+        </h1>
 
-      {/* 🌑 Dark Overlay - Caché en watch mode */}
-      {!watchMode && (
-        <div className="absolute inset-0 bg-black/30 z-3 pointer-events-none" />
-      )}
-
-      {/* 📄 CONTENU PRINCIPAL - Caché en watch mode */}
-      {!watchMode && (
-        <div className="relative z-10 flex flex-col items-center justify-center h-full text-white font-mono px-4">
-          
-          {/* INDICATEUR LIVE */}
-          <div className="mb-6 flex items-center gap-3 backdrop-blur-sm px-4 py-2 rounded-full bg-black/40 border border-white/10">
-            <div className={`w-2 h-2 rounded-full ${isLive ? 'bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'bg-red-500'}`} />
-            <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-200">
-              {isLive ? 'LIVE ON AIR' : 'OFFLINE'}
-            </span>
-          </div>
-
-          {/* TITRE */}
-          <h1 className="text-6xl sm:text-7xl md:text-9xl font-bold uppercase tracking-tighter mb-8 md:mb-12 drop-shadow-2xl mix-blend-overlay opacity-90 select-none text-center">
-            STILL FM
-          </h1>
-
-          {/* BOUTONS */}
-          <div className="flex flex-col gap-4 items-center w-full max-w-sm">
-              
-            <Link 
-              href="/home"
-              className="w-full group relative overflow-hidden"
-            >
-              <div className="border-2 border-white px-8 py-4 text-sm uppercase tracking-[0.2em] text-center transition-all duration-500 hover:bg-white hover:text-black backdrop-blur-md bg-black/30 font-bold">
+        {/* BOUTONS */}
+        <div className="flex flex-col md:flex-row gap-6 items-center">
+            
+          <Link 
+            href="/home"
+            className="group relative overflow-hidden"
+          >
+            <div className="border border-white px-12 py-4 text-xs uppercase tracking-[0.2em] transition-all duration-500 hover:bg-white hover:text-black backdrop-blur-md bg-black/30 font-bold">
                 Enter Site
-              </div>
-            </Link>
+            </div>
+          </Link>
 
-            {isLive && (
-              <button 
-                onClick={handleWatchStream}
-                className="w-full border-2 border-green-500 text-green-400 px-8 py-4 text-sm uppercase tracking-[0.2em] text-center transition-all duration-500 hover:bg-green-500 hover:text-black backdrop-blur-md bg-black/30 font-bold animate-pulse hover:animate-none cursor-pointer"
-              >
-                Watch Stream
-              </button>
-            )}
-          </div>
-
-          <p className="mt-6 text-[10px] uppercase tracking-widest text-gray-400 opacity-70 text-center">
-            Montreal Underground Radio
-          </p>
+          {isLive && (
+            <button 
+              onClick={handleWatchStream}
+              // Assure que le bouton est au-dessus des overlays en mode normal (z-10)
+              className="border border-green-500 text-green-400 px-12 py-4 text-xs uppercase tracking-[0.2em] transition-all duration-500 hover:bg-green-500 hover:text-black backdrop-blur-md bg-black/30 font-bold animate-pulse hover:animate-none cursor-pointer z-10"
+            >
+              Watch Stream
+            </button>
+          )}
         </div>
-      )}
 
-      {/* 🎵 AUDIO PLAYER - Caché en watch mode */}
-      {!watchMode && (
-        <div className="fixed bottom-0 left-0 right-0 md:bottom-6 md:left-6 md:right-auto z-50">
-          <LandingAudioPlayer />
-        </div>
-      )}
+        <p className="mt-8 text-[10px] uppercase tracking-widest text-gray-400 opacity-70">
+          Montreal Underground Radio
+        </p>
+      </div>
 
-      {/* ❌ BOUTON FERMER - Visible SEULEMENT en watch mode */}
+      {/* 🎵 AUDIO PLAYER */}
+      <div className={`fixed bottom-4 left-4 z-50 transition-opacity duration-500 ${watchMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+        <LandingAudioPlayer />
+      </div>
+
+      {/* ❌ BOUTON RETOUR */}
       {watchMode && (
         <button 
           onClick={handleCloseWatch}
-          className="fixed top-4 right-4 md:top-6 md:right-6 z-[100] border-2 border-white/50 text-white px-6 py-3 text-sm uppercase tracking-widest hover:bg-white hover:text-black transition-all cursor-pointer backdrop-blur-sm bg-black/30 font-bold"
+          className="fixed top-6 right-6 z-[100] border border-white/50 text-white/80 px-6 py-2 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all cursor-pointer"
         >
-          ✕ Close
+          Close Stream X
         </button>
       )}
     </div>

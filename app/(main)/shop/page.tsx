@@ -17,11 +17,11 @@ export default function ShopPage() {
           
           {/* Image - Côté gauche */}
           <div className="relative border-b lg:border-b-0 lg:border-r border-white group h-full">
-            <div className="w-full h-full relative overflow-hidden bg-black">
+            <div className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center">
               <img 
                 src="/t2.png" 
                 alt="Still FM T-Shirt" 
-                className="w-full h-full object-contain grayscale group-hover:grayscale-0 transition-all duration-500"
+                className="max-w-full max-h-full object-contain grayscale group-hover:grayscale-0 transition-all duration-500"
               />
               
               {/* Badge "Available Now" */}
@@ -31,29 +31,32 @@ export default function ShopPage() {
             </div>
           </div>
 
-          {/* Info - Côté droit */}
-          <div className="flex flex-col justify-center p-8 lg:p-12 h-full overflow-y-auto custom-scrollbar">
+          {/* Info - Côté droit - ALIGNÉ EN HAUT */}
+          <div className="flex flex-col p-8 lg:p-12 h-full">
             
-            <div className="max-w-xl">
-              <h1 className="text-4xl lg:text-5xl font-bold uppercase mb-3 tracking-tight leading-none">
-                Still FM Tee
-              </h1>
+            <div className="flex-1 flex flex-col">
               
-              <p className="text-xs uppercase tracking-wider opacity-50 mb-6">
-                Official Merchandise
-              </p>
+              {/* Titre et description */}
+              <div className="mb-8">
+                <h1 className="text-4xl lg:text-5xl font-bold uppercase mb-2 tracking-tight leading-none">
+                  Still FM Tee
+                </h1>
+                
+                <p className="text-xs uppercase tracking-wider opacity-50 mb-4">
+                  Official Merchandise
+                </p>
 
-              <div className="space-y-4 mb-8 text-sm">
-                <p className="leading-relaxed opacity-80">
+                <p className="text-sm leading-relaxed opacity-80">
                   100% heavyweight cotton. Screen printed locally in Montreal. 
-                  Official Still FM radio branding. Limited edition drop.
+                  Official Still FM radio branding.
                 </p>
               </div>
 
               {/* Prix */}
-              <div className="mb-6 pb-6 border-b border-white/10">
-                <p className="text-4xl font-bold">
-                  $35 <span className="text-lg font-normal opacity-50">CAD</span>
+              <div className="mb-6">
+                <p className="text-xs uppercase tracking-wider opacity-50 mb-2">Price</p>
+                <p className="text-3xl font-bold">
+                  $35 <span className="text-base font-normal opacity-50">CAD</span>
                 </p>
               </div>
 
@@ -67,7 +70,7 @@ export default function ShopPage() {
                     <button
                       key={size}
                       onClick={() => setSelectedSize(size)}
-                      className={`border py-3 text-sm uppercase tracking-wider transition-all font-bold ${
+                      className={`border py-2 text-sm uppercase tracking-wider transition-all font-bold ${
                         selectedSize === size
                           ? 'bg-white text-black border-white'
                           : 'border-white hover:bg-white hover:text-black'
@@ -82,7 +85,7 @@ export default function ShopPage() {
               {/* Bouton d'achat */}
               <button 
                 disabled={!selectedSize}
-                className={`w-full border-2 py-4 text-sm uppercase tracking-wider transition-all font-bold mb-6 ${
+                className={`w-full border-2 py-3 text-sm uppercase tracking-wider transition-all font-bold mb-6 ${
                   selectedSize
                     ? 'border-white hover:bg-white hover:text-black cursor-pointer'
                     : 'border-white/20 text-white/20 cursor-not-allowed'
@@ -91,11 +94,13 @@ export default function ShopPage() {
                 {selectedSize ? `Add to Cart — $35` : 'Select a Size'}
               </button>
 
-              {/* Shipping info */}
-              <div className="space-y-1 text-[10px] opacity-50 pt-4 border-t border-white/10">
-                <p>✓ Free shipping over $100 CAD</p>
-                <p>✓ Local pickup in Montreal</p>
-                <p>✓ 30 days exchange policy</p>
+              {/* Shipping info - En bas */}
+              <div className="mt-auto pt-6 border-t border-white/10">
+                <div className="space-y-1 text-[10px] opacity-50">
+                  <p>✓ Free shipping over $100 CAD</p>
+                  <p>✓ Local pickup in Montreal</p>
+                  <p>✓ 30 days exchange policy</p>
+                </div>
               </div>
             </div>
 

@@ -6,7 +6,7 @@ export default function ShopPage() {
       id: 1,
       name: "STILL FM TEE",
       price: "35",
-      image: "../../../public/t2.png",
+      image: "/t2.png",
       size: "S / M / L / XL"
     },
     {
@@ -103,13 +103,13 @@ export default function ShopPage() {
             Limited edition merchandise drop. Screen printed locally in Montreal. 
             First batch shipping December 2024. Sign up for restock notifications.
           </p>
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-4">
             <input 
               type="email" 
               placeholder="YOUR EMAIL"
-              className="bg-transparent border border-white px-6 py-3 text-xs uppercase tracking-wider placeholder:text-gray-600 focus:outline-none focus:bg-white focus:text-black transition-all w-64"
+              className="bg-transparent border border-white px-6 py-3 text-xs uppercase tracking-wider placeholder:text-gray-600 focus:outline-none focus:bg-white focus:text-black transition-all w-full md:w-64"
             />
-            <button className="border border-white px-8 py-3 text-xs uppercase tracking-wider hover:bg-white hover:text-black transition-all font-bold">
+            <button className="border border-white px-8 py-3 text-xs uppercase tracking-wider hover:bg-white hover:text-black transition-all font-bold w-full md:w-auto">
               Notify Me
             </button>
           </div>

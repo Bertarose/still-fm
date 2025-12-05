@@ -7,56 +7,56 @@ export default function ResidentsPage() {
     {
       name: "DJ POSER",
       genre: "TECHNO / INDUSTRIAL",
-      image: "https://images.unsplash.com/photo-1571266028243-d220c6f1e5d8?w=1200&h=1200&fit=crop",
+      image: "https://images.unsplash.com/photo-1571266028243-d220c6f1e5d8?w=1200&h=1200&fit=crop&q=80",
       bio: "Heavy techno and industrial sounds. Resident since 2023.",
       social: "https://www.instagram.com/djposer"
     },
     {
       name: "SHADOW BASS",
       genre: "DRUM & BASS / NEUROFUNK",
-      image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200&h=1200&fit=crop",
+      image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200&h=1200&fit=crop&q=80",
       bio: "Liquid DnB and neurofunk specialist. Montreal underground veteran.",
       social: "https://www.instagram.com/shadowbass"
     },
     {
       name: "NEON PULSE",
       genre: "HOUSE / MINIMAL",
-      image: "https://images.unsplash.com/photo-1574163759315-e8e6f8b4b315?w=1200&h=1200&fit=crop",
+      image: "https://images.unsplash.com/photo-1574163759315-e8e6f8b4b315?w=1200&h=1200&fit=crop&q=80",
       bio: "Deep house and minimal grooves. Known for marathon sets.",
       social: "https://www.instagram.com/neonpulse"
     },
     {
       name: "VOID RIDER",
       genre: "INDUSTRIAL / EBM",
-      image: "https://images.unsplash.com/photo-1598387181032-a3103a2db5b3?w=1200&h=1200&fit=crop",
+      image: "https://images.unsplash.com/photo-1598387181032-a3103a2db5b3?w=1200&h=1200&fit=crop&q=80",
       bio: "Dark industrial techno with EBM influences. Noise architect.",
       social: "https://www.instagram.com/voidrider"
     },
     {
       name: "ECHO DRIFT",
       genre: "AMBIENT / EXPERIMENTAL",
-      image: "https://images.unsplash.com/photo-1563206767-5b18f218e8de?w=1200&h=1200&fit=crop",
+      image: "https://images.unsplash.com/photo-1563206767-5b18f218e8de?w=1200&h=1200&fit=crop&q=80",
       bio: "Atmospheric soundscapes and experimental textures.",
       social: "https://www.instagram.com/echodrift"
     },
     {
       name: "PULSE WAVE",
       genre: "ELECTRO / BREAKS",
-      image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1200&h=1200&fit=crop",
+      image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1200&h=1200&fit=crop&q=80",
       bio: "Breakbeat and electro fusion. High-energy selector.",
       social: "https://www.instagram.com/pulsewave"
     },
     {
       name: "DARK MATTER",
       genre: "DUBSTEP / BASS",
-      image: "https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=1200&h=1200&fit=crop",
+      image: "https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=1200&h=1200&fit=crop&q=80",
       bio: "Heavy bass and dubstep. Sub-frequency specialist.",
       social: "https://www.instagram.com/darkmatter"
     },
     {
       name: "COSMIC NOISE",
       genre: "TECHNO / TRANCE",
-      image: "https://images.unsplash.com/photo-1571607697765-063be663682a?w=1200&h=1200&fit=crop",
+      image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1200&h=1200&fit=crop&q=80",
       bio: "Hypnotic techno and trance journeys. Psychedelic explorer.",
       social: "https://www.instagram.com/cosmicnoise"
     }

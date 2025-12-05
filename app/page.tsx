@@ -14,9 +14,8 @@ export default function LandingPage() {
   const playerInitialized = useRef(false);
   const twitchPlayerRef = useRef<any>(null);
 
-  // Initialisation du Player Twitch
+  // --- 1. INITIALISATION DU PLAYER TWITCH ET VÉRIFICATION DES PARENTS ---
   useEffect(() => {
-    // Vérifie si le player a déjà été initialisé ou si le script Twitch est prêt
     if (playerInitialized.current) return;
 
     const initTwitchPlayer = () => {
@@ -24,7 +23,7 @@ export default function LandingPage() {
       if ((window as any).Twitch && document.getElementById('twitch-embed')) {
         playerInitialized.current = true;
           
-        // --- LOGIQUE DE VÉRIFICATION DES PARENTS (CORRECTION CRITIQUE) ---
+        // --- LOGIQUE DE VÉRIFICATION DES PARENTS (CRITIQUE) ---
         const parents = ['localhost', '127.0.0.1', 'still-fm.vercel.app', 'www.stillfm.com', 'stillfm.com'];
         if (typeof window !== 'undefined' && !parents.includes(window.location.hostname)) {
             parents.push(window.location.hostname);
@@ -32,7 +31,7 @@ export default function LandingPage() {
 
         console.log('🔗 Parents autorisés pour Twitch:', parents);
         console.log('💻 Hôte actuel:', window.location.hostname);
-        // ------------------------------------------------------------------
+        // --------------------------------------------------------
 
         const options = {
           width: '100%',
@@ -44,31 +43,36 @@ export default function LandingPage() {
           controls: false,
         };
 
-        const player = new (window as any).Twitch.Player('twitch-embed', options);
-        twitchPlayerRef.current = player;
+        try {
+            const player = new (window as any).Twitch.Player('twitch-embed', options);
+            twitchPlayerRef.current = player;
+            console.log('☑️ Twitch Player instance créée.', player);
 
-        player.addEventListener((window as any).Twitch.Player.READY, () => {
-          console.log('✅ Twitch player ready. Player Object:', twitchPlayerRef.current);
-          player.setMuted(true);
-          // La lecture automatique peut parfois échouer sans interaction utilisateur,
-          // mais on tente quand même pour le fond.
-          player.play().catch((err: any) => console.log('Twitch play failed (autoplay restriction):', err));
-        });
+            player.addEventListener((window as any).Twitch.Player.READY, () => {
+              console.log('✅ Twitch player ready.');
+              player.setMuted(true);
+              player.play().catch((err: any) => console.warn('Twitch play failed (autoplay restriction):', err));
+            });
 
-        player.addEventListener((window as any).Twitch.Player.ONLINE, () => {
-          console.log('🔴 Twitch est ONLINE (via Player Event)');
-          setIsLive(true);
-        });
-          
-        player.addEventListener((window as any).Twitch.Player.OFFLINE, () => {
-          console.log('⚫ Twitch est OFFLINE (via Player Event)');
-          setIsLive(false);
-        });
+            player.addEventListener((window as any).Twitch.Player.ONLINE, () => {
+              console.log('🔴 Twitch est ONLINE (via Player Event).');
+              setIsLive(true);
+            });
+            
+            player.addEventListener((window as any).Twitch.Player.OFFLINE, () => {
+              console.log('⚫ Twitch est OFFLINE (via Player Event).');
+              setIsLive(false);
+            });
+            
+            player.addEventListener((window as any).Twitch.Player.PLAYING, () => {
+              console.log('▶️ Twitch est PLAYING (via Player Event).');
+              setIsLive(true);
+            });
 
-        player.addEventListener((window as any).Twitch.Player.PLAYING, () => {
-          console.log('▶️ Twitch est PLAYING (via Player Event)');
-          setIsLive(true);
-        });
+        } catch (error) {
+            console.error('❌ ERREUR FATALE: La création de Twitch.Player a échoué. Vérifiez le domaine "parent".', error);
+            playerInitialized.current = false; // Permettre une nouvelle tentative
+        }
       } else {
         console.log('⚠️ En attente du script Twitch ou de l\'élément "twitch-embed"...');
       }
@@ -81,19 +85,18 @@ export default function LandingPage() {
         script.id = 'twitch-js';
         script.src = 'https://player.twitch.tv/js/embed/v1.js';
         script.async = true;
-        script.onload = initTwitchPlayer; // Initialise après le chargement du script
+        script.onload = initTwitchPlayer;
         document.body.appendChild(script);
       }
     } else {
-      initTwitchPlayer(); // Le script est déjà là, on initialise immédiatement
+      initTwitchPlayer();
     }
   }, []);
 
-  // API Check (utilisé comme source de secours fiable)
+  // --- 2. VÉRIFICATION API (Source de secours) ---
   useEffect(() => {
     const checkTwitchViaAPI = async () => {
       try {
-        // NOTE: Utiliser decapi.me/twitch/uptime est un moyen rapide mais non-officiel
         const res = await fetch('https://decapi.me/twitch/uptime/bertarose');
         const text = await res.text();
           
@@ -101,21 +104,18 @@ export default function LandingPage() {
           
         if (text.includes('offline') || text.includes('error')) {
           console.log('⚫ API confirme: OFFLINE');
-          // On ne force le passage à OFF LINE que si le player n'est pas encore en PLAYING.
-          // Pour éviter un flash en cas de latence.
-          if (!twitchPlayerRef.current || !twitchPlayerRef.current.getPlaybackStats()?.isLive) {
-             setIsLive(false);
-          }
+          setIsLive(false);
         } else {
-          console.log('🔴 API confirme: ONLINE');
+          console.log('🔴 API confirme: ONLINE. (Durée: ' + text + ')');
           setIsLive(true);
+          // Ajouté un log pour confirmer que l'état est mis à jour
+          console.log('✨ setIsLive(true) appelé via API.'); 
         }
       } catch (e) {
         console.error('❌ Erreur lors de la vérification de l\'API Twitch:', e);
       }
     };
 
-    // Démarrer la vérification API après une courte attente et définir l'intervalle
     const initialTimeout = setTimeout(checkTwitchViaAPI, 3000);
     const interval = setInterval(checkTwitchViaAPI, 60000);
     return () => {
@@ -124,26 +124,23 @@ export default function LandingPage() {
     };
   }, []);
 
-  // Gestion du mode "Watch Stream"
+  // --- 3. GESTION DU MODE WATCH STREAM ---
   const handleWatchStream = () => {
     console.log('🎬 Activating watch mode');
 
-    // --- CORRECTION DU DÉBOGAGE : VÉRIFICATION DU PLAYER ---
     if (!twitchPlayerRef.current) {
         console.error('❌ Twitch Player non initialisé. Impossible d\'activer le mode Watch.');
         return;
     }
-    // ----------------------------------------------------
-
+    
     if (isRadioPlaying) {
-        console.log('Stopping radio...');
         toggleRadio();
+        console.log('Stopping radio...');
     }
     
-    // Si le player existe, on le dé-mute et on bascule en mode Watch
     twitchPlayerRef.current.setMuted(false);
     twitchPlayerRef.current.setVolume(1.0);
-    twitchPlayerRef.current.play().catch((err: any) => console.log('Twitch play failed (user interaction):', err));
+    twitchPlayerRef.current.play().catch((err: any) => console.warn('Twitch play failed (user interaction failed):', err));
     setWatchMode(true);
     console.log('✅ Watch mode activé. Mute: OFF, Volume: 1.0');
   };
@@ -153,13 +150,12 @@ export default function LandingPage() {
     setWatchMode(false);
     if (twitchPlayerRef.current) {
       twitchPlayerRef.current.setMuted(true);
-      twitchPlayerRef.current.setVolume(0.5); // On remet un volume faible ou nul si vous voulez
+      twitchPlayerRef.current.setVolume(0.5);
     }
   };
 
-  // Animation étoiles (aucune modification)
+  // --- 4. ANIMATION ÉTOILES (Non modifiée) ---
   useEffect(() => {
-    // ... (Votre code pour les étoiles ici) ...
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -216,7 +212,7 @@ export default function LandingPage() {
     return () => window.removeEventListener('resize', resizeCanvas);
   }, []);
 
-
+  // --- 5. RENDU JSX ---
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
 

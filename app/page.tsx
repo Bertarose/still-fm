@@ -2,19 +2,16 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import AudioPlayer from './components/AudioPlayer';
-import { usePlayer } from './context/PlayerContext';
+import LandingAudioPlayer from './components/LandingAudioPlayer'; // ← Nouveau
 
 export default function LandingPage() {
-  const { isPlaying: isRadioPlaying, togglePlay: toggleRadio } = usePlayer();
-  
-  const [isLive, setIsLive] = useState(true); 
+  const [isLive, setIsLive] = useState(false); 
   const [watchMode, setWatchMode] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const playerInitialized = useRef(false);
   const twitchPlayerRef = useRef<any>(null);
 
-  // --- 1. INTÉGRATION TWITCH API ---
+  // --- TWITCH API ---
   useEffect(() => {
     if (playerInitialized.current) return;
 
@@ -62,10 +59,8 @@ export default function LandingPage() {
     }
   }, []);
 
-  // Fonction pour activer le mode "Spectateur"
   const handleWatchStream = () => {
     if (twitchPlayerRef.current) {
-        if (isRadioPlaying) toggleRadio();
         twitchPlayerRef.current.setMuted(false);
         twitchPlayerRef.current.setVolume(1.0);
         twitchPlayerRef.current.play();
@@ -73,7 +68,7 @@ export default function LandingPage() {
     }
   };
 
-  // --- 2. Animation des étoiles ---
+  // --- Animation étoiles ---
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -134,7 +129,7 @@ export default function LandingPage() {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
 
-      {/* === TWITCH LIVE OU VIDÉO OFFLINE === */}
+      {/* TWITCH LIVE OU VIDÉO OFFLINE */}
       {isLive ? (
         <div className={`absolute inset-0 overflow-hidden transition-all duration-500 ${watchMode ? 'z-50' : 'z-0'}`}>
           <div 
@@ -155,7 +150,7 @@ export default function LandingPage() {
         />
       )}
 
-      {/* === CANVAS (ÉTOILES) === */}
+      {/* CANVAS ÉTOILES */}
       <canvas
         ref={canvasRef}
         className={`absolute inset-0 w-full h-full z-1 pointer-events-none mix-blend-screen transition-opacity duration-500 ${watchMode ? 'opacity-0' : 'opacity-50'}`}
@@ -164,7 +159,7 @@ export default function LandingPage() {
       {/* Dark Overlay */}
       <div className={`absolute inset-0 bg-black/30 z-3 pointer-events-none transition-opacity duration-500 ${watchMode ? 'opacity-0' : 'opacity-100'}`} />
 
-      {/* === CONTENU PRINCIPAL === */}
+      {/* CONTENU PRINCIPAL */}
       <div className={`relative z-10 flex flex-col items-center justify-center h-full text-white font-mono pb-20 transition-all duration-500 ${watchMode ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 scale-100'}`}>
         
         {/* INDICATEUR LIVE */}
@@ -207,12 +202,12 @@ export default function LandingPage() {
         </p>
       </div>
 
-      {/* LECTEUR AUDIO FLOTTANT */}
+      {/* ✅ AUDIO PLAYER REMIS ICI */}
       <div className={`transition-opacity duration-500 ${watchMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-          <AudioPlayer />
+        <LandingAudioPlayer />
       </div>
 
-      {/* BOUTON RETOUR (Pour quitter le mode Watch) */}
+      {/* BOUTON RETOUR */}
       {watchMode && (
         <button 
           onClick={() => {

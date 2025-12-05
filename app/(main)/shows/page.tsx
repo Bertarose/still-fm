@@ -1,237 +1,163 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { usePlayer } from '../../context/PlayerContext';
+import { useState, useEffect, useRef } from 'react';
+import { usePlayer } from '../context/PlayerContext';
 
-export default function ShowsPage() {
-  const { playShow } = usePlayer();
-
-  const [allShows, setAllShows] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  const [selectedResident, setSelectedResident] = useState<string>('ALL');
-  const [selectedStyle, setSelectedStyle] = useState<string>('ALL');
-  const [selectedMonth, setSelectedMonth] = useState<string>('ALL');
-
-  // Fetch depuis Mixcloud API
+const useMixcloudScript = (onScriptLoad: () => void) => {
   useEffect(() => {
-    const fetchShows = async () => {
+    if ((window as any).Mixcloud) {
+      onScriptLoad();
+      return;
+    }
+
+    const id = 'mixcloud-widget-api-script';
+    if (document.getElementById(id)) return;
+
+    const script = document.createElement('script');
+    script.id = id;
+    script.src = 'https://www.mixcloud.com/media/js/widgetApi.js';
+    script.async = true;
+    script.onload = onScriptLoad;
+    document.body.appendChild(script);
+  }, [onScriptLoad]);
+};
+
+export default function TopAudioPlayer() {
+  const { currentShow, isPlaying, playShow, togglePlay } = usePlayer();
+  const [isReady, setIsReady] = useState(false);
+  const widgetRef = useRef<any>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const hasLoadedDefault = useRef(false);
+
+  // 🔥 NOUVEAU : Charger le dernier show par défaut
+  useEffect(() => {
+    const loadDefaultShow = async () => {
+      if (hasLoadedDefault.current || currentShow) return;
+      
       try {
-        const res = await fetch('https://api.mixcloud.com/StillFM/cloudcasts/?limit=100');
+        const res = await fetch('https://api.mixcloud.com/StillFM/cloudcasts/?limit=1');
         const data = await res.json();
         
-        const formatted = data.data.map((show: any) => {
-          const title = show.name.toLowerCase();
-          let resident = 'VARIOUS';
-          
-          if (title.includes('poser')) resident = 'DJ POSER';
-          else if (title.includes('shadow') || title.includes('bass therapy')) resident = 'SHADOW BASS';
-          else if (title.includes('neon') || title.includes('pulse')) resident = 'NEON PULSE';
-          else if (title.includes('void') || title.includes('rider')) resident = 'VOID RIDER';
-          else if (title.includes('echo') || title.includes('drift')) resident = 'ECHO DRIFT';
-          else if (title.includes('dark') || title.includes('matter')) resident = 'DARK MATTER';
-          else if (title.includes('cosmic') || title.includes('noise')) resident = 'COSMIC NOISE';
-          
-          let style = 'ELECTRONIC';
-          if (show.tags && show.tags.length > 0) {
-            const tag = show.tags[0].name.toLowerCase();
-            if (tag.includes('techno')) style = 'TECHNO';
-            else if (tag.includes('house')) style = 'HOUSE';
-            else if (tag.includes('drum') || tag.includes('bass') || tag.includes('dnb')) style = 'DRUM & BASS';
-            else if (tag.includes('ambient')) style = 'AMBIENT';
-            else if (tag.includes('industrial')) style = 'INDUSTRIAL';
-            else if (tag.includes('electro')) style = 'ELECTRO';
-            else if (tag.includes('dubstep')) style = 'DUBSTEP';
-            else style = tag.toUpperCase();
-          }
-          
-          const date = new Date(show.created_time);
-          const month = date.toLocaleDateString('en-US', { 
-            month: 'short', 
-            year: 'numeric' 
-          }).toUpperCase();
-          
-          return {
-            key: show.key,
-            name: show.name,
-            resident,
-            style,
-            date: show.created_time,
-            month,
-            img: show.pictures?.extra_large || show.pictures?.large,
-            url: show.url
-          };
-        });
-        
-        setAllShows(formatted);
-        setIsLoading(false);
+        if (data.data && data.data.length > 0) {
+          const latestShow = data.data[0];
+          playShow({
+            key: latestShow.key,
+            name: latestShow.name,
+            url: latestShow.url,
+            img: latestShow.pictures?.extra_large
+          });
+          hasLoadedDefault.current = true;
+        }
       } catch (e) {
-        console.error('Error fetching shows:', e);
-        setIsLoading(false);
+        console.error('Error loading default show:', e);
       }
     };
-    
-    fetchShows();
-  }, []);
 
-  const residents = ['ALL', ...Array.from(new Set(allShows.map(s => s.resident))).sort()];
-  const styles = ['ALL', ...Array.from(new Set(allShows.map(s => s.style))).sort()];
-  const months = ['ALL', ...Array.from(new Set(allShows.map(s => s.month))).sort().reverse()];
+    loadDefaultShow();
+  }, [currentShow, playShow]);
 
-  const filteredShows = allShows.filter(show => {
-    const matchResident = selectedResident === 'ALL' || show.resident === selectedResident;
-    const matchStyle = selectedStyle === 'ALL' || show.style === selectedStyle;
-    const matchMonth = selectedMonth === 'ALL' || show.month === selectedMonth;
-    return matchResident && matchStyle && matchMonth;
+  useMixcloudScript(() => {
+    if (iframeRef.current && !widgetRef.current) {
+      initWidget();
+    }
   });
 
-  const resetFilters = () => {
-    setSelectedResident('ALL');
-    setSelectedStyle('ALL');
-    setSelectedMonth('ALL');
+  const initWidget = () => {
+    if (!iframeRef.current || !(window as any).Mixcloud) return;
+
+    const widget = (window as any).Mixcloud.PlayerWidget(iframeRef.current);
+    widgetRef.current = widget;
+
+    widget.ready.then(() => {
+      setIsReady(true);
+      console.log("Mixcloud Widget Ready");
+    });
   };
 
-  if (isLoading) {
+  useEffect(() => {
+    if (widgetRef.current && currentShow) {
+      widgetRef.current.load(currentShow.key, true).then(() => {
+        if (isPlaying) {
+          widgetRef.current.play();
+        }
+      });
+    }
+  }, [currentShow]);
+
+  useEffect(() => {
+    if (widgetRef.current && isReady) {
+      if (isPlaying) {
+        widgetRef.current.play();
+      } else {
+        widgetRef.current.pause();
+      }
+    }
+  }, [isPlaying, isReady]);
+
+  if (!currentShow) {
     return (
-      <div className="min-h-screen bg-black text-white font-mono flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-xl uppercase tracking-wider mb-2 animate-pulse">
-            Loading Shows...
-          </div>
-          <div className="text-xs opacity-50">Fetching from Mixcloud</div>
-        </div>
+      <div className="w-full bg-black border-b border-white font-mono h-[60px] flex items-center justify-center">
+        <span className="text-white text-xs uppercase animate-pulse tracking-wider">
+          Loading...
+        </span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white font-mono selection:bg-white selection:text-black pb-12">
+    <div className="w-full bg-black border-b border-white font-mono h-[60px] flex items-center relative overflow-hidden">
       
-      <div className="crt-screen" />
+      {/* Iframe Mixcloud (caché mais fonctionnel) */}
+      <iframe
+        ref={iframeRef}
+        src={`https://www.mixcloud.com/widget/iframe/?hide_cover=1&mini=1&light=1&autoplay=0&feed=${encodeURIComponent(currentShow.key)}`}
+        className="absolute opacity-0 pointer-events-none w-0 h-0"
+        allow="autoplay; encrypted-media"
+      />
       
-      <main className="max-w-full">
+      {/* Custom UI noir minimaliste */}
+      <div className="w-full flex items-center justify-between px-6">
         
-        {/* Header + Filtres compacts sur une ligne */}
-        <div className="border-b border-white px-4 py-3">
+        {/* Gauche : Play/Pause + Info */}
+        <div className="flex items-center gap-4">
           
-          {/* Première ligne : Titre + Reset */}
-          <div className="flex items-center justify-between mb-3">
-            <h1 className="text-base md:text-xl font-bold uppercase tracking-wider">
-              Shows ({filteredShows.length})
-            </h1>
-            
-            {(selectedResident !== 'ALL' || selectedStyle !== 'ALL' || selectedMonth !== 'ALL') && (
-              <button
-                onClick={resetFilters}
-                className="text-[9px] md:text-xs uppercase tracking-wider px-3 py-1 border border-white hover:bg-white hover:text-black transition-all"
-              >
-                Reset
-              </button>
+          {/* Bouton Play/Pause */}
+          <button
+            onClick={togglePlay}
+            disabled={!isReady}
+            className="w-10 h-10 border border-white hover:bg-white hover:text-black transition-all flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed group"
+          >
+            {isPlaying ? (
+              <div className="flex gap-1">
+                <div className="w-[3px] h-4 bg-white group-hover:bg-black transition-colors" />
+                <div className="w-[3px] h-4 bg-white group-hover:bg-black transition-colors" />
+              </div>
+            ) : (
+              <div className="w-0 h-0 border-l-[10px] border-l-white group-hover:border-l-black border-t-[7px] border-t-transparent border-b-[7px] border-b-transparent ml-[2px] transition-colors" />
             )}
-          </div>
+          </button>
 
-          {/* Deuxième ligne : 3 filtres minimalistes */}
-          <div className="grid grid-cols-3 gap-2">
-            
-            <select
-              value={selectedResident}
-              onChange={(e) => setSelectedResident(e.target.value)}
-              className="w-full bg-black border border-white px-2 py-1 text-[10px] md:text-xs uppercase cursor-pointer hover:bg-white hover:text-black transition-all"
-            >
-              <option value="ALL">All Residents</option>
-              {residents.filter(r => r !== 'ALL').map(resident => (
-                <option key={resident} value={resident}>
-                  {resident}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={selectedStyle}
-              onChange={(e) => setSelectedStyle(e.target.value)}
-              className="w-full bg-black border border-white px-2 py-1 text-[10px] md:text-xs uppercase cursor-pointer hover:bg-white hover:text-black transition-all"
-            >
-              <option value="ALL">All Styles</option>
-              {styles.filter(s => s !== 'ALL').map(style => (
-                <option key={style} value={style}>
-                  {style}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-full bg-black border border-white px-2 py-1 text-[10px] md:text-xs uppercase cursor-pointer hover:bg-white hover:text-black transition-all"
-            >
-              <option value="ALL">All Months</option>
-              {months.filter(m => m !== 'ALL').map(month => (
-                <option key={month} value={month}>
-                  {month}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-          {filteredShows.map((show, idx) => (
-            <div 
-              key={idx}
-              className="border-b border-r border-white group cursor-pointer"
-              onClick={() => playShow(show)}
-            >
-              <div className="aspect-square relative overflow-hidden bg-black">
-                <img 
-                  src={show.img}
-                  alt={show.name}
-                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
-                  loading="lazy"
-                />
-                
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center">
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="w-12 h-12 border-2 border-white rounded-full flex items-center justify-center">
-                      <div className="w-0 h-0 border-l-[12px] border-l-white border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent ml-1" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-3">
-                <h3 className="text-xs font-bold uppercase leading-tight mb-1 line-clamp-2">
-                  {show.name}
-                </h3>
-                
-                <div className="text-[9px] uppercase opacity-50 mb-1">
-                  {show.resident}
-                </div>
-
-                <div className="flex items-center justify-between text-[8px] uppercase opacity-40">
-                  <span>{show.style}</span>
-                  <span>{new Date(show.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                </div>
-              </div>
+          {/* Info du show */}
+          <div className="flex flex-col justify-center">
+            <div className="text-xs uppercase tracking-wider font-bold text-white line-clamp-1 max-w-[300px] md:max-w-[500px]">
+              {currentShow.name}
             </div>
-          ))}
+            <div className="text-[9px] uppercase tracking-wider text-gray-500">
+              {isReady ? (isPlaying ? '● Playing' : '● Paused') : 'Loading...'}
+            </div>
+          </div>
         </div>
 
-        {filteredShows.length === 0 && (
-          <div className="border-b border-white p-12 text-center">
-            <p className="text-sm uppercase opacity-50 mb-4">
-              No shows match your filters
-            </p>
-            <button
-              onClick={resetFilters}
-              className="text-xs uppercase px-6 py-2 border border-white hover:bg-white hover:text-black transition-all"
-            >
-              Reset Filters
-            </button>
-          </div>
-        )}
-
-      </main>
+        {/* Droite : Link to Mixcloud */}
+        <a 
+          href={currentShow.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[10px] uppercase tracking-wider text-gray-500 hover:text-white transition-colors hidden md:block"
+        >
+          View on Mixcloud →
+        </a>
+      </div>
     </div>
   );
 }

@@ -6,7 +6,7 @@ export default function ShopPage() {
       id: 1,
       name: "STILL FM TEE",
       price: "35",
-      image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&h=800&fit=crop",
+      image: "../../../public/t2.png",
       size: "S / M / L / XL"
     },
     {

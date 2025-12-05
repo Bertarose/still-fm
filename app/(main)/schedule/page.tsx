@@ -3,113 +3,111 @@
 import { useState } from 'react';
 
 export default function SchedulePage() {
-  const {activeTab === 'live' && 'status' in show && show.status === 'LIVE' && (
+  const [activeTab, setActiveTab] = useState<'live' | 'replays'>('live');
 
-  // LIVE SHOWS (émissions en direct programmées)
   const liveShows = [
     {
       date: "FRI 06 DEC",
       time: "20:00 - 22:00",
-      title: "TECHNO NIGHTS",
+      title: "TECHNO NIGHTS VOL.13",
       resident: "DJ POSER",
-      description: "Heavy techno session with industrial undertones. Deep, dark, relentless.",
+      description: "Heavy techno session with industrial undertones. Expect relentless 140+ BPM tracks.",
       status: "LIVE"
     },
     {
       date: "SAT 07 DEC",
       time: "22:00 - 00:00",
-      title: "BASS THERAPY",
+      title: "BASS THERAPY #09",
       resident: "SHADOW BASS",
-      description: "Drum & bass assault. Liquid rollers to jump-up mayhem. No mercy.",
+      description: "Drum & Bass special featuring liquid and neurofunk vibes.",
       status: "UPCOMING"
     },
     {
       date: "SUN 08 DEC",
       time: "18:00 - 20:00",
-      title: "HOUSE SESSION",
-      resident: "NEON PULSE",
-      description: "Classic house vibes. Disco samples, acid basslines, Chicago soul.",
-      status: "UPCOMING"
-    },
-    {
-      date: "WED 11 DEC",
-      time: "21:00 - 23:00",
-      title: "INDUSTRIAL HOUR",
-      resident: "VOID RIDER",
-      description: "Grinding gears and broken machines. EBM, power electronics, noise.",
-      status: "UPCOMING"
-    },
-    {
-      date: "THU 12 DEC",
-      time: "19:00 - 21:00",
-      title: "AMBIENT DRIFT",
+      title: "AMBIENT DRIFT #06",
       resident: "ECHO DRIFT",
-      description: "Textural soundscapes for late night introspection. Drone, field recordings.",
+      description: "Atmospheric soundscapes and experimental ambient textures.",
       status: "UPCOMING"
     },
-    {
-      date: "FRI 13 DEC",
-      time: "23:00 - 01:00",
-      title: "ELECTRO BREAKS",
-      resident: "PULSE WAVE",
-      description: "Miami bass meets Detroit electro. 808 kicks, vocoders, breakbeats.",
-      status: "UPCOMING"
-    },
-  ];
-
-  // REPLAYS (rediffusions d'anciennes émissions)
-  const replays = [
     {
       date: "MON 09 DEC",
-      time: "14:00 - 16:00",
-      title: "TECHNO NIGHTS",
-      resident: "DJ POSER",
-      description: "Replay from Nov 22. Heavy techno session with industrial undertones.",
-      originalDate: "Originally aired: NOV 22"
+      time: "21:00 - 23:00",
+      title: "HOUSE SESSION",
+      resident: "NEON PULSE",
+      description: "Deep house and minimal grooves for Monday night.",
+      status: "UPCOMING"
     },
     {
       date: "TUE 10 DEC",
-      time: "16:00 - 18:00",
-      title: "HOUSE SESSION",
-      resident: "NEON PULSE",
-      description: "Replay from Nov 24. Classic house vibes with disco samples.",
-      originalDate: "Originally aired: NOV 24"
+      time: "20:00 - 22:00",
+      title: "INDUSTRIAL HOUR",
+      resident: "VOID RIDER",
+      description: "Dark industrial techno with EBM influences.",
+      status: "UPCOMING"
     },
     {
       date: "WED 11 DEC",
-      time: "15:00 - 17:00",
-      title: "BASS THERAPY",
-      resident: "SHADOW BASS",
-      description: "Replay from Nov 30. Drum & bass assault from liquid to jump-up.",
-      originalDate: "Originally aired: NOV 30"
-    },
-    {
-      date: "THU 12 DEC",
-      time: "13:00 - 15:00",
-      title: "AMBIENT DRIFT",
-      resident: "ECHO DRIFT",
-      description: "Replay from Nov 28. Textural soundscapes and field recordings.",
-      originalDate: "Originally aired: NOV 28"
-    },
-    {
-      date: "FRI 13 DEC",
-      time: "16:00 - 18:00",
-      title: "INDUSTRIAL HOUR",
-      resident: "VOID RIDER",
-      description: "Replay from Dec 04. EBM, power electronics, and industrial noise.",
-      originalDate: "Originally aired: DEC 04"
-    },
-    {
-      date: "SAT 14 DEC",
-      time: "14:00 - 16:00",
+      time: "19:00 - 21:00",
       title: "ELECTRO BREAKS",
       resident: "PULSE WAVE",
-      description: "Replay from Nov 29. Miami bass meets Detroit electro.",
-      originalDate: "Originally aired: NOV 29"
-    },
+      description: "Breakbeat and electro fusion session.",
+      status: "UPCOMING"
+    }
   ];
 
-  const currentShows = activeTab === 'live' ? liveShows : replays;
+  const replayShows = [
+    {
+      date: "THU 05 DEC",
+      time: "Previously aired",
+      title: "BASS THERAPY #08",
+      resident: "SHADOW BASS",
+      description: "Drum & Bass special featuring liquid and neurofunk vibes.",
+      originalDate: "Originally aired: Nov 28, 2024"
+    },
+    {
+      date: "WED 04 DEC",
+      time: "Previously aired",
+      title: "TECHNO NIGHTS VOL.12",
+      resident: "DJ POSER",
+      description: "Heavy techno session with industrial undertones.",
+      originalDate: "Originally aired: Nov 20, 2024"
+    },
+    {
+      date: "TUE 03 DEC",
+      time: "Previously aired",
+      title: "HOUSE SESSION",
+      resident: "NEON PULSE",
+      description: "Deep house and minimal grooves.",
+      originalDate: "Originally aired: Nov 15, 2024"
+    },
+    {
+      date: "MON 02 DEC",
+      time: "Previously aired",
+      title: "AMBIENT DRIFT #05",
+      resident: "ECHO DRIFT",
+      description: "Atmospheric soundscapes and experimental ambient textures.",
+      originalDate: "Originally aired: Nov 10, 2024"
+    },
+    {
+      date: "SUN 01 DEC",
+      time: "Previously aired",
+      title: "INDUSTRIAL HOUR",
+      resident: "VOID RIDER",
+      description: "Dark industrial techno with EBM influences.",
+      originalDate: "Originally aired: Nov 05, 2024"
+    },
+    {
+      date: "SAT 30 NOV",
+      time: "Previously aired",
+      title: "ELECTRO BREAKS",
+      resident: "PULSE WAVE",
+      description: "Breakbeat and electro fusion session.",
+      originalDate: "Originally aired: Oct 28, 2024"
+    }
+  ];
+
+  const displayedShows = activeTab === 'live' ? liveShows : replayShows;
 
   return (
     <div className="min-h-screen bg-black text-white font-mono selection:bg-white selection:text-black pb-12">
@@ -118,52 +116,51 @@ export default function SchedulePage() {
       
       <main className="max-w-full">
         
-        {/* Header avec onglets */}
+        {/* Header avec Tabs */}
         <div className="border-b border-white">
-          <div className="px-6 py-4 flex items-center justify-between">
-            <h1 className="text-xl font-bold uppercase tracking-wider">
-              Schedule
-            </h1>
-            
-            {/* Tabs */}
-            <div className="flex gap-0 border border-white">
-              <button
-                onClick={() => setActiveTab('live')}
-                className={`
-                  px-6 py-2 text-xs uppercase tracking-wider transition-all
-                  ${activeTab === 'live' 
-                    ? 'bg-white text-black' 
-                    : 'bg-black text-white hover:bg-white hover:text-black'
-                  }
-                `}
-              >
-                Live Shows
-              </button>
-              <button
-                onClick={() => setActiveTab('replays')}
-                className={`
-                  px-6 py-2 text-xs uppercase tracking-wider border-l border-white transition-all
-                  ${activeTab === 'replays' 
-                    ? 'bg-white text-black' 
-                    : 'bg-black text-white hover:bg-white hover:text-black'
-                  }
-                `}
-              >
-                Replays
-              </button>
-            </div>
+          <div className="flex items-center">
+            <button
+              onClick={() => setActiveTab('live')}
+              className={`flex-1 px-6 py-4 text-sm uppercase tracking-wider transition-all border-r border-white ${
+                activeTab === 'live'
+                  ? 'bg-white text-black font-bold'
+                  : 'hover:bg-white hover:text-black'
+              }`}
+            >
+              Live Shows
+            </button>
+            <button
+              onClick={() => setActiveTab('replays')}
+              className={`flex-1 px-6 py-4 text-sm uppercase tracking-wider transition-all ${
+                activeTab === 'replays'
+                  ? 'bg-white text-black font-bold'
+                  : 'hover:bg-white hover:text-black'
+              }`}
+            >
+              Replays
+            </button>
           </div>
         </div>
 
-        {/* Grid de shows */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {currentShows.map((show, idx) => (
+        {/* Grid des shows */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+          {displayedShows.map((show, idx) => (
             <div 
               key={idx}
-              className="border-b border-r border-white p-6 hover:bg-white hover:text-black transition-colors group cursor-pointer"
+              className="border-b border-r border-white p-6 hover:bg-white hover:text-black transition-all cursor-pointer group"
             >
+              {/* Date */}
+              <div className="text-xs font-bold uppercase tracking-wider mb-2 opacity-50 group-hover:opacity-100">
+                {show.date}
+              </div>
+
+              {/* Time */}
+              <div className="text-sm font-bold uppercase mb-4">
+                {show.time}
+              </div>
+
               {/* Live badge (seulement pour les live shows) */}
-              {activeTab === 'live' && show.status === 'LIVE' && (
+              {activeTab === 'live' && 'status' in show && show.status === 'LIVE' && (
                 <div className="inline-block bg-white text-black group-hover:bg-black group-hover:text-white px-2 py-1 text-[10px] font-bold uppercase mb-3 animate-pulse">
                   ● LIVE NOW
                 </div>
@@ -171,68 +168,57 @@ export default function SchedulePage() {
 
               {/* Replay badge */}
               {activeTab === 'replays' && (
-                <div className="inline-block border border-white group-hover:border-black px-2 py-1 text-[10px] font-bold uppercase mb-3">
+                <div className="inline-block bg-gray-800 text-white group-hover:bg-black px-2 py-1 text-[10px] font-bold uppercase mb-3 border border-white/20">
                   REPLAY
                 </div>
               )}
 
-              {/* Titre */}
-              <h2 className="text-lg font-bold uppercase mb-2 leading-tight">
+              {/* Title */}
+              <h3 className="text-base font-bold uppercase mb-2 leading-tight">
                 {show.title}
-              </h2>
+              </h3>
 
               {/* Resident */}
-              <div className="text-sm uppercase mb-3 opacity-70 group-hover:opacity-100">
+              <div className="text-xs uppercase tracking-wider mb-3 opacity-70 group-hover:opacity-100">
                 {show.resident}
               </div>
 
               {/* Description */}
-              <p className="text-xs leading-relaxed mb-3 opacity-80 group-hover:opacity-100">
+              <p className="text-xs leading-relaxed opacity-60 group-hover:opacity-80 mb-3">
                 {show.description}
               </p>
 
-              {/* Original date (pour replays) */}
-              {activeTab === 'replays' && 'originalDate' in show && (
-                <div className="text-[9px] uppercase tracking-wider opacity-50 group-hover:opacity-70 mb-2">
+              {/* Original Date (pour replays) */}
+              {'originalDate' in show && (
+                <div className="text-[10px] uppercase opacity-40 group-hover:opacity-60 pt-2 border-t border-white/10">
                   {show.originalDate}
                 </div>
               )}
-
-              {/* Date & Time */}
-              <div className="text-[10px] uppercase tracking-wider opacity-50 group-hover:opacity-70">
-                {show.date} / {show.time}
-              </div>
             </div>
           ))}
         </div>
 
-        {/* Message si aucun show */}
-        {currentShows.length === 0 && (
-          <div className="border-b border-white p-12 text-center">
-            <p className="text-sm uppercase opacity-50">
-              No {activeTab === 'live' ? 'live shows' : 'replays'} scheduled
-            </p>
-          </div>
-        )}
-
-        {/* Footer CTA */}
-        <div className="border-t border-white p-6 md:p-12">
-          <div className="max-w-2xl">
-            <h2 className="text-2xl font-bold uppercase mb-4 tracking-wider">
-              Host a Show
-            </h2>
-            <p className="text-sm mb-6 leading-relaxed opacity-80">
-              Got an idea? Want to share your music? We're open to proposals. 
-              Send us your concept and let's make it happen.
-            </p>
-            <a 
-              href="mailto:schedule@still.fm"
-              className="inline-block border border-white px-6 py-2 text-xs uppercase tracking-wider hover:bg-white hover:text-black transition-all"
-            >
-              Propose a Show →
-            </a>
+        {/* CTA Section */}
+        <div className="border-t border-white p-12 text-center">
+          <h2 className="text-2xl font-bold uppercase mb-6 tracking-wider">
+            Host a Show
+          </h2>
+          <p className="text-sm opacity-70 mb-6 max-w-2xl mx-auto leading-relaxed">
+            Want to broadcast on Still FM? We're always looking for talented residents 
+            to join our lineup. Send us your mix and artist profile.
+          </p>
+          <div className="flex flex-col md:flex-row items-center justify-center gap-4">
+            <input 
+              type="email" 
+              placeholder="YOUR EMAIL"
+              className="bg-transparent border border-white px-6 py-3 text-xs uppercase tracking-wider placeholder:text-gray-600 focus:outline-none focus:bg-white focus:text-black transition-all w-full md:w-64"
+            />
+            <button className="border border-white px-8 py-3 text-xs uppercase tracking-wider hover:bg-white hover:text-black transition-all font-bold w-full md:w-auto">
+              Submit Mix
+            </button>
           </div>
         </div>
+
       </main>
     </div>
   );

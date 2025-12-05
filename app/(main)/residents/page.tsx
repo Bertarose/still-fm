@@ -7,7 +7,7 @@ export default function ResidentsPage() {
     {
       name: "DJ POSER",
       genre: "TECHNO / INDUSTRIAL",
-      image: "https://images.unsplash.com/photo-1571266028243-d220c6f1e5d8?w=1200&h=1200&fit=crop&q=80",
+      image: "https://images.unsplash.com/photo-1598387181032-a3103a2db5b3?w=1200&h=1200&fit=crop&q=80",
       bio: "Heavy techno and industrial sounds. Resident since 2023.",
       social: "https://www.instagram.com/djposer"
     },

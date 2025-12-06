@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 
+const RADIO_STREAM_URL = 'http://localhost:8000/steelfm.mp3';
+const RADIO_ENABLED = false; // Change à true quand tu auras un vrai stream
+
 const useMixcloudScript = (onScriptLoad: () => void) => {
   useEffect(() => {
     if ((window as any).Mixcloud) {
@@ -24,15 +27,44 @@ const useMixcloudScript = (onScriptLoad: () => void) => {
 
 export default function LandingAudioPlayer() {
   const { currentShow, isPlaying, playShow, togglePlay } = usePlayer();
+  const [useRadio, setUseRadio] = useState(false);
+  const [isRadioOnline, setIsRadioOnline] = useState(false);
   const [isReady, setIsReady] = useState(false);
   
+  const radioRef = useRef<HTMLAudioElement>(null);
   const widgetRef = useRef<any>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Charger le dernier show Mixcloud au montage
+  // Vérifier si la radio est online
+  useEffect(() => {
+    if (!RADIO_ENABLED || !RADIO_STREAM_URL) {
+      setIsRadioOnline(false);
+      return;
+    }
+
+    const checkRadio = async () => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch(RADIO_STREAM_URL, { 
+          method: 'HEAD',
+          signal: controller.signal 
+        });
+        clearTimeout(timeoutId);
+        setIsRadioOnline(res.ok);
+      } catch {
+        setIsRadioOnline(false);
+      }
+    };
+    checkRadio();
+    const interval = setInterval(checkRadio, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Charger le dernier show Mixcloud
   useEffect(() => {
     const loadDefaultShow = async () => {
-      if (currentShow) return; // Ne charger que si vide
+      if (currentShow) return;
       
       try {
         console.log('🔄 Loading latest show...');
@@ -56,7 +88,7 @@ export default function LandingAudioPlayer() {
 
     const timer = setTimeout(loadDefaultShow, 1000);
     return () => clearTimeout(timer);
-  }, []); // Seulement au premier montage
+  }, []);
 
   // Initialiser le widget Mixcloud
   const initWidget = useCallback(() => {
@@ -84,34 +116,87 @@ export default function LandingAudioPlayer() {
 
   // Charger le show dans le widget (SANS autoplay)
   useEffect(() => {
-    if (widgetRef.current && currentShow && isReady) {
+    if (widgetRef.current && currentShow && isReady && !useRadio) {
       console.log('📀 Loading show:', currentShow.name);
       widgetRef.current.load(currentShow.key, false); // false = PAS d'autoplay
     }
-  }, [currentShow, isReady]);
+  }, [currentShow, isReady, useRadio]);
 
-  // Contrôler play/pause quand l'utilisateur clique
+  // Contrôler play/pause Mixcloud
   useEffect(() => {
-    if (widgetRef.current && isReady) {
+    if (widgetRef.current && isReady && !useRadio) {
       if (isPlaying) {
-        console.log('▶️ User clicked Play');
+        console.log('▶️ Playing Mixcloud');
         widgetRef.current.play();
       } else {
-        console.log('⏸️ User clicked Pause');
+        console.log('⏸️ Pausing Mixcloud');
         widgetRef.current.pause();
       }
     }
-  }, [isPlaying, isReady]);
+  }, [isPlaying, isReady, useRadio]);
 
+  // Switch entre Radio et Mixcloud
+  const handleSwitch = (toRadio: boolean) => {
+    if (!RADIO_ENABLED) {
+      console.log('⚠️ Radio is disabled');
+      return;
+    }
+
+    setUseRadio(toRadio);
+
+    if (toRadio && isRadioOnline) {
+      // Passer à la radio
+      if (widgetRef.current && isReady) {
+        widgetRef.current.pause();
+      }
+      playShow({ 
+        key: 'radio-live', 
+        name: 'Still FM Radio - Live Stream', 
+        url: RADIO_STREAM_URL 
+      });
+      // PAS d'autoplay - l'utilisateur doit cliquer Play
+    } else {
+      // Retour au Mixcloud
+      if (radioRef.current) {
+        radioRef.current.pause();
+      }
+    }
+  };
+
+  // Toggle Play/Pause
   const handleToggle = () => {
     console.log('🎵 Toggle:', isPlaying ? 'pause' : 'play');
+    
+    if (useRadio && radioRef.current) {
+      // Contrôle de la radio
+      if (isPlaying) {
+        radioRef.current.pause();
+      } else {
+        radioRef.current.play().catch(e => console.error('Radio play error:', e));
+      }
+    } else if (widgetRef.current && isReady) {
+      // Contrôle de Mixcloud
+      if (isPlaying) {
+        widgetRef.current.pause();
+      } else {
+        widgetRef.current.play();
+      }
+    }
+    
     togglePlay();
   };
 
-  const currentName = currentShow?.name || 'Loading...';
+  const currentName = useRadio 
+    ? (isRadioOnline ? 'Still FM Radio - Live Stream' : 'Radio Offline')
+    : (currentShow?.name || 'Loading...');
 
   return (
     <>
+      {/* Audio HTML5 pour la radio */}
+      {RADIO_ENABLED && RADIO_STREAM_URL && (
+        <audio ref={radioRef} src={RADIO_STREAM_URL} preload="none" className="hidden" />
+      )}
+
       {/* Iframe Mixcloud caché */}
       <iframe
         ref={iframeRef}
@@ -136,12 +221,12 @@ export default function LandingAudioPlayer() {
           </div>
 
           {/* Contrôles Play/Pause */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-2">
             
             {/* Bouton Play/Pause */}
             <button
               onClick={handleToggle}
-              disabled={!isReady}
+              disabled={(useRadio && !isRadioOnline) || (!useRadio && !isReady)}
               className="w-8 h-8 md:w-10 md:h-10 border border-white/40 hover:border-white hover:bg-white/10 transition-all flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
             >
               {isPlaying ? (
@@ -158,11 +243,14 @@ export default function LandingAudioPlayer() {
 
             {/* Status */}
             <div className="flex-1 text-[8px] md:text-[9px] text-white/50">
-              {isReady ? (isPlaying ? '● Playing' : '● Ready') : 'Loading...'}
+              {useRadio 
+                ? (isRadioOnline ? '● Live' : '⚠ Offline') 
+                : (isReady ? (isPlaying ? '● Playing' : '● Ready') : 'Loading...')
+              }
             </div>
 
             {/* Lien Mixcloud */}
-            {currentShow && (
+            {!useRadio && currentShow && (
               <a 
                 href={currentShow.url}
                 target="_blank"
@@ -173,6 +261,40 @@ export default function LandingAudioPlayer() {
               </a>
             )}
           </div>
+
+          {/* Switch Radio/Mixcloud - Visible si radio activée */}
+          {RADIO_ENABLED && (
+            <div className="flex items-center justify-between pt-2 border-t border-white/10">
+              
+              {/* Mixcloud */}
+              <div className="flex items-center gap-1.5">
+                <div className={`w-1.5 h-1.5 rounded-full ${!useRadio ? 'bg-green-400 animate-pulse' : 'bg-white/20'}`} />
+                <span className={`text-[9px] md:text-[10px] uppercase ${!useRadio ? 'text-white font-bold' : 'text-white/40'}`}>
+                  Mixcloud
+                </span>
+              </div>
+
+              {/* Toggle Switch */}
+              <label className="relative inline-flex items-center cursor-pointer mx-2">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={useRadio}
+                  onChange={(e) => handleSwitch(e.target.checked)}
+                />
+                <div className="w-12 h-6 md:w-14 md:h-7 bg-white/20 rounded-full peer transition-all peer-checked:bg-white/30"></div>
+                <span className="absolute left-1 top-1 w-4 h-4 md:w-5 md:h-5 bg-white rounded-full shadow-lg transform transition-transform peer-checked:translate-x-6 md:peer-checked:translate-x-7"></span>
+              </label>
+
+              {/* Radio */}
+              <div className="flex items-center gap-1.5">
+                <span className={`text-[9px] md:text-[10px] uppercase ${useRadio ? 'text-white font-bold' : 'text-white/40'}`}>
+                  Radio
+                </span>
+                <div className={`w-1.5 h-1.5 rounded-full ${useRadio ? (isRadioOnline ? 'bg-green-400 animate-pulse' : 'bg-red-500') : 'bg-white/20'}`} />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>

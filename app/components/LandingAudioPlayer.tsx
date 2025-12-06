@@ -1,49 +1,38 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 
-// 🔧 FIX : Radio désactivée temporairement (pas de serveur local)
-const RADIO_STREAM_URL = ''; // Vide = radio désactivée
-const RADIO_ENABLED = false; // Set à true quand tu as un vrai stream
-
-export default function LandingAudioPlayer() {
-  const { currentShow, isPlaying, playShow, togglePlay } = usePlayer();
-  const [useRadio, setUseRadio] = useState(false);
-  const [isRadioOnline, setIsRadioOnline] = useState(false);
-  
-  const radioRef = useRef<HTMLAudioElement>(null);
-
-  // Vérifier si la radio est online (seulement si activée)
+const useMixcloudScript = (onScriptLoad: () => void) => {
   useEffect(() => {
-    if (!RADIO_ENABLED || !RADIO_STREAM_URL) {
-      setIsRadioOnline(false);
+    if ((window as any).Mixcloud) {
+      onScriptLoad();
       return;
     }
 
-    const checkRadio = async () => {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-        const res = await fetch(RADIO_STREAM_URL, { 
-          method: 'HEAD',
-          signal: controller.signal 
-        });
-        clearTimeout(timeoutId);
-        setIsRadioOnline(res.ok);
-      } catch {
-        setIsRadioOnline(false);
-      }
-    };
-    checkRadio();
-    const interval = setInterval(checkRadio, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    const id = 'mixcloud-widget-api-script';
+    if (document.getElementById(id)) return;
 
-  // Charger le dernier show Mixcloud par défaut
+    const script = document.createElement('script');
+    script.id = id;
+    script.src = 'https://www.mixcloud.com/media/js/widgetApi.js';
+    script.async = true;
+    script.onload = onScriptLoad;
+    document.body.appendChild(script);
+  }, [onScriptLoad]);
+};
+
+export default function LandingAudioPlayer() {
+  const { currentShow, isPlaying, playShow, togglePlay } = usePlayer();
+  const [isReady, setIsReady] = useState(false);
+  
+  const widgetRef = useRef<any>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Charger le dernier show Mixcloud au montage
   useEffect(() => {
     const loadDefaultShow = async () => {
-      if (currentShow) return;
+      if (currentShow) return; // Ne charger que si vide
       
       try {
         console.log('🔄 Loading latest show...');
@@ -67,57 +56,76 @@ export default function LandingAudioPlayer() {
 
     const timer = setTimeout(loadDefaultShow, 1000);
     return () => clearTimeout(timer);
+  }, []); // Seulement au premier montage
+
+  // Initialiser le widget Mixcloud
+  const initWidget = useCallback(() => {
+    if (!iframeRef.current || widgetRef.current || !(window as any).Mixcloud) return;
+
+    console.log('🎵 Initializing Mixcloud widget...');
+    const widget = (window as any).Mixcloud.PlayerWidget(iframeRef.current);
+    widgetRef.current = widget;
+
+    widget.ready.then(() => {
+      console.log('✅ Widget ready');
+      setIsReady(true);
+    });
+
+    widget.events.pause.on(() => {
+      console.log('⏸️ Paused');
+    });
+
+    widget.events.play.on(() => {
+      console.log('▶️ Playing');
+    });
   }, []);
 
-  const handleSwitch = (toRadio: boolean) => {
-    if (!RADIO_ENABLED) {
-      console.log('⚠️ Radio is disabled');
-      return;
-    }
+  useMixcloudScript(initWidget);
 
-    setUseRadio(toRadio);
+  // Charger le show dans le widget (SANS autoplay)
+  useEffect(() => {
+    if (widgetRef.current && currentShow && isReady) {
+      console.log('📀 Loading show:', currentShow.name);
+      widgetRef.current.load(currentShow.key, false); // false = PAS d'autoplay
+    }
+  }, [currentShow, isReady]);
 
-    if (toRadio && isRadioOnline) {
-      if (radioRef.current) {
-        radioRef.current.play().catch(console.error);
-      }
-      playShow({ 
-        key: 'radio-live', 
-        name: 'Still FM Radio - Live Stream', 
-        url: RADIO_STREAM_URL 
-      });
-    } else {
-      if (radioRef.current) {
-        radioRef.current.pause();
+  // Contrôler play/pause quand l'utilisateur clique
+  useEffect(() => {
+    if (widgetRef.current && isReady) {
+      if (isPlaying) {
+        console.log('▶️ User clicked Play');
+        widgetRef.current.play();
+      } else {
+        console.log('⏸️ User clicked Pause');
+        widgetRef.current.pause();
       }
     }
-  };
+  }, [isPlaying, isReady]);
 
   const handleToggle = () => {
-    if (useRadio && radioRef.current) {
-      if (isPlaying) {
-        radioRef.current.pause();
-      } else {
-        radioRef.current.play().catch(console.error);
-      }
-    }
+    console.log('🎵 Toggle:', isPlaying ? 'pause' : 'play');
     togglePlay();
   };
 
-  const currentName = useRadio 
-    ? (isRadioOnline ? 'Still FM Radio - Live Stream' : 'Radio Offline')
-    : (currentShow?.name || 'Loading...');
+  const currentName = currentShow?.name || 'Loading...';
 
   return (
     <>
-      {RADIO_ENABLED && RADIO_STREAM_URL && (
-        <audio ref={radioRef} src={RADIO_STREAM_URL} preload="none" className="hidden" />
-      )}
+      {/* Iframe Mixcloud caché */}
+      <iframe
+        ref={iframeRef}
+        src={`https://www.mixcloud.com/widget/iframe/?hide_cover=1&mini=1&light=1&feed=${encodeURIComponent(currentShow?.key || '/StillFM/')}`}
+        className="absolute opacity-0 pointer-events-none w-0 h-0"
+        allow="autoplay"
+      />
 
+      {/* Player UI */}
       <div className="backdrop-blur-md bg-black/95 border-t md:border border-white/20 hover:border-white/40 transition-all duration-300 font-mono w-full md:w-96 md:rounded-lg overflow-hidden">
         
         <div className="p-3 md:p-4">
           
+          {/* Titre du show */}
           <div className="mb-2">
             <div className="text-[8px] md:text-[9px] text-white/50 uppercase tracking-[0.15em] mb-1">
               Now Playing
@@ -127,27 +135,34 @@ export default function LandingAudioPlayer() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 mb-2">
+          {/* Contrôles Play/Pause */}
+          <div className="flex items-center gap-2">
+            
+            {/* Bouton Play/Pause */}
             <button
               onClick={handleToggle}
-              disabled={(useRadio && !isRadioOnline) || (!useRadio && !currentShow)}
-              className="w-8 h-8 md:w-10 md:h-10 border border-white/40 hover:border-white hover:bg-white/10 transition-all flex items-center justify-center disabled:opacity-30 shrink-0"
+              disabled={!isReady}
+              className="w-8 h-8 md:w-10 md:h-10 border border-white/40 hover:border-white hover:bg-white/10 transition-all flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
             >
               {isPlaying ? (
+                // Icône Pause
                 <div className="flex gap-1">
                   <div className="w-[2px] md:w-[3px] h-3 md:h-4 bg-white" />
                   <div className="w-[2px] md:w-[3px] h-3 md:h-4 bg-white" />
                 </div>
               ) : (
+                // Icône Play
                 <div className="w-0 h-0 border-l-[8px] md:border-l-[10px] border-l-white border-t-[6px] md:border-t-[7px] border-t-transparent border-b-[6px] md:border-b-[7px] border-b-transparent ml-[2px]" />
               )}
             </button>
 
+            {/* Status */}
             <div className="flex-1 text-[8px] md:text-[9px] text-white/50">
-              {useRadio ? (isRadioOnline ? '● Live' : '⚠ Offline') : (currentShow ? '● Ready' : 'Loading...')}
+              {isReady ? (isPlaying ? '● Playing' : '● Ready') : 'Loading...'}
             </div>
 
-            {!useRadio && currentShow && (
+            {/* Lien Mixcloud */}
+            {currentShow && (
               <a 
                 href={currentShow.url}
                 target="_blank"
@@ -158,48 +173,56 @@ export default function LandingAudioPlayer() {
               </a>
             )}
           </div>
-
-          {/* Switch - Caché si radio désactivée */}
-          {RADIO_ENABLED && (
-            <div className="flex items-center justify-between pt-2 border-t border-white/10">
-              
-              <div className="flex items-center gap-1.5">
-                <div className={`w-1.5 h-1.5 rounded-full ${!useRadio ? 'bg-green-400 animate-pulse' : 'bg-white/20'}`} />
-                <span className={`text-[9px] md:text-[10px] uppercase ${!useRadio ? 'text-white font-bold' : 'text-white/40'}`}>
-                  Mixcloud
-                </span>
-              </div>
-
-              <label className="relative inline-flex items-center cursor-pointer mx-2">
-                <input
-                  type="checkbox"
-                  className="sr-only peer"
-                  checked={useRadio}
-                  onChange={(e) => handleSwitch(e.target.checked)}
-                />
-                <div className="w-12 h-6 md:w-14 md:h-7 bg-white/20 rounded-full peer transition-all peer-checked:bg-white/30"></div>
-                <span className="absolute left-1 top-1 w-4 h-4 md:w-5 md:h-5 bg-white rounded-full shadow-lg transform transition-transform peer-checked:translate-x-6 md:peer-checked:translate-x-7"></span>
-              </label>
-
-              <div className="flex items-center gap-1.5">
-                <span className={`text-[9px] md:text-[10px] uppercase ${useRadio ? 'text-white font-bold' : 'text-white/40'}`}>
-                  Radio
-                </span>
-                <div className={`w-1.5 h-1.5 rounded-full ${useRadio ? (isRadioOnline ? 'bg-green-400 animate-pulse' : 'bg-red-500') : 'bg-white/20'}`} />
-              </div>
-            </div>
-          )}
         </div>
       </div>
-
-      {currentShow && !useRadio && currentShow.key !== 'radio-live' && (
-        <iframe
-          key={currentShow.key}
-          src={`https://www.mixcloud.com/widget/iframe/?hide_cover=1&mini=1&light=1&autoplay=${isPlaying ? '1' : '0'}&feed=${encodeURIComponent(currentShow.key)}`}
-          className="hidden"
-          allow="autoplay"
-        />
-      )}
     </>
   );
 }
+```
+
+---
+
+## 🎯 Comportement
+
+### Au chargement :
+1. ✅ Fetch le dernier show de Mixcloud
+2. ✅ Affiche le titre dans le player
+3. ✅ État : **"● Ready"** (prêt à jouer)
+4. ⏸️ **PAUSE** par défaut
+
+### Quand l'utilisateur clique Play :
+1. ✅ `togglePlay()` est appelé
+2. ✅ `widgetRef.current.play()` lance l'audio
+3. ✅ État passe à **"● Playing"**
+4. 🔊 **L'audio se joue**
+
+### Quand l'utilisateur clique Pause :
+1. ✅ `togglePlay()` est appelé
+2. ✅ `widgetRef.current.pause()` arrête l'audio
+3. ✅ État passe à **"● Ready"**
+
+---
+
+## 🧪 Logs attendus
+
+Quand tu ouvres la page (F12 Console) :
+```
+🔄 Loading latest show...
+✅ Loaded: 2023-07-23 // Dante Maxwell...
+🎵 Initializing Mixcloud widget...
+✅ Widget ready
+📀 Loading show: 2023-07-23 // Dante Maxwell...
+```
+
+Quand tu cliques Play :
+```
+🎵 Toggle: play
+▶️ User clicked Play
+▶️ Playing
+```
+
+Quand tu cliques Pause :
+```
+🎵 Toggle: pause
+⏸️ User clicked Pause
+⏸️ Paused

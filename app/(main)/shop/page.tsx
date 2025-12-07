@@ -40,7 +40,7 @@ export default function ShopPage() {
               {/* Titre et description */}
               <div className="mb-6">
                 <h1 className="text-4xl lg:text-5xl font-bold uppercase mb-2 tracking-tight leading-none">
-                  Still FM Tee
+                  STILL Tee
                 </h1>
                 
                 <p className="text-xs uppercase tracking-wider opacity-50 mb-4">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import LandingAudioPlayer from './components/LandingAudioPlayer'; 
 import { usePlayer } from './context/PlayerContext';
 
@@ -14,7 +15,7 @@ export default function LandingPage() {
   const playerInitialized = useRef(false);
   const twitchPlayerRef = useRef<any>(null);
 
-  // --- 1. INITIALISATION DU PLAYER TWITCH ET GESTION DES PARENTS ---
+  // --- 1. INITIALISATION DU PLAYER TWITCH ---
   useEffect(() => {
     if (playerInitialized.current) return;
 
@@ -51,12 +52,10 @@ export default function LandingPage() {
               console.log('✅ Twitch player ready.');
               player.setMuted(true);
               
-              // *** CORRECTION 1 : Vérification de la promesse play() ***
               const playPromise = player.play();
               if (playPromise && typeof playPromise.catch === 'function') {
                   playPromise.catch((err: any) => console.warn('Twitch play failed (autoplay restriction):', err));
               }
-              // ********************************************************
             });
 
             player.addEventListener((window as any).Twitch.Player.ONLINE, () => {
@@ -97,7 +96,7 @@ export default function LandingPage() {
     }
   }, []);
 
-  // --- 2. VÉRIFICATION API (Source de secours) ---
+  // --- 2. VÉRIFICATION API ---
   useEffect(() => {
     const checkTwitchViaAPI = async () => {
       try {
@@ -139,12 +138,10 @@ export default function LandingPage() {
     twitchPlayerRef.current.setMuted(false);
     twitchPlayerRef.current.setVolume(1.0);
     
-    // *** CORRECTION 2 : Vérification de la promesse play() ***
     const userPlayPromise = twitchPlayerRef.current.play();
     if (userPlayPromise && typeof userPlayPromise.catch === 'function') {
         userPlayPromise.catch((err: any) => console.warn('Twitch play failed (user interaction failed):', err));
     }
-    // ********************************************************
     
     setWatchMode(true);
     console.log('✅ Watch mode activé.');
@@ -158,7 +155,7 @@ export default function LandingPage() {
     }
   };
 
-  // --- 4. ANIMATION ÉTOILES (Non modifiée) ---
+  // --- 4. ANIMATION ÉTOILES ---
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -220,7 +217,7 @@ export default function LandingPage() {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
 
-      {/* 🔴 TWITCH EMBED (CONTENEUR PERSISTANT) */}
+      {/* TWITCH EMBED */}
       <div 
         className={`absolute inset-0 overflow-hidden transition-all duration-500 ${
           watchMode ? 'z-[60]' : (isLive ? 'z-0' : 'z-[-1]')
@@ -234,7 +231,7 @@ export default function LandingPage() {
         />
       </div>
 
-      {/* 🎥 VIDEO OFFLINE */}
+      {/* VIDEO OFFLINE */}
       {!isLive && (
         <video
           className="absolute inset-0 w-full h-full object-cover z-0"
@@ -266,10 +263,17 @@ export default function LandingPage() {
           </span>
         </div>
 
-        {/* TITRE */}
-        <h1 className="text-7xl md:text-9xl font-bold uppercase tracking-tighter mb-12 drop-shadow-2xl mix-blend-overlay opacity-90 select-none">
-          STILL FM
-        </h1>
+        {/* LOGO */}
+        <div className="mb-12">
+          <Image 
+            src="/Stillfm logo-white.png"
+            alt="Still FM"
+            width={600}
+            height={200}
+            className="w-[300px] md:w-[600px] h-auto drop-shadow-2xl opacity-90"
+            priority
+          />
+        </div>
 
         {/* BOUTONS */}
         <div className="flex flex-col md:flex-row gap-6 items-center">
@@ -298,12 +302,12 @@ export default function LandingPage() {
         </p>
       </div>
 
-      {/* 🎵 AUDIO PLAYER */}
+      {/* AUDIO PLAYER */}
       <div className={`fixed bottom-4 left-4 z-50 transition-opacity duration-500 ${watchMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <LandingAudioPlayer />
       </div>
 
-      {/* ❌ BOUTON RETOUR */}
+      {/* BOUTON RETOUR */}
       {watchMode && (
         <button 
           onClick={handleCloseWatch}

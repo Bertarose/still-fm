@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePlayer } from '../context/PlayerContext';
-import Link from 'next/link';
 
 const useMixcloudScript = (onScriptLoad: () => void) => {
   useEffect(() => {
@@ -140,7 +139,7 @@ export default function TopAudioPlayer() {
 
           {/* Info du show */}
           <div className="flex flex-col justify-center">
-            <div className="text-xs uppercase tracking-wider font-bold text-white line-clamp-1 max-w-[200px] md:max-w-[400px]">
+            <div className="text-xs uppercase tracking-wider font-bold text-white line-clamp-1 max-w-[300px] md:max-w-[500px]">
               {currentShow.name}
             </div>
             <div className="text-[9px] uppercase tracking-wider text-gray-500">
@@ -149,27 +148,15 @@ export default function TopAudioPlayer() {
           </div>
         </div>
 
-        {/* Droite : Links */}
-        <div className="flex items-center gap-3">
-          
-          {/* Badge "Back to Live" */}
-          <Link
-            href="/"
-            className="text-[10px] uppercase tracking-wider px-3 py-1 border border-white/30 text-white/70 hover:bg-white hover:text-black hover:border-white transition-all hidden md:block"
-          >
-            ← Back to Live
-          </Link>
-
-          {/* Link to Mixcloud */}
-          <a 
-            href={currentShow.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[10px] uppercase tracking-wider text-gray-500 hover:text-white transition-colors hidden md:block"
-          >
-            View on Mixcloud →
-          </a>
-        </div>
+        {/* Droite : Link to Mixcloud */}
+        <a 
+          href={currentShow.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[10px] uppercase tracking-wider text-gray-500 hover:text-white transition-colors hidden md:block"
+        >
+          View on Mixcloud →
+        </a>
       </div>
     </div>
   );

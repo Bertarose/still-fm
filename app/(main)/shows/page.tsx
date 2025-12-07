@@ -7,20 +7,49 @@ export default function ShowsPage() {
   const { playShow } = usePlayer();
 
   const [allShows, setAllShows] = useState<any[]>([]);
+  const [displayedShows, setDisplayedShows] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showCount, setShowCount] = useState(100); // Combien afficher
   
   const [selectedResident, setSelectedResident] = useState<string>('ALL');
   const [selectedStyle, setSelectedStyle] = useState<string>('ALL');
-  const [selectedMonth, setSelectedMonth] = useState<string>('ALL');
+  const [selectedYear, setSelectedYear] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Fetch depuis Mixcloud API
+  // Fetch TOUS les shows (pagination)
   useEffect(() => {
-    const fetchShows = async () => {
+    const fetchAllShows = async () => {
       try {
-        const res = await fetch('https://api.mixcloud.com/StillFM/cloudcasts/?limit=100');
-        const data = await res.json();
-        
-        const formatted = data.data.map((show: any) => {
+        let allData: any[] = [];
+        let offset = 0;
+        const limit = 100;
+        let hasMore = true;
+
+        // Fetch par batch de 100 jusqu'à avoir tout
+        while (hasMore && offset < 500) { // Max 500 pour éviter timeout
+          console.log(`📡 Fetching shows ${offset}-${offset + limit}...`);
+          const res = await fetch(
+            `https://api.mixcloud.com/StillFM/cloudcasts/?limit=${limit}&offset=${offset}`
+          );
+          const data = await res.json();
+          
+          if (data.data && data.data.length > 0) {
+            allData = [...allData, ...data.data];
+            offset += limit;
+            
+            // Si on a reçu moins que limit, c'est la fin
+            if (data.data.length < limit) {
+              hasMore = false;
+            }
+          } else {
+            hasMore = false;
+          }
+        }
+
+        console.log(`✅ Loaded ${allData.length} shows total`);
+
+        // Formater les shows
+        const formatted = allData.map((show: any) => {
           const title = show.name.toLowerCase();
           let resident = 'VARIOUS';
           
@@ -46,10 +75,7 @@ export default function ShowsPage() {
           }
           
           const date = new Date(show.created_time);
-          const month = date.toLocaleDateString('en-US', { 
-            month: 'short', 
-            year: 'numeric' 
-          }).toUpperCase();
+          const year = date.getFullYear().toString();
           
           return {
             key: show.key,
@@ -57,7 +83,7 @@ export default function ShowsPage() {
             resident,
             style,
             date: show.created_time,
-            month,
+            year,
             img: show.pictures?.extra_large || show.pictures?.large,
             url: show.url
           };
@@ -71,24 +97,40 @@ export default function ShowsPage() {
       }
     };
     
-    fetchShows();
+    fetchAllShows();
   }, []);
 
+  // Extraire les valeurs uniques pour les filtres
   const residents = ['ALL', ...Array.from(new Set(allShows.map(s => s.resident))).sort()];
   const styles = ['ALL', ...Array.from(new Set(allShows.map(s => s.style))).sort()];
-  const months = ['ALL', ...Array.from(new Set(allShows.map(s => s.month))).sort().reverse()];
+  const years = ['ALL', ...Array.from(new Set(allShows.map(s => s.year))).sort().reverse()];
 
-  const filteredShows = allShows.filter(show => {
-    const matchResident = selectedResident === 'ALL' || show.resident === selectedResident;
-    const matchStyle = selectedStyle === 'ALL' || show.style === selectedStyle;
-    const matchMonth = selectedMonth === 'ALL' || show.month === selectedMonth;
-    return matchResident && matchStyle && matchMonth;
-  });
+  // Filtrer les shows
+  useEffect(() => {
+    let filtered = allShows.filter(show => {
+      const matchResident = selectedResident === 'ALL' || show.resident === selectedResident;
+      const matchStyle = selectedStyle === 'ALL' || show.style === selectedStyle;
+      const matchYear = selectedYear === 'ALL' || show.year === selectedYear;
+      const matchSearch = searchQuery === '' || 
+        show.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        show.resident.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      return matchResident && matchStyle && matchYear && matchSearch;
+    });
+
+    setDisplayedShows(filtered);
+  }, [allShows, selectedResident, selectedStyle, selectedYear, searchQuery]);
 
   const resetFilters = () => {
     setSelectedResident('ALL');
     setSelectedStyle('ALL');
-    setSelectedMonth('ALL');
+    setSelectedYear('ALL');
+    setSearchQuery('');
+    setShowCount(100);
+  };
+
+  const loadMore = () => {
+    setShowCount(prev => prev + 100);
   };
 
   if (isLoading) {
@@ -96,13 +138,15 @@ export default function ShowsPage() {
       <div className="min-h-screen bg-black text-white font-mono flex items-center justify-center">
         <div className="text-center">
           <div className="text-xl uppercase tracking-wider mb-2 animate-pulse">
-            Loading Shows...
+            Loading All Shows...
           </div>
-          <div className="text-xs opacity-50">Fetching from Mixcloud</div>
+          <div className="text-xs opacity-50">This may take a moment</div>
         </div>
       </div>
     );
   }
+
+  const visibleShows = displayedShows.slice(0, showCount);
 
   return (
     <div className="min-h-screen bg-black text-white font-mono selection:bg-white selection:text-black pb-12">
@@ -111,16 +155,24 @@ export default function ShowsPage() {
       
       <main className="max-w-full">
         
-        {/* Header + Filtres compacts sur une ligne */}
+        {/* Header + Search */}
         <div className="border-b border-white px-4 py-3">
           
-          {/* Première ligne : Titre + Reset */}
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <h1 className="text-base md:text-xl font-bold uppercase tracking-wider">
-              Shows ({filteredShows.length})
+              Shows ({displayedShows.length})
             </h1>
             
-            {(selectedResident !== 'ALL' || selectedStyle !== 'ALL' || selectedMonth !== 'ALL') && (
+            {/* Search bar */}
+            <input
+              type="text"
+              placeholder="Search shows..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-black border border-white px-3 py-1 text-xs uppercase placeholder:text-gray-600 focus:outline-none focus:bg-white focus:text-black transition-all w-full md:w-64"
+            />
+
+            {(selectedResident !== 'ALL' || selectedStyle !== 'ALL' || selectedYear !== 'ALL' || searchQuery !== '') && (
               <button
                 onClick={resetFilters}
                 className="text-[9px] md:text-xs uppercase tracking-wider px-3 py-1 border border-white hover:bg-white hover:text-black transition-all"
@@ -130,9 +182,22 @@ export default function ShowsPage() {
             )}
           </div>
 
-          {/* Deuxième ligne : 3 filtres minimalistes */}
+          {/* Filtres compacts */}
           <div className="grid grid-cols-3 gap-2">
             
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="w-full bg-black border border-white px-2 py-1 text-[10px] md:text-xs uppercase cursor-pointer hover:bg-white hover:text-black transition-all"
+            >
+              <option value="ALL">All Years</option>
+              {years.filter(y => y !== 'ALL').map(year => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+
             <select
               value={selectedResident}
               onChange={(e) => setSelectedResident(e.target.value)}
@@ -158,25 +223,12 @@ export default function ShowsPage() {
                 </option>
               ))}
             </select>
-
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-full bg-black border border-white px-2 py-1 text-[10px] md:text-xs uppercase cursor-pointer hover:bg-white hover:text-black transition-all"
-            >
-              <option value="ALL">All Months</option>
-              {months.filter(m => m !== 'ALL').map(month => (
-                <option key={month} value={month}>
-                  {month}
-                </option>
-              ))}
-            </select>
           </div>
         </div>
 
         {/* Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-          {filteredShows.map((show, idx) => (
+          {visibleShows.map((show, idx) => (
             <div 
               key={idx}
               className="border-b border-r border-white group cursor-pointer"
@@ -210,15 +262,28 @@ export default function ShowsPage() {
 
                 <div className="flex items-center justify-between text-[8px] uppercase opacity-40">
                   <span>{show.style}</span>
-                  <span>{new Date(show.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                  <span>{show.year}</span>
                 </div>
               </div>
             </div>
           ))}
         </div>
 
-        {filteredShows.length === 0 && (
-          <div className="border-b border-white p-12 text-center">
+        {/* Load More */}
+        {visibleShows.length < displayedShows.length && (
+          <div className="border-t border-white p-12 text-center">
+            <button
+              onClick={loadMore}
+              className="border border-white px-8 py-3 text-xs uppercase tracking-wider hover:bg-white hover:text-black transition-all font-bold"
+            >
+              Load More Shows ({displayedShows.length - visibleShows.length} remaining)
+            </button>
+          </div>
+        )}
+
+        {/* No results */}
+        {displayedShows.length === 0 && (
+          <div className="border-t border-white p-12 text-center">
             <p className="text-sm uppercase opacity-50 mb-4">
               No shows match your filters
             </p>

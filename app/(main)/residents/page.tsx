@@ -2,196 +2,193 @@
 
 import { useState } from 'react';
 
-export default function ResidentsPage() {
-  const residents = [
-    {
-      name: "DJ POSER",
-      genre: "TECHNO / INDUSTRIAL",
-      image: "https://images.unsplash.com/photo-1598387181032-a3103a2db5b3?w=1200&h=1200&fit=crop&q=80",
-      bio: "Heavy techno and industrial sounds. Resident since 2023.",
-      social: "https://www.instagram.com/djposer"
-    },
-    {
-      name: "SHADOW BASS",
-      genre: "DRUM & BASS",
-      image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200&h=1200&fit=crop&q=80",
-      bio: "Liquid DnB and neurofunk specialist.",
-      social: "https://www.instagram.com/shadowbass"
-    },
-    {
-      name: "NEON PULSE",
-      genre: "HOUSE / MINIMAL",
-      image: "https://images.unsplash.com/photo-1574163759315-e8e6f8b4b315?w=1200&h=1200&fit=crop&q=80",
-      bio: "Deep house and minimal grooves.",
-      social: "https://www.instagram.com/neonpulse"
-    },
-    {
-      name: "VOID RIDER",
-      genre: "INDUSTRIAL / EBM",
-      image: "https://images.unsplash.com/photo-1598387181032-a3103a2db5b3?w=1200&h=1200&fit=crop&q=80",
-      bio: "Dark industrial techno with EBM influences.",
-      social: "https://www.instagram.com/voidrider"
-    },
-    {
-      name: "ECHO DRIFT",
-      genre: "AMBIENT",
-      image: "https://images.unsplash.com/photo-1563206767-5b18f218e8de?w=1200&h=1200&fit=crop&q=80",
-      bio: "Atmospheric soundscapes and experimental textures.",
-      social: "https://www.instagram.com/echodrift"
-    },
-    {
-      name: "PULSE WAVE",
-      genre: "ELECTRO / BREAKS",
-      image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1200&h=1200&fit=crop&q=80",
-      bio: "Breakbeat and electro fusion.",
-      social: "https://www.instagram.com/pulsewave"
-    },
-    {
-      name: "DARK MATTER",
-      genre: "DUBSTEP / BASS",
-      image: "https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=1200&h=1200&fit=crop&q=80",
-      bio: "Heavy bass and dubstep.",
-      social: "https://www.instagram.com/darkmatter"
-    },
-    {
-      name: "COSMIC NOISE",
-      genre: "TECHNO / TRANCE",
-      image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1200&h=1200&fit=crop&q=80",
-      bio: "Hypnotic techno and trance journeys.",
-      social: "https://www.instagram.com/cosmicnoise"
-    },
-    {
-      name: "LUNAR PHASE",
-      genre: "PROGRESSIVE",
-      image: "https://images.unsplash.com/photo-1551858806-56578d6b4d95?w=1200&h=1200&fit=crop&q=80",
-      bio: "Progressive house and melodic techno.",
-      social: "https://www.instagram.com/lunarphase"
-    },
-    {
-      name: "STEEL DRUM",
-      genre: "JUNGLE",
-      image: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=1200&h=1200&fit=crop&q=80",
-      bio: "Old school jungle and amen breaks.",
-      social: "https://www.instagram.com/steeldrum"
-    },
-    {
-      name: "GHOST SIGNAL",
-      genre: "MINIMAL WAVE",
-      image: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=1200&h=1200&fit=crop&q=80",
-      bio: "Minimal wave and cold wave.",
-      social: "https://www.instagram.com/ghostsignal"
-    },
-    {
-      name: "FREQUENCY X",
-      genre: "HARDCORE",
-      image: "https://images.unsplash.com/photo-1501612780327-45045538702b?w=1200&h=1200&fit=crop&q=80",
-      bio: "Hardcore and gabber specialist.",
-      social: "https://www.instagram.com/frequencyx"
-    },
-    {
-      name: "ACID RAIN",
-      genre: "ACID TECHNO",
-      image: "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=1200&h=1200&fit=crop&q=80",
-      bio: "303 acid lines and techno.",
-      social: "https://www.instagram.com/acidrain"
-    },
-    {
-      name: "BINARY STAR",
-      genre: "IDM",
-      image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1200&h=1200&fit=crop&q=80",
-      bio: "Intelligent dance music explorer.",
-      social: "https://www.instagram.com/binarystar"
-    },
-    {
-      name: "VOLTAGE DROP",
-      genre: "ELECTRO CLASH",
-      image: "https://images.unsplash.com/photo-1485579149621-3123dd979885?w=1200&h=1200&fit=crop&q=80",
-      bio: "Electroclash and new wave.",
-      social: "https://www.instagram.com/voltagedrop"
-    },
-    {
-      name: "SUBSONIC",
-      genre: "DEEP HOUSE",
-      image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&h=1200&fit=crop&q=80",
-      bio: "Deep house and soulful vibes.",
-      social: "https://www.instagram.com/subsonic"
-    },
-    {
-      name: "CIRCUIT BREAKER",
-      genre: "BREAKS",
-      image: "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=1200&h=1200&fit=crop&q=80",
-      bio: "Big beat and nu skool breaks.",
-      social: "https://www.instagram.com/circuitbreaker"
-    },
-    {
-      name: "FROST BYTE",
-      genre: "MINIMAL TECHNO",
-      image: "https://images.unsplash.com/photo-1525201548942-d8732f6617a0?w=1200&h=1200&fit=crop&q=80",
-      bio: "Minimal techno and microhouse.",
-      social: "https://www.instagram.com/frostbyte"
-    },
-    {
-      name: "OBSIDIAN",
-      genre: "DARK AMBIENT",
-      image: "https://images.unsplash.com/photo-1528722828814-77b9b83aafb2?w=1200&h=1200&fit=crop&q=80",
-      bio: "Dark ambient soundscapes.",
-      social: "https://www.instagram.com/obsidian"
-    },
-    {
-      name: "REVERB CITY",
-      genre: "DUB TECHNO",
-      image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200&h=1200&fit=crop&q=80",
-      bio: "Dub techno and atmospheric beats.",
-      social: "https://www.instagram.com/reverbcity"
-    },
-    // Continuer avec 37 residents de plus...
-    {
-      name: "PLASMA WAVE",
-      genre: "TRANCE",
-      image: "https://images.unsplash.com/photo-1598387993441-a364f854c3e1?w=1200&h=1200&fit=crop&q=80",
-      bio: "Uplifting and progressive trance.",
-      social: "https://www.instagram.com/plasmawave"
-    },
-    {
-      name: "CHROME SOUL",
-      genre: "TECH HOUSE",
-      image: "https://images.unsplash.com/photo-1571266028243-d220c6f1e5d8?w=1200&h=1200&fit=crop&q=80",
-      bio: "Tech house grooves.",
-      social: "https://www.instagram.com/chromesoul"
-    },
-    {
-      name: "PIXEL DUST",
-      genre: "CHIPTUNE",
-      image: "https://images.unsplash.com/photo-1550985616-10810253b84d?w=1200&h=1200&fit=crop&q=80",
-      bio: "8-bit and chiptune classics.",
-      social: "https://www.instagram.com/pixeldust"
-    },
-    {
-      name: "NEBULA DRIFT",
-      genre: "PSYTRANCE",
-      image: "https://images.unsplash.com/photo-1574163759315-e8e6f8b4b315?w=1200&h=1200&fit=crop&q=80",
-      bio: "Psychedelic trance journeys.",
-      social: "https://www.instagram.com/nebuladrift"
-    },
-    {
-      name: "IRON GATE",
-      genre: "HARD TECHNO",
-      image: "https://images.unsplash.com/photo-1598387181032-a3103a2db5b3?w=1200&h=1200&fit=crop&q=80",
-      bio: "Hard techno and schranz.",
-      social: "https://www.instagram.com/irongate"
-    },
-    // Ajoute 32 residents de plus ici avec le même format
-    // Je te donne le pattern pour que tu puisses continuer
-  ];
+const residents = [
+  {
+    name: "DJ POSER",
+    genre: "TECHNO / INDUSTRIAL",
+    image: "https://images.unsplash.com/photo-1571330735066-03aaa9429d89?w=1200&h=1200&fit=crop",
+    bio: "Heavy techno and industrial sounds from the underground. Known for pushing boundaries and creating intense sonic experiences.",
+    social: "https://www.instagram.com/djposer"
+  },
+  {
+    name: "SHADOW BASS",
+    genre: "DRUM & BASS",
+    image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200&h=1200&fit=crop",
+    bio: "Deep, dark drum & bass with a focus on sub-bass frequencies and atmospheric textures.",
+    social: "https://www.instagram.com/shadowbass"
+  },
+  {
+    name: "NEON PULSE",
+    genre: "ELECTRO / SYNTHWAVE",
+    image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1200&h=1200&fit=crop",
+    bio: "Retro-futuristic electro and synthwave with a modern twist. Neon-soaked soundscapes and pulsing rhythms.",
+    social: "https://www.instagram.com/neonpulse"
+  },
+  {
+    name: "VOID RIDER",
+    genre: "AMBIENT / EXPERIMENTAL",
+    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1200&h=1200&fit=crop",
+    bio: "Experimental ambient soundscapes exploring the void between sound and silence.",
+    social: "https://www.instagram.com/voidrider"
+  },
+  {
+    name: "ECHO DRIFT",
+    genre: "DUB TECHNO",
+    image: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=1200&h=1200&fit=crop",
+    bio: "Deep dub techno with echoing delays and hypnotic grooves. Music for the late night.",
+    social: "https://www.instagram.com/echodrift"
+  },
+  {
+    name: "PULSE WAVE",
+    genre: "ACID HOUSE",
+    image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1200&h=1200&fit=crop",
+    bio: "Classic acid house with squelchy 303 basslines and driving four-to-the-floor beats.",
+    social: "https://www.instagram.com/pulsewave"
+  },
+  {
+    name: "DARK MATTER",
+    genre: "INDUSTRIAL TECHNO",
+    image: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=1200&h=1200&fit=crop",
+    bio: "Heavy industrial techno from the darkest corners of the dance floor.",
+    social: "https://www.instagram.com/darkmatter"
+  },
+  {
+    name: "COSMIC NOISE",
+    genre: "NOISE / EXPERIMENTAL",
+    image: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=1200&h=1200&fit=crop",
+    bio: "Pure noise experimentation pushing the boundaries of what music can be.",
+    social: "https://www.instagram.com/cosmicnoise"
+  },
+  {
+    name: "LUNAR PHASE",
+    genre: "DOWNTEMPO / TRIP HOP",
+    image: "https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=1200&h=1200&fit=crop",
+    bio: "Moody downtempo and trip hop for introspective journeys.",
+    social: "https://www.instagram.com/lunarphase"
+  },
+  {
+    name: "STEEL DRUM",
+    genre: "BREAKBEAT / JUNGLE",
+    image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=1200&h=1200&fit=crop",
+    bio: "Fast-paced breakbeat and jungle rhythms with heavy bass.",
+    social: "https://www.instagram.com/steeldrum"
+  },
+  {
+    name: "GHOST SIGNAL",
+    genre: "MINIMAL TECHNO",
+    image: "https://images.unsplash.com/photo-1501612780327-45045538702b?w=1200&h=1200&fit=crop",
+    bio: "Stripped-back minimal techno with haunting atmospheres.",
+    social: "https://www.instagram.com/ghostsignal"
+  },
+  {
+    name: "FREQUENCY X",
+    genre: "ELECTRO / BREAKS",
+    image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200&h=1200&fit=crop",
+    bio: "High-energy electro and breakbeat fusion.",
+    social: "https://www.instagram.com/frequencyx"
+  },
+  {
+    name: "ACID RAIN",
+    genre: "ACID TECHNO",
+    image: "https://images.unsplash.com/photo-1571330735066-03aaa9429d89?w=1200&h=1200&fit=crop",
+    bio: "Acidic techno with twisted 303 lines and relentless energy.",
+    social: "https://www.instagram.com/acidrain"
+  },
+  {
+    name: "BINARY STAR",
+    genre: "IDM / GLITCH",
+    image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1200&h=1200&fit=crop",
+    bio: "Intelligent dance music with glitchy textures and complex rhythms.",
+    social: "https://www.instagram.com/binarystar"
+  },
+  {
+    name: "VOLTAGE DROP",
+    genre: "ELECTRO HOUSE",
+    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1200&h=1200&fit=crop",
+    bio: "Peak-time electro house with massive drops and infectious energy.",
+    social: "https://www.instagram.com/voltagedrop"
+  },
+  {
+    name: "SUBSONIC",
+    genre: "DUBSTEP / BASS",
+    image: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=1200&h=1200&fit=crop",
+    bio: "Deep dubstep with earth-shaking sub-bass frequencies.",
+    social: "https://www.instagram.com/subsonic"
+  },
+  {
+    name: "CIRCUIT BREAKER",
+    genre: "HARDCORE / GABBER",
+    image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1200&h=1200&fit=crop",
+    bio: "Relentless hardcore and gabber beats at breakneck speeds.",
+    social: "https://www.instagram.com/circuitbreaker"
+  },
+  {
+    name: "FROST BYTE",
+    genre: "CHIPTUNE / 8BIT",
+    image: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=1200&h=1200&fit=crop",
+    bio: "Retro chiptune and 8-bit sounds with a modern edge.",
+    social: "https://www.instagram.com/frostbyte"
+  },
+  {
+    name: "OBSIDIAN",
+    genre: "DARK AMBIENT",
+    image: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=1200&h=1200&fit=crop",
+    bio: "Deep, dark ambient soundscapes for late night contemplation.",
+    social: "https://www.instagram.com/obsidian"
+  },
+  {
+    name: "REVERB CITY",
+    genre: "TECHNO / HOUSE",
+    image: "https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=1200&h=1200&fit=crop",
+    bio: "Classic techno and house with lush reverb and delay.",
+    social: "https://www.instagram.com/reverbcity"
+  },
+  {
+    name: "PLASMA WAVE",
+    genre: "TRANCE / PSY",
+    image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=1200&h=1200&fit=crop",
+    bio: "Hypnotic trance and psytrance for transcendent dance floor experiences.",
+    social: "https://www.instagram.com/plasmawave"
+  },
+  {
+    name: "CHROME SOUL",
+    genre: "TECHNO / FUNK",
+    image: "https://images.unsplash.com/photo-1501612780327-45045538702b?w=1200&h=1200&fit=crop",
+    bio: "Funky techno grooves with a futuristic chrome finish.",
+    social: "https://www.instagram.com/chromesoul"
+  },
+  {
+    name: "PIXEL DUST",
+    genre: "FUTURE BASS",
+    image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200&h=1200&fit=crop",
+    bio: "Colorful future bass with glitchy textures and emotional melodies.",
+    social: "https://www.instagram.com/pixeldust"
+  },
+  {
+    name: "NEBULA DRIFT",
+    genre: "SPACE DISCO",
+    image: "https://images.unsplash.com/photo-1571330735066-03aaa9429d89?w=1200&h=1200&fit=crop",
+    bio: "Cosmic disco journeys through space and time.",
+    social: "https://www.instagram.com/nebuladrift"
+  },
+  {
+    name: "IRON GATE",
+    genre: "EBM / INDUSTRIAL",
+    image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1200&h=1200&fit=crop",
+    bio: "Electronic body music with industrial strength and precision.",
+    social: "https://www.instagram.com/irongate"
+  }
+];
 
+export default function ResidentsPage() {
   const [selectedResident, setSelectedResident] = useState(residents[0]);
 
   return (
-    <div className="min-h-screen bg-black text-white font-mono selection:bg-white selection:text-black pb-12">
+    <div className="min-h-screen bg-black text-white font-mono selection:bg-white selection:text-black">
       
       <div className="crt-screen" />
       
-      <main className="max-w-full">
+      <main className="h-screen flex flex-col">
         
         {/* Header */}
         <div className="border-b border-white px-6 py-4">
@@ -200,91 +197,66 @@ export default function ResidentsPage() {
           </h1>
         </div>
 
-        {/* Layout: Hero (9 cols) + List (3 cols) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12">
+        {/* Content Grid : Hero (gauche) + Liste scrollable (droite) */}
+        <div className="flex-1 grid grid-cols-12 overflow-hidden">
           
-          {/* Hero Image - 9 colonnes */}
-          <div className="lg:col-span-9 border-b lg:border-b-0 lg:border-r border-white relative group">
-            <div className="aspect-square lg:aspect-[16/10] relative overflow-hidden bg-black">
-              {selectedResident && (
-                <>
+          {/* HERO - 9 colonnes */}
+          <div className="col-span-9 border-r border-white flex flex-col">
+            
+            {selectedResident && (
+              <>
+                {/* Image */}
+                <div className="flex-1 relative overflow-hidden">
                   <img 
                     src={selectedResident.image}
                     alt={selectedResident.name}
-                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                    className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
                   />
                   
-                  {/* Overlay info */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-8 md:p-12">
-                    <div>
-                      <h2 className="text-4xl md:text-6xl font-bold uppercase mb-2 tracking-wider">
-                        {selectedResident.name}
-                      </h2>
-                      <p className="text-sm md:text-base uppercase tracking-wider opacity-70 mb-4">
-                        {selectedResident.genre}
-                      </p>
-                      <p className="text-xs md:text-sm leading-relaxed opacity-80 max-w-2xl mb-6">
-                        {selectedResident.bio}
-                      </p>
-                      
-                      {/* Social link */}
-                      <a 
-                        href={selectedResident.social}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block border border-white px-6 py-2 text-xs uppercase tracking-wider hover:bg-white hover:text-black transition-all opacity-0 group-hover:opacity-100"
-                      >
-                        View Profile →
-                      </a>
-                    </div>
+                  {/* Overlay avec info */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/80 to-transparent p-8">
+                    <h2 className="text-4xl font-bold uppercase tracking-wider mb-2">
+                      {selectedResident.name}
+                    </h2>
+                    <p className="text-sm uppercase tracking-wider opacity-70 mb-4">
+                      {selectedResident.genre}
+                    </p>
+                    <p className="text-sm leading-relaxed opacity-90 max-w-2xl mb-4">
+                      {selectedResident.bio}
+                    </p>
+                    <a 
+                      href={selectedResident.social}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block text-xs uppercase tracking-wider border border-white px-4 py-2 hover:bg-white hover:text-black transition-all"
+                    >
+                      Follow →
+                    </a>
                   </div>
-                </>
-              )}
-            </div>
+                </div>
+              </>
+            )}
           </div>
 
-          {/* Liste compacte des Residents - 3 colonnes */}
-          <div className="lg:col-span-3 bg-black overflow-y-auto max-h-screen custom-scrollbar">
+          {/* LISTE SCROLLABLE - 3 colonnes */}
+          <div className="col-span-3 overflow-y-auto">
             {residents.map((resident, idx) => (
-              <div
+              <button
                 key={idx}
                 onClick={() => setSelectedResident(resident)}
-                className={`border-b border-white px-3 py-2 cursor-pointer transition-all ${
-                  selectedResident.name === resident.name
-                    ? 'bg-white text-black'
-                    : 'hover:bg-white hover:text-black'
+                className={`w-full text-left px-3 py-2 border-b border-white transition-all ${
+                  selectedResident.name === resident.name 
+                    ? 'bg-white text-black' 
+                    : 'bg-black text-white hover:bg-white/10'
                 }`}
               >
-                <h3 className="text-[10px] font-bold uppercase tracking-wider">
+                <div className="text-[10px] font-bold uppercase tracking-wider leading-tight">
                   {resident.name}
-                </h3>
-              </div>
+                </div>
+              </button>
             ))}
           </div>
         </div>
-
-        {/* CTA Section */}
-        <div className="border-t border-white p-12 text-center">
-          <h2 className="text-2xl font-bold uppercase mb-6 tracking-wider">
-            Join The Family
-          </h2>
-          <p className="text-sm opacity-70 mb-6 max-w-2xl mx-auto leading-relaxed">
-            We're always looking for talented DJs and producers to join our resident roster. 
-            If you're passionate about underground electronic music and want to be part of Montreal's 
-            most exciting radio station, send us your demo.
-          </p>
-          <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-            <input 
-              type="email" 
-              placeholder="YOUR EMAIL"
-              className="bg-transparent border border-white px-6 py-3 text-xs uppercase tracking-wider placeholder:text-gray-600 focus:outline-none focus:bg-white focus:text-black transition-all w-full md:w-64"
-            />
-            <button className="border border-white px-8 py-3 text-xs uppercase tracking-wider hover:bg-white hover:text-black transition-all font-bold w-full md:w-auto">
-              Apply Now
-            </button>
-          </div>
-        </div>
-
       </main>
     </div>
   );

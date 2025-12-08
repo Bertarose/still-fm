@@ -213,7 +213,7 @@ export default function ResidentsPage() {
                   loading="lazy"
                 />
                 
-                {/* Hover overlay avec icône Instagram */}
+                {/* Hover overlay */}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/70 transition-all flex items-center justify-center">
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity text-center">
                     <div className="text-xs uppercase tracking-wider mb-2">Follow</div>

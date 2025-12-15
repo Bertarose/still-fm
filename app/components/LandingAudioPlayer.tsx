@@ -230,7 +230,7 @@ export default function LandingAudioPlayer({ isLive }: LandingAudioPlayerProps) 
             className="block text-center pt-3 group"
           >
             <div className="flex items-center justify-center gap-2 text-sm md:text-[10px] uppercase tracking-wider text-white/60 hover:text-white transition-all font-bold">
-              <span>Enter Archive</span>
+              <span>Enter site</span>
               <svg 
                 className="w-4 h-4 md:w-3 md:h-3 transform group-hover:translate-x-1 transition-transform" 
                 fill="none" 

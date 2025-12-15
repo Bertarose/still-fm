@@ -60,10 +60,11 @@ export default function InstallPWA() {
 
   return (
     <>
-      {/* Install Button en haut à gauche (CORRIGÉ) */}
+      {/* Install Button : Utilisation du style en ligne pour forcer la position en haut à gauche */}
       <button
         onClick={handleInstallClick}
-        className="fixed top-6 left-6 z-50 bg-white text-black px-6 py-3 text-xs uppercase tracking-wider font-bold border-2 border-black hover:bg-black hover:text-white transition-all flex items-center gap-2 shadow-lg"
+        className="fixed z-50 bg-white text-black px-6 py-3 text-xs uppercase tracking-wider font-bold border-2 border-black hover:bg-black hover:text-white transition-all flex items-center gap-2 shadow-lg"
+        style={{ top: '1.5rem', left: '1.5rem' }} // <= CORRECTION DE SPÉCIFICITÉ
       >
         <span>📱</span>
         <span>Install App</span>

@@ -16,7 +16,7 @@ export default function FixedHeader({ currentPage: propCurrentPage }: FixedHeade
   return (
     <header className="w-full bg-white text-black font-mono border-b border-black">
       
-      {/* LIGNE 1 : Logo + Marquee + Status */}
+      {/* LIGNE 1 : Logo + Marquee + Status + Landing Link */}
       <div className="flex h-8 items-stretch border-b border-black">
         <Link 
           href="/home" 
@@ -31,9 +31,21 @@ export default function FixedHeader({ currentPage: propCurrentPage }: FixedHeade
           </div>
         </div>
         
-        <div className="w-28 md:w-40 flex items-center justify-center border-l border-black bg-[#e0e0e0] text-[8px] md:text-[11px] font-bold uppercase tracking-wide shrink-0">
-          <span className="hidden md:inline">STREAM OFFLINE</span>
-          <span className="md:hidden">OFFLINE</span>
+        {/* Status OFFLINE + Lien Landing */}
+        <div className="flex items-stretch shrink-0 border-l border-black">
+          <div className="w-28 md:w-32 flex items-center justify-center bg-[#e0e0e0] text-[8px] md:text-[10px] font-bold uppercase tracking-wide">
+            <span className="hidden md:inline">STREAM OFFLINE</span>
+            <span className="md:hidden">OFFLINE</span>
+          </div>
+          
+          {/* Lien vers Landing Page */}
+          <Link
+            href="/"
+            className="w-8 md:w-10 flex items-center justify-center bg-black text-white hover:bg-gray-800 transition-colors border-l border-white text-lg md:text-xl"
+            title="Go to Landing Page"
+          >
+            ⌂
+          </Link>
         </div>
       </div>
 

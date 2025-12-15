@@ -1,143 +1,158 @@
 'use client';
 
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { usePlayer } from '@/app/context/PlayerContext';
+import { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
+import LandingAudioPlayer from './components/LandingAudioPlayer';
+import InstallPWA from './components/InstallPWA';
 
-type Mode = 'video' | 'radio';
+export default function LandingPage() {
+  const [isLive, setIsLive] = useState(false);
+  const [watchMode, setWatchMode] = useState(false);
+  const twitchRef = useRef<any>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-interface Props {
-  isLive: boolean;
-  onWatchVideo: () => void;
-  onCloseVideo: () => void;
-}
-
-export default function LandingAudioPlayer({
-  isLive,
-  onWatchVideo,
-  onCloseVideo,
-}: Props) {
-  const { isPlaying, play, pause } = usePlayer();
-  const [mode, setMode] = useState<Mode>('video');
-
-  // 🔁 Synchronisation mode
+  // 🎥 TWITCH INIT
   useEffect(() => {
-    if (mode === 'video') {
-      pause();
-      onWatchVideo();
-    } else if (mode === 'radio') {
-      onCloseVideo();
-      play();
+    if ((window as any).Twitch) {
+      const player = new (window as any).Twitch.Player('twitch-embed', {
+        channel: 'bertarose',
+        width: '100%',
+        height: '100%',
+        muted: true,
+        autoplay: false,
+        parent: [window.location.hostname],
+      });
+
+      twitchRef.current = player;
+
+      player.addEventListener('ONLINE', () => setIsLive(true));
+      player.addEventListener('OFFLINE', () => setIsLive(false));
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://player.twitch.tv/js/embed/v1.js';
+      script.onload = () => location.reload();
+      document.body.appendChild(script);
     }
-  }, [mode]);
+  }, []);
+
+  const openVideo = () => {
+    if (!twitchRef.current) return;
+    twitchRef.current.setMuted(false);
+    twitchRef.current.play();
+    setWatchMode(true);
+  };
+
+  const closeVideo = () => {
+    if (!twitchRef.current) return;
+    twitchRef.current.setMuted(true);
+    setWatchMode(false);
+  };
+
+  // 🌌 CANVAS
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const stars = Array.from({ length: 120 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 1.5 + 0.5,
+    }));
+
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      stars.forEach(s => {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    };
+
+    draw();
+  }, []);
 
   return (
-    <div className="
-      w-full md:w-96
-      bg-black/95 backdrop-blur-xl
-      border-t md:border border-white/20
-      md:rounded-xl shadow-2xl
-      font-mono
-      relative z-30
-    ">
-      <div className="p-4">
+    <div className="relative w-full h-screen bg-black overflow-hidden">
 
-        {/* TITRE */}
-        <div className="mb-4 text-center">
-          <div className="text-[9px] uppercase tracking-[0.25em] text-white/40">
-            Still FM
-          </div>
-          <div className="text-sm font-bold text-white">
-            Montreal Underground Radio
-          </div>
+      {/* INSTALL APP - FIXE EN HAUT À DROITE */}
+      <div className="fixed top-4 right-4 z-50">
+        <InstallPWA />
+      </div>
+
+      {/* TWITCH */}
+      <div
+        className={`absolute inset-0 transition-opacity duration-700
+          ${watchMode ? 'opacity-100 z-20' : 'opacity-40 z-0'}
+        `}
+      >
+        <div id="twitch-embed" className="w-full h-full" />
+      </div>
+
+      {/* FALLBACK VIDEO */}
+      {!isLive && (
+        <video
+          src="/video.mov"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover z-0"
+        />
+      )}
+
+      {/* CANVAS */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 z-10 mix-blend-screen opacity-40 pointer-events-none"
+      />
+
+      {/* LOGO */}
+      {!watchMode && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-white pointer-events-none">
+          <Image
+            src="/Stillfm logo-white.png"
+            alt="Still FM"
+            width={600}
+            height={200}
+            className="w-[280px] md:w-[500px]"
+            priority
+          />
         </div>
+      )}
 
-        {/* TOGGLE */}
-        <div className="flex items-center justify-between mb-4 px-2 relative z-20">
-          <button
-            onClick={() => setMode('video')}
-            className={`text-xs uppercase tracking-wider px-3 py-2 rounded transition cursor-pointer
-              ${mode === 'video'
-                ? 'bg-white text-black font-bold'
-                : 'text-white/50 hover:text-white'}
-            `}
-          >
-            Live Video
-          </button>
-
-          <div className="relative w-14 h-7 flex-shrink-0">
-            <div className="absolute inset-0 bg-white/20 rounded-full pointer-events-none" />
-            <div
-              className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform pointer-events-auto
-                ${mode === 'radio' ? 'translate-x-7' : 'translate-x-1'}
-              `}
-            />
-          </div>
-
-          <button
-            onClick={() => setMode('radio')}
-            className={`text-xs uppercase tracking-wider px-3 py-2 rounded transition cursor-pointer
-              ${mode === 'radio'
-                ? 'bg-white text-black font-bold'
-                : 'text-white/50 hover:text-white'}
-            `}
-          >
-            Radio
-          </button>
+      {/* PLAYER */}
+      {!watchMode && (
+        <div className="fixed bottom-0 left-0 right-0 md:left-4 md:bottom-4 z-40">
+          <LandingAudioPlayer
+            isLive={isLive}
+            onWatchVideo={openVideo}
+            onCloseVideo={closeVideo}
+          />
         </div>
+      )}
 
-        {/* ACTION PRINCIPALE */}
-        <div className="mb-3">
-          {mode === 'video' ? (
-            <button
-              onClick={onWatchVideo}
-              disabled={!isLive}
-              className="
-                w-full py-3 border border-white/50
-                text-xs uppercase tracking-widest
-                hover:bg-white hover:text-black
-                transition disabled:opacity-30 cursor-pointer
-              "
-            >
-              {isLive ? 'Watch Live' : 'Offline'}
-            </button>
-          ) : (
-            <button
-              onClick={isPlaying ? pause : play}
-              className="
-                w-full py-3 border border-white/50
-                text-xs uppercase tracking-widest
-                hover:bg-white hover:text-black
-                transition cursor-pointer
-              "
-            >
-              {isPlaying ? 'Pause Radio' : 'Listen Live'}
-            </button>
-          )}
-        </div>
-
-        {/* STATUS */}
-        <div className="text-center text-[10px] text-white/60 mb-4">
-          {mode === 'video'
-            ? isLive ? '🔴 Live on air' : '⚫ Offline'
-            : isPlaying ? '📻 Playing live radio' : '📻 Radio'}
-        </div>
-
-        {/* CTA ENTER */}
-        <Link
-          href="/home"
+      {/* CLOSE VIDEO */}
+      {watchMode && (
+        <button
+          onClick={closeVideo}
           className="
-            block w-full text-center
-            py-3 border border-white/30
-            text-xs uppercase tracking-[0.25em]
-            text-white/70 hover:bg-white hover:text-black
-            transition cursor-pointer
+            fixed top-4 right-4 z-50
+            border border-white/50
+            px-4 py-2 text-xs uppercase tracking-widest
+            text-white hover:bg-white hover:text-black
+            transition
           "
         >
-          Enter Archive →
-        </Link>
-
-      </div>
+          Close
+        </button>
+      )}
     </div>
   );
 }

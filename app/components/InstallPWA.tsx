@@ -1,156 +1,123 @@
 'use client';
+import { useEffect, useState } from 'react';
 
-import { useEffect, useRef, useState } from 'react';
-import Image from 'next/image';
-import LandingAudioPlayer from './components/LandingAudioPlayer';
-import InstallPWA from './components/InstallPWA';
+export default function InstallPWA() {
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstall, setShowInstall] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [showIOSInstructions, setShowIOSInstructions] = useState(false);
 
-export default function LandingPage() {
-  const [isLive, setIsLive] = useState(false);
-  const [watchMode, setWatchMode] = useState(false);
-  const twitchRef = useRef<any>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  // 🎥 TWITCH INIT
   useEffect(() => {
-    if ((window as any).Twitch) {
-      const player = new (window as any).Twitch.Player('twitch-embed', {
-        channel: 'bertarose',
-        width: '100%',
-        height: '100%',
-        muted: true,
-        autoplay: false,
-        parent: [window.location.hostname],
-      });
+    // Detect iOS
+    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    setIsIOS(iOS);
 
-      twitchRef.current = player;
-
-      player.addEventListener('ONLINE', () => setIsLive(true));
-      player.addEventListener('OFFLINE', () => setIsLive(false));
-    } else {
-      const script = document.createElement('script');
-      script.src = 'https://player.twitch.tv/js/embed/v1.js';
-      script.onload = () => location.reload();
-      document.body.appendChild(script);
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setShowInstall(false);
+      return;
     }
-  }, []);
 
-  const openVideo = () => {
-    if (!twitchRef.current) return;
-    twitchRef.current.setMuted(false);
-    twitchRef.current.play();
-    setWatchMode(true);
-  };
+    // For iOS, show instructions button if not installed
+    if (iOS) {
+      setShowInstall(true);
+      return;
+    }
 
-  const closeVideo = () => {
-    if (!twitchRef.current) return;
-    twitchRef.current.setMuted(true);
-    setWatchMode(false);
-  };
-
-  // 🌌 CANVAS
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const stars = Array.from({ length: 120 }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      r: Math.random() * 1.5 + 0.5,
-    }));
-
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = 'rgba(255,255,255,0.6)';
-      stars.forEach(s => {
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fill();
-      });
-      requestAnimationFrame(draw);
+    // For Android/Chrome - listen for install prompt
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstall(true);
     };
 
-    draw();
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, []);
 
+  const handleInstallClick = async () => {
+    // iOS - show instructions
+    if (isIOS) {
+      setShowIOSInstructions(true);
+      return;
+    }
+
+    // Android/Chrome - trigger install
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    console.log(`User response: ${outcome}`);
+    setDeferredPrompt(null);
+    setShowInstall(false);
+  };
+
+  if (!showInstall) return null;
+
   return (
-    <div className="relative w-full h-screen bg-black overflow-hidden">
+    <>
+      {/* Install Button en haut à gauche (CORRIGÉ) */}
+      <button
+        onClick={handleInstallClick}
+        className="fixed top-6 left-6 z-50 bg-white text-black px-6 py-3 text-xs uppercase tracking-wider font-bold border-2 border-black hover:bg-black hover:text-white transition-all flex items-center gap-2 shadow-lg"
+      >
+        <span>📱</span>
+        <span>Install App</span>
+      </button>
 
-      {/* INSTALL APP BUTTON (maintenant en haut à gauche) */}
-      <InstallPWA />
-
-      {/* TWITCH */}
-      {isLive && watchMode && (
-        <div
-          className="absolute inset-0 transition-opacity duration-700 opacity-100 z-20"
+      {/* iOS Instructions Modal */}
+      {showIOSInstructions && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setShowIOSInstructions(false)}
         >
-          <div id="twitch-embed" className="w-full h-full" />
+          <div 
+            className="bg-white text-black p-8 max-w-md border-2 border-black"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-xl uppercase tracking-wider font-bold mb-4">
+              Install Still FM
+            </h3>
+            
+            <div className="space-y-4 text-sm">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">1️⃣</span>
+                <div>
+                  <p className="font-bold">Tap Share button</p>
+                  <p className="text-gray-600">Bottom center (square with arrow)</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">2️⃣</span>
+                <div>
+                  <p className="font-bold">Scroll and find</p>
+                  <p className="text-gray-600">"Add to Home Screen"</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">3️⃣</span>
+                <div>
+                  <p className="font-bold">Tap "Add"</p>
+                  <p className="text-gray-600">Still FM icon on your home screen!</p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowIOSInstructions(false)}
+              className="w-full mt-6 bg-black text-white py-3 text-xs uppercase tracking-wider font-bold hover:bg-gray-800 transition-all"
+            >
+              Got it!
+            </button>
+          </div>
         </div>
       )}
-
-      {/* FALLBACK VIDEO */}
-      {!isLive && !watchMode && (
-        <video
-          src="/video.mov"
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover z-0"
-        />
-      )}
-
-      {/* CANVAS */}
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 z-10 mix-blend-screen opacity-40"
-      />
-
-      {/* LOGO */}
-      {!watchMode && (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-white">
-          <Image
-            src="/Stillfm logo-white.png"
-            alt="Still FM"
-            width={600}
-            height={200}
-            className="w-[280px] md:w-[500px]"
-            priority
-          />
-        </div>
-      )}
-
-      {/* PLAYER */}
-      {!watchMode && (
-        <div className="fixed bottom-0 left-0 right-0 md:left-4 md:bottom-4 z-50">
-          <LandingAudioPlayer
-            isLive={isLive}
-            onWatchVideo={openVideo}
-            onCloseVideo={closeVideo}
-          />
-        </div>
-      )}
-
-      {/* CLOSE VIDEO */}
-      {watchMode && (
-        <button
-          onClick={closeVideo}
-          className="
-            fixed top-4 right-4 z-50
-            border border-white/50
-            px-4 py-2 text-xs uppercase tracking-widest
-            text-white hover:bg-white hover:text-black
-            transition
-          "
-        >
-          Close
-        </button>
-      )}
-    </div>
+    </>
   );
 }

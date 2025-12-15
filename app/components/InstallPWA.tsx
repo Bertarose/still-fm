@@ -60,10 +60,10 @@ export default function InstallPWA() {
 
   return (
     <>
-      {/* Install Button */}
+      {/* Install Button en haut à droite */}
       <button
         onClick={handleInstallClick}
-        className="fixed bottom-6 right-6 z-50 bg-white text-black px-6 py-3 text-xs uppercase tracking-wider font-bold border-2 border-black hover:bg-black hover:text-white transition-all flex items-center gap-2 shadow-lg"
+        className="fixed top-6 right-6 z-50 bg-white text-black px-6 py-3 text-xs uppercase tracking-wider font-bold border-2 border-black hover:bg-black hover:text-white transition-all flex items-center gap-2 shadow-lg"
       >
         <span>📱</span>
         <span>Install App</span>

@@ -1,111 +1,64 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import LandingAudioPlayer from './components/LandingAudioPlayer';
+import { usePlayer } from './context/PlayerContext';
 
 export default function LandingPage() {
-  const [isLive, setIsLive] = useState(false);
+  const { isLive, setIsLive, twitchPlayer, setTwitchPlayer } = usePlayer();
   const [watchMode, setWatchMode] = useState(false);
-  const twitchRef = useRef<any>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // 🎥 TWITCH INIT
+  // 🎥 Initialisation Twitch
   useEffect(() => {
-    if ((window as any).Twitch) {
-      const player = new (window as any).Twitch.Player('twitch-embed', {
-        channel: 'bertarose',
-        width: '100%',
-        height: '100%',
-        muted: true,
-        autoplay: false,
-        parent: [window.location.hostname],
-      });
+    const loadTwitch = () => {
+      if ((window as any).Twitch && document.getElementById('twitch-embed')) {
+        const player = new (window as any).Twitch.Player('twitch-embed', {
+          channel: 'bertarose',
+          width: '100%',
+          height: '100%',
+          muted: true,
+          autoplay: false,
+          parent: [window.location.hostname],
+        });
+        setTwitchPlayer(player);
 
-      twitchRef.current = player;
-
-      player.addEventListener('ONLINE', () => setIsLive(true));
-      player.addEventListener('OFFLINE', () => setIsLive(false));
-    } else {
-      const script = document.createElement('script');
-      script.src = 'https://player.twitch.tv/js/embed/v1.js';
-      script.onload = () => location.reload();
-      document.body.appendChild(script);
-    }
-  }, []);
+        player.addEventListener('ONLINE', () => setIsLive(true));
+        player.addEventListener('OFFLINE', () => setIsLive(false));
+      } else {
+        const script = document.createElement('script');
+        script.src = 'https://player.twitch.tv/js/embed/v1.js';
+        script.onload = loadTwitch;
+        document.body.appendChild(script);
+      }
+    };
+    loadTwitch();
+  }, [setIsLive, setTwitchPlayer]);
 
   const openVideo = () => {
-    if (!twitchRef.current) return;
-    twitchRef.current.setMuted(false);
-    twitchRef.current.play();
+    if (!twitchPlayer) return;
+    twitchPlayer.setMuted(false);
+    twitchPlayer.play();
     setWatchMode(true);
   };
 
   const closeVideo = () => {
-    if (!twitchRef.current) return;
-    twitchRef.current.setMuted(true);
+    if (!twitchPlayer) return;
+    twitchPlayer.setMuted(true);
     setWatchMode(false);
   };
-
-  // 🌌 CANVAS
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const stars = Array.from({ length: 120 }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      r: Math.random() * 1.5 + 0.5,
-    }));
-
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = 'rgba(255,255,255,0.6)';
-      stars.forEach(s => {
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fill();
-      });
-      requestAnimationFrame(draw);
-    };
-
-    draw();
-  }, []);
 
   return (
     <div className="relative w-full h-screen bg-black overflow-hidden">
 
       {/* TWITCH */}
       <div
-        className={`absolute inset-0 transition-opacity duration-700
-          ${watchMode ? 'opacity-100 z-20' : 'opacity-40 z-0'}
-        `}
+        className={`absolute inset-0 transition-opacity duration-700 ${
+          watchMode ? 'opacity-100 z-20' : 'opacity-40 z-0'
+        }`}
       >
         <div id="twitch-embed" className="w-full h-full" />
       </div>
-
-      {/* FALLBACK VIDEO */}
-      {!isLive && (
-        <video
-          src="/video.mov"
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover z-0"
-        />
-      )}
-
-      {/* CANVAS */}
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 z-10 mix-blend-screen opacity-40"
-      />
 
       {/* LOGO */}
       {!watchMode && (
@@ -124,11 +77,7 @@ export default function LandingPage() {
       {/* PLAYER */}
       {!watchMode && (
         <div className="fixed bottom-0 left-0 right-0 md:left-4 md:bottom-4 z-50">
-          <LandingAudioPlayer
-            isLive={isLive}
-            onWatchVideo={openVideo}
-            onCloseVideo={closeVideo}
-          />
+          <LandingAudioPlayer onWatchVideo={openVideo} onCloseVideo={closeVideo} />
         </div>
       )}
 

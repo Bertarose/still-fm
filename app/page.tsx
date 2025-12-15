@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 import LandingAudioPlayer from './components/LandingAudioPlayer'; 
 import { usePlayer } from './context/PlayerContext';
@@ -15,7 +14,7 @@ export default function LandingPage() {
   const playerInitialized = useRef(false);
   const twitchPlayerRef = useRef<any>(null);
 
-  // --- 1. INITIALISATION DU PLAYER TWITCH ---
+  // INITIALISATION TWITCH PLAYER
   useEffect(() => {
     if (playerInitialized.current) return;
 
@@ -30,9 +29,6 @@ export default function LandingPage() {
             parents.push(window.location.hostname);
         }
 
-        console.log('🔗 Parents autorisés pour Twitch:', parents);
-        console.log('💻 Hôte actuel:', window.location.hostname);
-
         const options = {
           width: '100%',
           height: '100%',
@@ -46,33 +42,27 @@ export default function LandingPage() {
         try {
             const player = new (window as any).Twitch.Player('twitch-embed', options);
             twitchPlayerRef.current = player;
-            console.log('☑️ Twitch Player instance créée.');
 
             player.addEventListener((window as any).Twitch.Player.READY, () => {
-              console.log('✅ Twitch player ready.');
               player.setMuted(true);
-              
               const playPromise = player.play();
               if (playPromise && typeof playPromise.catch === 'function') {
-                  playPromise.catch((err: any) => console.warn('Twitch play failed (autoplay restriction):', err));
+                  playPromise.catch((err: any) => console.warn('Twitch autoplay blocked:', err));
               }
             });
 
             player.addEventListener((window as any).Twitch.Player.ONLINE, () => {
-              console.log('🔴 Twitch est ONLINE (via Player Event).');
               setIsLive(true);
             });
             
             player.addEventListener((window as any).Twitch.Player.OFFLINE, () => {
-              console.log('⚫ Twitch est OFFLINE (via Player Event).');
+              setIsLive(false);
             });
 
         } catch (error) {
-            console.error('❌ ERREUR FATALE: La création de Twitch.Player a échoué. Vérifiez le domaine "parent".', error);
+            console.error('Twitch Player creation failed:', error);
             playerInitialized.current = false;
         }
-      } else {
-        console.log('⚠️ Attente: Le script Twitch ou l\'élément DOM #twitch-embed n\'est pas prêt.');
       }
     };
 
@@ -89,14 +79,13 @@ export default function LandingPage() {
       initTwitchPlayer(); 
       setTimeout(() => {
           if (!playerInitialized.current) {
-              console.log('🔄 Tentative de réinitialisation Twitch après 500ms...');
               initTwitchPlayer();
           }
       }, 500);
     }
   }, []);
 
-  // --- 2. VÉRIFICATION API ---
+  // VÉRIFICATION API TWITCH
   useEffect(() => {
     const checkTwitchViaAPI = async () => {
       try {
@@ -109,7 +98,7 @@ export default function LandingPage() {
           setIsLive(true);
         }
       } catch (e) {
-        console.error('❌ Erreur lors de la vérification de l\'API Twitch:', e);
+        console.error('Twitch API check error:', e);
       }
     };
 
@@ -121,41 +110,45 @@ export default function LandingPage() {
     };
   }, []);
 
-  // --- 3. GESTION DU MODE WATCH STREAM ---
-  const handleWatchStream = () => {
-    console.log('🎬 Activating watch mode');
-
-    if (!twitchPlayerRef.current) {
-        console.error('❌ Twitch Player non initialisé. Impossible d\'activer le mode Watch. Vérifiez les logs "parent".');
+  // EXPOSER handleWatchStream AU PLAYER
+  useEffect(() => {
+    (window as any).openTwitchWatch = () => {
+      if (!twitchPlayerRef.current) {
+        console.error('Twitch Player not initialized');
         return;
-    }
-    
-    if (isRadioPlaying) { 
+      }
+      
+      if (isRadioPlaying) { 
         toggleRadio();
-        console.log('Stopping radio...');
-    }
-    
-    twitchPlayerRef.current.setMuted(false);
-    twitchPlayerRef.current.setVolume(1.0);
-    
-    const userPlayPromise = twitchPlayerRef.current.play();
-    if (userPlayPromise && typeof userPlayPromise.catch === 'function') {
-        userPlayPromise.catch((err: any) => console.warn('Twitch play failed (user interaction failed):', err));
-    }
-    
-    setWatchMode(true);
-    console.log('✅ Watch mode activé.');
-  };
+      }
+      
+      twitchPlayerRef.current.setMuted(false);
+      twitchPlayerRef.current.setVolume(1.0);
+      
+      const userPlayPromise = twitchPlayerRef.current.play();
+      if (userPlayPromise && typeof userPlayPromise.catch === 'function') {
+        userPlayPromise.catch((err: any) => console.warn('Twitch play failed:', err));
+      }
+      
+      setWatchMode(true);
+    };
+
+    (window as any).closeTwitchWatch = () => {
+      setWatchMode(false);
+      if (twitchPlayerRef.current) {
+        twitchPlayerRef.current.setMuted(true);
+      }
+    };
+  }, [isRadioPlaying, toggleRadio]);
 
   const handleCloseWatch = () => {
-    console.log('⏹️ Closing watch mode');
     setWatchMode(false);
     if (twitchPlayerRef.current) {
       twitchPlayerRef.current.setMuted(true);
     }
   };
 
-  // --- 4. ANIMATION ÉTOILES ---
+  // ANIMATION ÉTOILES
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -213,7 +206,6 @@ export default function LandingPage() {
     return () => window.removeEventListener('resize', resizeCanvas);
   }, []);
 
-  // --- 5. RENDU JSX ---
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
 
@@ -252,7 +244,7 @@ export default function LandingPage() {
       {/* Dark Overlay */}
       <div className={`absolute inset-0 bg-black/30 z-3 pointer-events-none transition-opacity duration-500 ${watchMode ? 'opacity-0' : 'opacity-100'}`} />
 
-      {/* CONTENU PRINCIPAL */}
+      {/* ✅ CONTENU MINIMAL - JUSTE LOGO + STATUS */}
       <div className={`relative z-10 flex flex-col items-center justify-center h-full text-white font-mono pb-20 transition-all duration-500 ${watchMode ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 scale-100'}`}>
         
         {/* INDICATEUR LIVE */}
@@ -275,39 +267,17 @@ export default function LandingPage() {
           />
         </div>
 
-        {/* BOUTONS */}
-        <div className="flex flex-col md:flex-row gap-6 items-center">
-            
-          <Link 
-            href="/home"
-            className="group relative overflow-hidden"
-          >
-            <div className="border border-white px-12 py-4 text-xs uppercase tracking-[0.2em] transition-all duration-500 hover:bg-white hover:text-black backdrop-blur-md bg-black/30 font-bold">
-                Enter Site
-            </div>
-          </Link>
-
-          {isLive && (
-            <button 
-              onClick={handleWatchStream}
-              className="border border-green-500 text-green-400 px-12 py-4 text-xs uppercase tracking-[0.2em] transition-all duration-500 hover:bg-green-500 hover:text-black backdrop-blur-md bg-black/30 font-bold animate-pulse hover:animate-none cursor-pointer z-10"
-            >
-              Watch Stream
-            </button>
-          )}
-        </div>
-
         <p className="mt-8 text-[10px] uppercase tracking-widest text-gray-400 opacity-70">
           Montreal Underground Radio
         </p>
       </div>
 
-      {/* AUDIO PLAYER */}
+      {/* ✅ PLAYER - CONTROL CENTER COMPLET */}
       <div className={`fixed bottom-4 left-4 z-50 transition-opacity duration-500 ${watchMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-        <LandingAudioPlayer />
+        <LandingAudioPlayer isLive={isLive} />
       </div>
 
-      {/* BOUTON RETOUR */}
+      {/* BOUTON RETOUR WATCH MODE */}
       {watchMode && (
         <button 
           onClick={handleCloseWatch}

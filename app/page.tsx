@@ -81,7 +81,7 @@ export default function LandingPage() {
   return (
     <div className="relative w-full h-screen bg-black overflow-hidden">
 
-      {/* INSTALL APP - TOP RIGHT */}
+      {/* INSTALL APP - FIXE EN HAUT À DROITE */}
       <div className="fixed top-4 right-4 z-50">
         <InstallPWA />
       </div>
@@ -129,7 +129,7 @@ export default function LandingPage() {
 
       {/* PLAYER */}
       {!watchMode && (
-        <div className="fixed bottom-0 left-0 right-0 md:left-4 md:bottom-4 z-50">
+        <div className="fixed bottom-0 left-0 right-0 md:left-4 md:bottom-4 z-40">
           <LandingAudioPlayer
             isLive={isLive}
             onWatchVideo={openVideo}

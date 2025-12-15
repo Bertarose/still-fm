@@ -81,22 +81,20 @@ export default function LandingPage() {
   return (
     <div className="relative w-full h-screen bg-black overflow-hidden">
 
-      {/* INSTALL APP - FIXE EN HAUT À DROITE */}
-      <div className="fixed top-4 right-4 z-50">
-        <InstallPWA />
-      </div>
+      {/* INSTALL APP BUTTON */}
+      <InstallPWA />
 
       {/* TWITCH */}
-      <div
-        className={`absolute inset-0 transition-opacity duration-700
-          ${watchMode ? 'opacity-100 z-20' : 'opacity-40 z-0'}
-        `}
-      >
-        <div id="twitch-embed" className="w-full h-full" />
-      </div>
+      {isLive && watchMode && (
+        <div
+          className="absolute inset-0 transition-opacity duration-700 opacity-100 z-20"
+        >
+          <div id="twitch-embed" className="w-full h-full" />
+        </div>
+      )}
 
       {/* FALLBACK VIDEO */}
-      {!isLive && (
+      {!isLive && !watchMode && (
         <video
           src="/video.mov"
           autoPlay
@@ -110,12 +108,12 @@ export default function LandingPage() {
       {/* CANVAS */}
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 z-10 mix-blend-screen opacity-40 pointer-events-none"
+        className="absolute inset-0 z-10 mix-blend-screen opacity-40"
       />
 
       {/* LOGO */}
       {!watchMode && (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-white pointer-events-none">
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-white">
           <Image
             src="/Stillfm logo-white.png"
             alt="Still FM"
@@ -129,7 +127,7 @@ export default function LandingPage() {
 
       {/* PLAYER */}
       {!watchMode && (
-        <div className="fixed bottom-0 left-0 right-0 md:left-4 md:bottom-4 z-40">
+        <div className="fixed bottom-0 left-0 right-0 md:left-4 md:bottom-4 z-50">
           <LandingAudioPlayer
             isLive={isLive}
             onWatchVideo={openVideo}

@@ -1,5 +1,6 @@
 // app/layout.tsx
 import { PlayerProvider } from './context/PlayerContext';
+import { LiveStatusProvider } from './context/LiveStatusContext';
 import './globals.css';
 import InstallPWA from './components/InstallPWA'; // Import conservé
 
@@ -37,27 +38,29 @@ export default function RootLayout({
   return (
     <html lang="en">
       {/* 🛑 LA BALISE <head> MANUELLE DOIT ÊTRE SUPPRIMÉE DE CET ENDROIT ! */}
-      <body>
-        <PlayerProvider>
-          {children}
-        </PlayerProvider>
-        <InstallPWA /> {/* Composant conservé dans le <body> */}
-        
-        {/* Service Worker Registration - Conservé dans le <body> */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('SW registered:', reg))
-                    .catch(err => console.log('SW registration failed:', err));
-                });
-              }
-            `,
-          }}
-        />
-      </body>
+ <body>
+  <LiveStatusProvider>
+    <PlayerProvider>
+      {children}
+    </PlayerProvider>
+  </LiveStatusProvider>
+
+  <InstallPWA />
+
+  <script
+    dangerouslySetInnerHTML={{
+      __html: `
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+              .then(reg => console.log('SW registered:', reg))
+              .catch(err => console.log('SW registration failed:', err));
+          });
+        }
+      `,
+    }}
+  />
+</body>
     </html>
   );
 }

@@ -7,48 +7,22 @@ import { usePlayer } from '@/app/context/PlayerContext';
 type Mode = 'video' | 'radio';
 
 interface Props {
-  isLive: boolean;
   onWatchVideo: () => void;
   onCloseVideo: () => void;
 }
 
-export default function LandingAudioPlayer({
-  isLive,
-  onWatchVideo,
-  onCloseVideo,
-}: Props) {
-  const { isPlaying, play, pause } = usePlayer();
+export default function LandingAudioPlayer({ onWatchVideo, onCloseVideo }: Props) {
+  const { isPlaying, togglePlay, isLive } = usePlayer();
   const [mode, setMode] = useState<Mode>('video');
 
-  // 🔁 Synchronisation mode
   useEffect(() => {
     if (mode === 'video') {
-      pause();
       onWatchVideo();
-    }
-    if (mode === 'radio') {
+    } else if (mode === 'radio') {
       onCloseVideo();
-      play();
+      if (!isPlaying) togglePlay();
     }
-  }, [mode, play, pause, onWatchVideo, onCloseVideo]);
-
-  const statusText = () => {
-    if (mode === 'video') return isLive ? 'Streaming Online 🔴' : 'Stream Offline ⚫';
-    return isPlaying ? '📻 Playing live radio' : '📻 Radio';
-  };
-
-  const mainButtonLabel = () => {
-    if (mode === 'video') return isLive ? 'Watch Live' : 'Offline';
-    return isPlaying ? 'Pause Radio' : 'Listen Live';
-  };
-
-  const handleMainAction = () => {
-    if (mode === 'video') {
-      if (isLive) onWatchVideo();
-    } else {
-      isPlaying ? pause() : play();
-    }
-  };
+  }, [mode]);
 
   return (
     <div className="
@@ -106,23 +80,39 @@ export default function LandingAudioPlayer({
 
         {/* ACTION PRINCIPALE */}
         <div className="mb-3">
-          <button
-            onClick={handleMainAction}
-            disabled={mode === 'video' && !isLive}
-            className="
-              w-full py-3 border border-white/50
-              text-xs uppercase tracking-widest
-              hover:bg-white hover:text-black
-              transition disabled:opacity-30
-            "
-          >
-            {mainButtonLabel()}
-          </button>
+          {mode === 'video' ? (
+            <button
+              onClick={onWatchVideo}
+              disabled={!isLive}
+              className="
+                w-full py-3 border border-white/50
+                text-xs uppercase tracking-widest
+                hover:bg-white hover:text-black
+                transition disabled:opacity-30
+              "
+            >
+              {isLive ? 'Watch Live' : 'Offline'}
+            </button>
+          ) : (
+            <button
+              onClick={togglePlay}
+              className="
+                w-full py-3 border border-white/50
+                text-xs uppercase tracking-widest
+                hover:bg-white hover:text-black
+                transition
+              "
+            >
+              {isPlaying ? 'Pause Radio' : 'Listen Live'}
+            </button>
+          )}
         </div>
 
         {/* STATUS */}
         <div className="text-center text-[10px] text-white/60 mb-4">
-          {statusText()}
+          {mode === 'video'
+            ? isLive ? '🔴 Live on air' : '⚫ Offline'
+            : isPlaying ? '📻 Playing live radio' : '📻 Radio'}
         </div>
 
         {/* CTA ENTER */}

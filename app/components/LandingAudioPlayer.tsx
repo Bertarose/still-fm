@@ -16,7 +16,7 @@ export default function LandingAudioPlayer({
   onWatchVideo,
   onCloseVideo,
 }: Props) {
-  const { isPlaying, playShow, togglePlay } = usePlayer();
+  const { isPlaying, togglePlay } = usePlayer();
   const [mode, setMode] = useState<Mode>('radio');
 
   // 🔁 Synchronisation mode
@@ -26,7 +26,7 @@ export default function LandingAudioPlayer({
     } else {
       onCloseVideo();
     }
-  }, [mode]);
+  }, [mode, onWatchVideo, onCloseVideo]);
 
   return (
     <div className="
@@ -38,23 +38,23 @@ export default function LandingAudioPlayer({
       select-none
       z-40
     ">
-      <div className="p-4">
+      <div className="p-5 md:p-6">
 
-        {/* TITRE */}
-        <div className="mb-4 text-center pointer-events-none">
-          <div className="text-[9px] uppercase tracking-[0.25em] text-white/40">
+        {/* TITRE - Textes plus gros */}
+        <div className="mb-5 text-center pointer-events-none">
+          <div className="text-[10px] md:text-xs uppercase tracking-[0.25em] text-white/40 mb-1">
             Still FM
           </div>
-          <div className="text-sm font-bold text-white">
+          <div className="text-base md:text-lg font-bold text-white">
             Montreal Underground Radio
           </div>
         </div>
 
         {/* TOGGLE */}
-        <div className="flex items-center justify-between mb-4 px-2">
+        <div className="flex items-center justify-between mb-5 px-2">
           <button
             onClick={() => setMode('video')}
-            className={`text-xs uppercase tracking-wider px-3 py-2 rounded transition
+            className={`text-xs md:text-sm uppercase tracking-wider px-4 py-2 rounded transition
               ${mode === 'video'
                 ? 'bg-white text-black font-bold'
                 : 'text-white/50 hover:text-white'}
@@ -65,20 +65,20 @@ export default function LandingAudioPlayer({
 
           {/* SWITCH */}
           <div
-            className="relative w-14 h-7 flex-shrink-0"
+            className="relative w-16 h-8 flex-shrink-0 cursor-pointer"
             onClick={() => setMode(mode === 'video' ? 'radio' : 'video')}
           >
             <div className="absolute inset-0 bg-white/20 rounded-full" />
             <div
-              className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform
-                ${mode === 'radio' ? 'translate-x-7' : 'translate-x-1'}
+              className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-transform shadow-lg
+                ${mode === 'radio' ? 'translate-x-8' : 'translate-x-1'}
               `}
             />
           </div>
 
           <button
             onClick={() => setMode('radio')}
-            className={`text-xs uppercase tracking-wider px-3 py-2 rounded transition
+            className={`text-xs md:text-sm uppercase tracking-wider px-4 py-2 rounded transition
               ${mode === 'radio'
                 ? 'bg-white text-black font-bold'
                 : 'text-white/50 hover:text-white'}
@@ -89,54 +89,54 @@ export default function LandingAudioPlayer({
         </div>
 
         {/* ACTION PRINCIPALE */}
-        <div className="mb-3">
+        <div className="mb-4">
           {mode === 'video' ? (
             <button
               onClick={onWatchVideo}
               disabled={!isLive}
               className="
-                w-full py-3 border border-white/50
-                text-xs uppercase tracking-widest
+                w-full py-3 md:py-4 border border-white/50
+                text-xs md:text-sm uppercase tracking-widest font-bold
                 hover:bg-white hover:text-black
-                transition disabled:opacity-30
+                transition disabled:opacity-30 disabled:cursor-not-allowed
               "
             >
-              {isLive ? 'Watch Live' : 'Offline'}
+              {isLive ? 'Watch Live Stream' : 'Stream Offline'}
             </button>
           ) : (
             <button
               onClick={togglePlay}
               className="
-                w-full py-3 border border-white/50
-                text-xs uppercase tracking-widest
+                w-full py-3 md:py-4 border border-white/50
+                text-xs md:text-sm uppercase tracking-widest font-bold
                 hover:bg-white hover:text-black
                 transition
               "
             >
-              {isPlaying ? 'Pause Radio' : 'Listen Live'}
+              {isPlaying ? 'Pause Radio' : 'Play Live Radio'}
             </button>
           )}
         </div>
 
-        {/* STATUS */}
-        <div className="text-center text-[10px] text-white/60 mb-4">
+        {/* STATUS - Plus visible */}
+        <div className="text-center text-xs md:text-sm text-white/60 mb-5 font-medium">
           {mode === 'video'
-            ? isLive ? '🔴 Live on air' : '⚫ Offline'
-            : isPlaying ? '📻 Playing live radio' : '📻 Radio'}
+            ? isLive ? '🔴 Live Stream Active' : '⚫ Stream Offline'
+            : isPlaying ? '📻 Playing Live' : '📻 Radio Ready'}
         </div>
 
-        {/* CTA ENTER */}
+        {/* CTA ENTER - Texte amélioré */}
         <a
           href="/home"
           className="
             block w-full text-center
-            py-3 border border-white/30
-            text-xs uppercase tracking-[0.25em]
+            py-3 md:py-4 border border-white/30
+            text-xs md:text-sm uppercase tracking-[0.25em] font-bold
             text-white/70 hover:bg-white hover:text-black
             transition
           "
         >
-          Enter Archive →
+          {isLive ? 'Explore Shows & Archive →' : 'Browse Shows & Archive →'}
         </a>
       </div>
     </div>

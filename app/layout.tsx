@@ -1,16 +1,17 @@
 // app/layout.tsx
 import { PlayerProvider } from './context/PlayerContext';
 import './globals.css';
-// MODIFICATIONS À AJOUTER DANS app/layout.tsx
-import InstallPWA from './components/InstallPWA'; // Import ajouté
+import InstallPWA from './components/InstallPWA'; // Import conservé
 
-// Métadonnées mises à jour
+// Métadonnées Mises à Jour (utilisées par Next.js pour générer le <head>)
 export const metadata = {
   title: 'Still FM - Underground Radio Montreal',
   description: 'Independent underground radio station from Montreal',
-  manifest: '/manifest.json', // ← AJOUTÉ
-  themeColor: '#000000',      // ← AJOUTÉ
-  appleWebApp: {              // ← BLOC AJOUTÉ
+  
+  // Paramètres PWA directement gérés par Next.js
+  manifest: '/manifest.json', 
+  themeColor: '#000000',      
+  appleWebApp: {              
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'Still FM'
@@ -20,7 +21,11 @@ export const metadata = {
     initialScale: 1,
     maximumScale: 1,
     userScalable: false
-  }
+  },
+  // Utilisation de l'objet 'icons' pour gérer l'icône Apple Touch
+  icons: {
+    apple: '/icon-192.png',
+  },
 };
 
 
@@ -31,22 +36,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        {/* PWA Meta Tags - AJOUTÉES */}
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#000000" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="Still FM" />
-      </head>
+      {/* 🛑 LA BALISE <head> MANUELLE DOIT ÊTRE SUPPRIMÉE DE CET ENDROIT ! */}
       <body>
         <PlayerProvider>
           {children}
         </PlayerProvider>
-        <InstallPWA /> {/* ← COMPOSANT AJOUTÉ */}
+        <InstallPWA /> {/* Composant conservé dans le <body> */}
         
-        {/* Service Worker Registration - SCRIPT AJOUTÉ */}
+        {/* Service Worker Registration - Conservé dans le <body> */}
         <script
           dangerouslySetInnerHTML={{
             __html: `

@@ -30,7 +30,25 @@ export default function LandingAudioPlayer({
       onCloseVideo();
       play();
     }
-  }, [mode]);
+  }, [mode, play, pause, onWatchVideo, onCloseVideo]);
+
+  const statusText = () => {
+    if (mode === 'video') return isLive ? 'Streaming Online 🔴' : 'Stream Offline ⚫';
+    return isPlaying ? '📻 Playing live radio' : '📻 Radio';
+  };
+
+  const mainButtonLabel = () => {
+    if (mode === 'video') return isLive ? 'Watch Live' : 'Offline';
+    return isPlaying ? 'Pause Radio' : 'Listen Live';
+  };
+
+  const handleMainAction = () => {
+    if (mode === 'video') {
+      if (isLive) onWatchVideo();
+    } else {
+      isPlaying ? pause() : play();
+    }
+  };
 
   return (
     <div className="
@@ -88,39 +106,23 @@ export default function LandingAudioPlayer({
 
         {/* ACTION PRINCIPALE */}
         <div className="mb-3">
-          {mode === 'video' ? (
-            <button
-              onClick={onWatchVideo}
-              disabled={!isLive}
-              className="
-                w-full py-3 border border-white/50
-                text-xs uppercase tracking-widest
-                hover:bg-white hover:text-black
-                transition disabled:opacity-30
-              "
-            >
-              {isLive ? 'Watch Live' : 'Offline'}
-            </button>
-          ) : (
-            <button
-              onClick={isPlaying ? pause : play}
-              className="
-                w-full py-3 border border-white/50
-                text-xs uppercase tracking-widest
-                hover:bg-white hover:text-black
-                transition
-              "
-            >
-              {isPlaying ? 'Pause Radio' : 'Listen Live'}
-            </button>
-          )}
+          <button
+            onClick={handleMainAction}
+            disabled={mode === 'video' && !isLive}
+            className="
+              w-full py-3 border border-white/50
+              text-xs uppercase tracking-widest
+              hover:bg-white hover:text-black
+              transition disabled:opacity-30
+            "
+          >
+            {mainButtonLabel()}
+          </button>
         </div>
 
         {/* STATUS */}
         <div className="text-center text-[10px] text-white/60 mb-4">
-          {mode === 'video'
-            ? isLive ? '🔴 Live on air' : '⚫ Offline'
-            : isPlaying ? '📻 Playing live radio' : '📻 Radio'}
+          {statusText()}
         </div>
 
         {/* CTA ENTER */}

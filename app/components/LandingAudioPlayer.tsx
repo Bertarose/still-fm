@@ -7,20 +7,27 @@ import { usePlayer } from '@/app/context/PlayerContext';
 type Mode = 'video' | 'radio';
 
 interface Props {
+  isLive: boolean;
   onWatchVideo: () => void;
   onCloseVideo: () => void;
 }
 
-export default function LandingAudioPlayer({ onWatchVideo, onCloseVideo }: Props) {
-  const { isPlaying, togglePlay, isLive } = usePlayer();
+export default function LandingAudioPlayer({
+  isLive,
+  onWatchVideo,
+  onCloseVideo,
+}: Props) {
+  const { isPlaying, play, pause } = usePlayer();
   const [mode, setMode] = useState<Mode>('video');
 
+  // 🔁 Synchronisation mode
   useEffect(() => {
     if (mode === 'video') {
+      pause();
       onWatchVideo();
     } else if (mode === 'radio') {
       onCloseVideo();
-      if (!isPlaying) togglePlay();
+      play();
     }
   }, [mode]);
 
@@ -31,6 +38,7 @@ export default function LandingAudioPlayer({ onWatchVideo, onCloseVideo }: Props
       border-t md:border border-white/20
       md:rounded-xl shadow-2xl
       font-mono
+      relative z-30
     ">
       <div className="p-4">
 
@@ -45,10 +53,10 @@ export default function LandingAudioPlayer({ onWatchVideo, onCloseVideo }: Props
         </div>
 
         {/* TOGGLE */}
-        <div className="flex items-center justify-between mb-4 px-2">
+        <div className="flex items-center justify-between mb-4 px-2 relative z-20">
           <button
             onClick={() => setMode('video')}
-            className={`text-xs uppercase tracking-wider px-3 py-2 rounded transition
+            className={`text-xs uppercase tracking-wider px-3 py-2 rounded transition cursor-pointer
               ${mode === 'video'
                 ? 'bg-white text-black font-bold'
                 : 'text-white/50 hover:text-white'}
@@ -57,10 +65,10 @@ export default function LandingAudioPlayer({ onWatchVideo, onCloseVideo }: Props
             Live Video
           </button>
 
-          <div className="relative w-14 h-7">
-            <div className="absolute inset-0 bg-white/20 rounded-full" />
+          <div className="relative w-14 h-7 flex-shrink-0">
+            <div className="absolute inset-0 bg-white/20 rounded-full pointer-events-none" />
             <div
-              className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform
+              className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform pointer-events-auto
                 ${mode === 'radio' ? 'translate-x-7' : 'translate-x-1'}
               `}
             />
@@ -68,7 +76,7 @@ export default function LandingAudioPlayer({ onWatchVideo, onCloseVideo }: Props
 
           <button
             onClick={() => setMode('radio')}
-            className={`text-xs uppercase tracking-wider px-3 py-2 rounded transition
+            className={`text-xs uppercase tracking-wider px-3 py-2 rounded transition cursor-pointer
               ${mode === 'radio'
                 ? 'bg-white text-black font-bold'
                 : 'text-white/50 hover:text-white'}
@@ -88,19 +96,19 @@ export default function LandingAudioPlayer({ onWatchVideo, onCloseVideo }: Props
                 w-full py-3 border border-white/50
                 text-xs uppercase tracking-widest
                 hover:bg-white hover:text-black
-                transition disabled:opacity-30
+                transition disabled:opacity-30 cursor-pointer
               "
             >
               {isLive ? 'Watch Live' : 'Offline'}
             </button>
           ) : (
             <button
-              onClick={togglePlay}
+              onClick={isPlaying ? pause : play}
               className="
                 w-full py-3 border border-white/50
                 text-xs uppercase tracking-widest
                 hover:bg-white hover:text-black
-                transition
+                transition cursor-pointer
               "
             >
               {isPlaying ? 'Pause Radio' : 'Listen Live'}
@@ -123,7 +131,7 @@ export default function LandingAudioPlayer({ onWatchVideo, onCloseVideo }: Props
             py-3 border border-white/30
             text-xs uppercase tracking-[0.25em]
             text-white/70 hover:bg-white hover:text-black
-            transition
+            transition cursor-pointer
           "
         >
           Enter Archive →

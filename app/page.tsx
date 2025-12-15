@@ -286,21 +286,7 @@ return (
   </div>
 
   {/* ✅ PLAYER - CONTROL CENTER COMPLET */}
-  <div className={`fixed bottom-4 left-4 z-50 transition-opacity duration-500 ${watchMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-    <LandingAudioPlayer isLive={isLive} />
-  </div>
 
-  {/* BOUTON RETOUR WATCH MODE */}
-  {watchMode && (
-    <button 
-      onClick={handleCloseWatch}
-      className="fixed top-6 right-6 z-[100] border border-white/50 text-white/80 px-6 py-2 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all cursor-pointer"
-    >
-      Close Stream X
-    </button>
-  )}
-</div>
-```
 
 );
 }

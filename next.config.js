@@ -15,9 +15,9 @@ const nextConfig = {
     // =======================================================
     // === AJOUT POUR DÉSACTIVER TURBOPACK (SOLUTION DE L'ERREUR) ===
     // =======================================================
-    // Cela devrait forcer l'utilisation de Webpack, que next-pwa utilise.
     compiler: {
-        turbopack: false,
+        // Cette ligne force l'utilisation de Webpack au lieu de Turbopack.
+        turbopack: false, 
     },
     // =======================================================
 

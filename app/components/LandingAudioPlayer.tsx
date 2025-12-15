@@ -1,196 +1,252 @@
-'use client';
+‘use client’;
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from ‘react’;
+import Link from ‘next/link’;
 
-// ✅ FIX: Use env variable instead of hardcoded localhost
-const RADIO_STREAM_URL = process.env.NEXT_PUBLIC_RADIO_URL || '';
-const RADIO_ENABLED = !!RADIO_STREAM_URL; // Auto-disable si pas d'URL
+const RADIO_STREAM_URL = process.env.NEXT_PUBLIC_RADIO_URL || ‘’;
+const RADIO_ENABLED = !!RADIO_STREAM_URL;
 
-export default function LandingAudioPlayer() {
-  const [source, setSource] = useState<'twitch' | 'radio'>('twitch');
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isTwitchLive, setIsTwitchLive] = useState(false);
-  const [isRadioOnline, setIsRadioOnline] = useState(false);
-  
-  const radioRef = useRef<HTMLAudioElement>(null);
+interface LandingAudioPlayerProps {
+isLive: boolean;
+}
 
-  // Vérifier si Twitch est live
-  useEffect(() => {
-    const checkTwitch = async () => {
-      try {
-        const res = await fetch('https://decapi.me/twitch/uptime/bertarose');
-        const text = await res.text();
-        setIsTwitchLive(!(text.includes('offline') || text.includes('error')));
-      } catch {
-        setIsTwitchLive(false);
-      }
-    };
-    checkTwitch();
-    const interval = setInterval(checkTwitch, 60000);
-    return () => clearInterval(interval);
-  }, []);
+export default function LandingAudioPlayer({ isLive }: LandingAudioPlayerProps) {
+const [source, setSource] = useState<‘twitch’ | ‘radio’>(‘twitch’);
+const [isPlaying, setIsPlaying] = useState(false);
+const [isRadioOnline, setIsRadioOnline] = useState(false);
+const [isCheckingTwitch, setIsCheckingTwitch] = useState(true);
 
-  // ✅ FIX: Only check radio if enabled
-  useEffect(() => {
-    if (!RADIO_ENABLED) {
-      setIsRadioOnline(false);
-      return;
-    }
+const radioRef = useRef<HTMLAudioElement>(null);
 
-    const checkRadio = async () => {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-        const res = await fetch(RADIO_STREAM_URL, { 
-          method: 'HEAD',
-          signal: controller.signal 
-        });
-        clearTimeout(timeoutId);
-        setIsRadioOnline(res.ok);
-      } catch {
-        setIsRadioOnline(false);
-      }
-    };
-    checkRadio();
-    const interval = setInterval(checkRadio, 30000);
-    return () => clearInterval(interval);
-  }, []);
+// Marquer comme vérifié après un court délai
+useEffect(() => {
+const timer = setTimeout(() => {
+setIsCheckingTwitch(false);
+}, 1000);
+return () => clearTimeout(timer);
+}, []);
 
-  // Switch entre Twitch et Radio
-  const handleSwitch = (toRadio: boolean) => {
-    setSource(toRadio ? 'radio' : 'twitch');
-    setIsPlaying(false);
-    if (radioRef.current) {
-      radioRef.current.pause();
-    }
-  };
+// Vérifier si radio online (si activée)
+useEffect(() => {
+if (!RADIO_ENABLED) {
+setIsRadioOnline(false);
+return;
+}
 
-  // Toggle Play/Pause pour Radio
-  const handleToggle = () => {
-    if (source === 'radio' && radioRef.current) {
-      if (isPlaying) {
-        radioRef.current.pause();
-        setIsPlaying(false);
-      } else {
-        radioRef.current.play().catch(console.error);
-        setIsPlaying(true);
-      }
-    }
-  };
-
-  // ✅ IMPROVED: Clearer status messages
-  const getStatusMessage = () => {
-    if (source === 'twitch') {
-      return isTwitchLive 
-        ? '🔴 Live - Use "Watch Stream" button above' 
-        : '⚫ Stream offline';
-    } else {
-      return isRadioOnline 
-        ? '📻 Radio live' 
-        : '⚠ Radio offline';
-    }
-  };
-
-  const currentName = source === 'twitch'
-    ? 'Still FM - Twitch Stream'
-    : 'Still FM - Radio Stream';
-
-  // ✅ Don't show player if Twitch live (use Watch Stream button instead)
-  if (source === 'twitch' && isTwitchLive) {
-    return null;
+```
+const checkRadio = async () => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(RADIO_STREAM_URL, { 
+      method: 'HEAD',
+      signal: controller.signal 
+    });
+    clearTimeout(timeoutId);
+    setIsRadioOnline(res.ok);
+  } catch {
+    setIsRadioOnline(false);
   }
+};
+checkRadio();
+const interval = setInterval(checkRadio, 30000);
+return () => clearInterval(interval);
+```
 
-  // ✅ Don't show player if no radio and Twitch offline
-  if (!RADIO_ENABLED && !isTwitchLive) {
-    return null;
-  }
+}, []);
 
-  return (
-    <>
-      {/* Audio HTML5 pour la radio */}
-      {RADIO_ENABLED && (
-        <audio ref={radioRef} src={RADIO_STREAM_URL} preload="none" className="hidden" />
-      )}
+// Switch entre Twitch et Radio
+const handleSwitch = (toRadio: boolean) => {
+setSource(toRadio ? ‘radio’ : ‘twitch’);
+setIsPlaying(false);
+if (radioRef.current) {
+radioRef.current.pause();
+}
+};
 
-      {/* Player UI - ✅ SIMPLIFIED */}
-      <div className="backdrop-blur-md bg-black/95 border-t md:border border-white/20 hover:border-white/40 transition-all duration-300 font-mono w-full md:w-96 md:rounded-lg overflow-hidden">
-        
-        <div className="p-3 md:p-4">
-          
-          {/* Titre */}
-          <div className="mb-2">
-            <div className="text-[8px] md:text-[9px] text-white/50 uppercase tracking-[0.15em] mb-1">
-              Audio Stream
-            </div>
-            <div className="text-[10px] md:text-[11px] text-white leading-tight line-clamp-1">
-              {currentName}
-            </div>
-          </div>
+// WATCH TWITCH
+const handleWatchTwitch = () => {
+if ((window as any).openTwitchWatch) {
+(window as any).openTwitchWatch();
+}
+};
 
-          {/* Contrôles */}
-          <div className="flex items-center gap-3 mb-2">
-            
-            {/* Bouton Play/Pause (seulement pour Radio) */}
-            {source === 'radio' && RADIO_ENABLED && (
-              <button
-                onClick={handleToggle}
-                disabled={!isRadioOnline}
-                className="w-8 h-8 md:w-10 md:h-10 border border-white/40 hover:border-white hover:bg-white/10 transition-all flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
-              >
-                {isPlaying ? (
-                  // Pause
-                  <div className="flex gap-1">
-                    <div className="w-[2px] md:w-[3px] h-3 md:h-4 bg-white" />
-                    <div className="w-[2px] md:w-[3px] h-3 md:h-4 bg-white" />
-                  </div>
-                ) : (
-                  // Play
-                  <div className="w-0 h-0 border-l-[8px] md:border-l-[10px] border-l-white border-t-[6px] md:border-t-[7px] border-t-transparent border-b-[6px] md:border-b-[7px] border-b-transparent ml-[2px]" />
-                )}
-              </button>
-            )}
+// PLAY RADIO
+const handlePlayRadio = () => {
+if (radioRef.current) {
+if (isPlaying) {
+radioRef.current.pause();
+setIsPlaying(false);
+} else {
+radioRef.current.play().catch(console.error);
+setIsPlaying(true);
+}
+}
+};
 
-            {/* Status - ✅ CLEARER */}
-            <div className="flex-1 text-[9px] md:text-[10px] text-white/70">
-              {getStatusMessage()}
-            </div>
-          </div>
+// Status message
+const getStatusMessage = () => {
+if (source === ‘twitch’) {
+return isLive
+? ‘🔴 Live now’
+: ‘⚫ Stream offline’;
+} else {
+return isRadioOnline
+? ‘📻 Radio live’
+: (RADIO_ENABLED ? ‘⚠ Radio offline’ : ‘📻 Coming soon’);
+}
+};
 
-          {/* Switch Twitch/Radio - ✅ ONLY IF RADIO ENABLED */}
-          {RADIO_ENABLED && (
-            <div className="flex items-center justify-between pt-2 border-t border-white/10">
-              
-              {/* Twitch */}
-              <div className="flex items-center gap-1.5">
-                <div className={`w-1.5 h-1.5 rounded-full ${source === 'twitch' ? (isTwitchLive ? 'bg-purple-500 animate-pulse' : 'bg-purple-900') : 'bg-white/20'}`} />
-                <span className={`text-[9px] md:text-[10px] uppercase ${source === 'twitch' ? 'text-white font-bold' : 'text-white/40'}`}>
-                  Twitch
-                </span>
-              </div>
+const currentName = source === ‘twitch’
+? ‘Still FM - Live Stream’
+: ‘Still FM - Radio’;
 
-              {/* Toggle Switch */}
-              <label className="relative inline-flex items-center cursor-pointer mx-2">
-                <input
-                  type="checkbox"
-                  className="sr-only peer"
-                  checked={source === 'radio'}
-                  onChange={(e) => handleSwitch(e.target.checked)}
-                />
-                <div className="w-12 h-6 md:w-14 md:h-7 bg-white/20 rounded-full peer transition-all peer-checked:bg-white/30"></div>
-                <span className="absolute left-1 top-1 w-4 h-4 md:w-5 md:h-5 bg-white rounded-full shadow-lg transform transition-transform peer-checked:translate-x-6 md:peer-checked:translate-x-7"></span>
-              </label>
+// Ne rien afficher pendant check initial
+if (isCheckingTwitch) {
+return null;
+}
 
-              {/* Radio */}
-              <div className="flex items-center gap-1.5">
-                <span className={`text-[9px] md:text-[10px] uppercase ${source === 'radio' ? 'text-white font-bold' : 'text-white/40'}`}>
-                  Radio
-                </span>
-                <div className={`w-1.5 h-1.5 rounded-full ${source === 'radio' ? (isRadioOnline ? 'bg-green-400 animate-pulse' : 'bg-red-500') : 'bg-white/20'}`} />
-              </div>
-            </div>
-          )}
+const canInteract = source === ‘twitch’ ? isLive : (RADIO_ENABLED && isRadioOnline);
+
+return (
+<>
+{/* Audio HTML5 pour la radio */}
+{RADIO_ENABLED && (
+<audio ref={radioRef} src={RADIO_STREAM_URL} preload="none" className="hidden" />
+)}
+
+```
+  {/* ✅ PLAYER - CONTROL CENTER COMPLET */}
+  <div className="backdrop-blur-md bg-black/95 border border-white/20 hover:border-white/40 transition-all duration-300 font-mono w-full md:w-96 rounded-lg overflow-hidden shadow-2xl">
+    
+    <div className="p-4">
+      
+      {/* Titre */}
+      <div className="mb-3">
+        <div className="text-[9px] text-white/50 uppercase tracking-[0.15em] mb-1">
+          {source === 'twitch' ? 'Live Stream' : 'Radio Stream'}
+        </div>
+        <div className="text-[11px] text-white leading-tight font-bold">
+          {currentName}
         </div>
       </div>
-    </>
-  );
+
+      {/* ✅ BOUTON PRINCIPAL - WATCH ou PLAY */}
+      <div className="mb-3">
+        {source === 'twitch' ? (
+          // BOUTON WATCH pour Twitch
+          <button
+            onClick={handleWatchTwitch}
+            disabled={!isLive}
+            className="w-full border border-white/40 hover:border-white hover:bg-white hover:text-black transition-all py-3 flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-white"
+          >
+            <div className="w-0 h-0 border-l-[10px] border-l-current border-t-[7px] border-t-transparent border-b-[7px] border-b-transparent" />
+            <span className="text-[10px] uppercase tracking-wider font-bold">
+              {isLive ? 'Watch Stream' : 'Offline'}
+            </span>
+          </button>
+        ) : (
+          // BOUTON PLAY pour Radio
+          <button
+            onClick={handlePlayRadio}
+            disabled={!isRadioOnline}
+            className="w-full border border-white/40 hover:border-white hover:bg-white hover:text-black transition-all py-3 flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-white"
+          >
+            {isPlaying ? (
+              <>
+                <div className="flex gap-1">
+                  <div className="w-[3px] h-4 bg-current" />
+                  <div className="w-[3px] h-4 bg-current" />
+                </div>
+                <span className="text-[10px] uppercase tracking-wider font-bold">Pause</span>
+              </>
+            ) : (
+              <>
+                <div className="w-0 h-0 border-l-[10px] border-l-current border-t-[7px] border-t-transparent border-b-[7px] border-b-transparent" />
+                <span className="text-[10px] uppercase tracking-wider font-bold">
+                  {isRadioOnline ? 'Play Radio' : (RADIO_ENABLED ? 'Offline' : 'Coming Soon')}
+                </span>
+              </>
+            )}
+          </button>
+        )}
+      </div>
+
+      {/* Status */}
+      <div className="text-[9px] text-white/60 text-center mb-3">
+        {getStatusMessage()}
+      </div>
+
+      {/* ✅ TOGGLE TWITCH/RADIO */}
+      <div className="flex items-center justify-between py-3 border-y border-white/10">
+        
+        {/* Twitch */}
+        <button
+          onClick={() => handleSwitch(false)}
+          className={`flex items-center gap-1.5 transition-all ${
+            source === 'twitch' ? 'opacity-100' : 'opacity-40 hover:opacity-60'
+          }`}
+        >
+          <div className={`w-1.5 h-1.5 rounded-full ${
+            source === 'twitch' 
+              ? (isLive ? 'bg-purple-500 animate-pulse' : 'bg-purple-900') 
+              : 'bg-white/20'
+          }`} />
+          <span className={`text-[10px] uppercase ${
+            source === 'twitch' ? 'text-white font-bold' : 'text-white/40'
+          }`}>
+            Twitch
+          </span>
+        </button>
+
+        {/* Toggle Visual */}
+        <div className="relative w-14 h-7">
+          <div className="w-full h-full bg-white/20 rounded-full"></div>
+          <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-lg transform transition-transform duration-300 ${
+            source === 'radio' ? 'translate-x-7' : 'translate-x-0'
+          }`}></div>
+        </div>
+
+        {/* Radio */}
+        <button
+          onClick={() => handleSwitch(true)}
+          className={`flex items-center gap-1.5 transition-all ${
+            source === 'radio' ? 'opacity-100' : 'opacity-40 hover:opacity-60'
+          }`}
+        >
+          <span className={`text-[10px] uppercase ${
+            source === 'radio' ? 'text-white font-bold' : 'text-white/40'
+          }`}>
+            Radio
+          </span>
+          <div className={`w-1.5 h-1.5 rounded-full ${
+            source === 'radio' 
+              ? (isRadioOnline ? 'bg-green-400 animate-pulse' : (RADIO_ENABLED ? 'bg-red-500' : 'bg-white/20')) 
+              : 'bg-white/20'
+          }`} />
+        </button>
+      </div>
+
+      {/* ✅ ENTER ARCHIVE LINK */}
+      <Link 
+        href="/home"
+        className="block text-center pt-3 group"
+      >
+        <div className="flex items-center justify-center gap-2 text-[10px] uppercase tracking-wider text-white/50 hover:text-white transition-all">
+          <span>Enter Archive</span>
+          <svg 
+            className="w-3 h-3 transform group-hover:translate-x-1 transition-transform" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </Link>
+    </div>
+  </div>
+</>
+
+);
 }

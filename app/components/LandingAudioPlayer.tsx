@@ -103,8 +103,6 @@ export default function LandingAudioPlayer({ isLive }: LandingAudioPlayerProps) 
     return null;
   }
 
-  const canInteract = source === 'twitch' ? isLive : (RADIO_ENABLED && isRadioOnline);
-
   return (
     <>
       {/* Audio HTML5 pour la radio */}
@@ -112,32 +110,32 @@ export default function LandingAudioPlayer({ isLive }: LandingAudioPlayerProps) 
         <audio ref={radioRef} src={RADIO_STREAM_URL} preload="none" className="hidden" />
       )}
 
-      {/* ✅ PLAYER - CONTROL CENTER COMPLET */}
-      <div className="backdrop-blur-md bg-black/95 border border-white/20 hover:border-white/40 transition-all duration-300 font-mono w-full md:w-96 rounded-lg overflow-hidden shadow-2xl">
+      {/* PLAYER - MOBILE RESPONSIVE */}
+      <div className="backdrop-blur-md bg-black/95 border-t border-white/20 transition-all duration-300 font-mono w-full md:w-96 md:rounded-lg overflow-hidden shadow-2xl md:border">
         
-        <div className="p-4">
+        <div className="p-4 md:p-4">
           
           {/* Titre */}
           <div className="mb-3">
             <div className="text-[9px] text-white/50 uppercase tracking-[0.15em] mb-1">
               {source === 'twitch' ? 'Live Stream' : 'Radio Stream'}
             </div>
-            <div className="text-[11px] text-white leading-tight font-bold">
+            <div className="text-sm md:text-[11px] text-white leading-tight font-bold">
               {currentName}
             </div>
           </div>
 
-          {/* ✅ BOUTON PRINCIPAL - WATCH ou PLAY */}
+          {/* BOUTON PRINCIPAL - RESPONSIVE */}
           <div className="mb-3">
             {source === 'twitch' ? (
               // BOUTON WATCH pour Twitch
               <button
                 onClick={handleWatchTwitch}
                 disabled={!isLive}
-                className="w-full border border-white/40 hover:border-white hover:bg-white hover:text-black transition-all py-3 flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-white"
+                className="w-full border-2 border-white/60 hover:border-white hover:bg-white hover:text-black transition-all py-4 flex items-center justify-center gap-3 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-white"
               >
-                <div className="w-0 h-0 border-l-[10px] border-l-current border-t-[7px] border-t-transparent border-b-[7px] border-b-transparent" />
-                <span className="text-[10px] uppercase tracking-wider font-bold">
+                <div className="w-0 h-0 border-l-[12px] border-l-current border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent" />
+                <span className="text-sm md:text-[10px] uppercase tracking-wider font-bold">
                   {isLive ? 'Watch Stream' : 'Offline'}
                 </span>
               </button>
@@ -146,20 +144,20 @@ export default function LandingAudioPlayer({ isLive }: LandingAudioPlayerProps) 
               <button
                 onClick={handlePlayRadio}
                 disabled={!isRadioOnline}
-                className="w-full border border-white/40 hover:border-white hover:bg-white hover:text-black transition-all py-3 flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-white"
+                className="w-full border-2 border-white/60 hover:border-white hover:bg-white hover:text-black transition-all py-4 flex items-center justify-center gap-3 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-white"
               >
                 {isPlaying ? (
                   <>
                     <div className="flex gap-1">
-                      <div className="w-[3px] h-4 bg-current" />
-                      <div className="w-[3px] h-4 bg-current" />
+                      <div className="w-[3px] h-5 bg-current" />
+                      <div className="w-[3px] h-5 bg-current" />
                     </div>
-                    <span className="text-[10px] uppercase tracking-wider font-bold">Pause</span>
+                    <span className="text-sm md:text-[10px] uppercase tracking-wider font-bold">Pause</span>
                   </>
                 ) : (
                   <>
-                    <div className="w-0 h-0 border-l-[10px] border-l-current border-t-[7px] border-t-transparent border-b-[7px] border-b-transparent" />
-                    <span className="text-[10px] uppercase tracking-wider font-bold">
+                    <div className="w-0 h-0 border-l-[12px] border-l-current border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent" />
+                    <span className="text-sm md:text-[10px] uppercase tracking-wider font-bold">
                       {isRadioOnline ? 'Play Radio' : (RADIO_ENABLED ? 'Offline' : 'Coming Soon')}
                     </span>
                   </>
@@ -169,53 +167,56 @@ export default function LandingAudioPlayer({ isLive }: LandingAudioPlayerProps) 
           </div>
 
           {/* Status */}
-          <div className="text-[9px] text-white/60 text-center mb-3">
+          <div className="text-[10px] md:text-[9px] text-white/60 text-center mb-3">
             {getStatusMessage()}
           </div>
 
-          {/* ✅ TOGGLE TWITCH/RADIO */}
+          {/* TOGGLE TWITCH/RADIO - CLICKABLE */}
           <div className="flex items-center justify-between py-3 border-y border-white/10">
             
-            {/* Twitch */}
+            {/* Twitch - BUTTON CLICKABLE */}
             <button
               onClick={() => handleSwitch(false)}
-              className={`flex items-center gap-1.5 transition-all ${
-                source === 'twitch' ? 'opacity-100' : 'opacity-40 hover:opacity-60'
+              className={`flex items-center gap-2 transition-all py-2 px-3 rounded ${
+                source === 'twitch' ? 'opacity-100 bg-white/10' : 'opacity-50 hover:opacity-80'
               }`}
             >
-              <div className={`w-1.5 h-1.5 rounded-full ${
+              <div className={`w-2 h-2 rounded-full ${
                 source === 'twitch' 
                   ? (isLive ? 'bg-purple-500 animate-pulse' : 'bg-purple-900') 
                   : 'bg-white/20'
               }`} />
-              <span className={`text-[10px] uppercase ${
+              <span className={`text-xs md:text-[10px] uppercase ${
                 source === 'twitch' ? 'text-white font-bold' : 'text-white/40'
               }`}>
                 Twitch
               </span>
             </button>
 
-            {/* Toggle Visual */}
-            <div className="relative w-14 h-7">
+            {/* Toggle Visual - AUSSI CLICKABLE */}
+            <button
+              onClick={() => handleSwitch(source === 'twitch')}
+              className="relative w-16 h-8 md:w-14 md:h-7 focus:outline-none"
+            >
               <div className="w-full h-full bg-white/20 rounded-full"></div>
-              <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-lg transform transition-transform duration-300 ${
-                source === 'radio' ? 'translate-x-7' : 'translate-x-0'
+              <div className={`absolute top-1 left-1 w-6 h-6 md:w-5 md:h-5 bg-white rounded-full shadow-lg transform transition-transform duration-300 ${
+                source === 'radio' ? 'translate-x-8 md:translate-x-7' : 'translate-x-0'
               }`}></div>
-            </div>
+            </button>
 
-            {/* Radio */}
+            {/* Radio - BUTTON CLICKABLE */}
             <button
               onClick={() => handleSwitch(true)}
-              className={`flex items-center gap-1.5 transition-all ${
-                source === 'radio' ? 'opacity-100' : 'opacity-40 hover:opacity-60'
+              className={`flex items-center gap-2 transition-all py-2 px-3 rounded ${
+                source === 'radio' ? 'opacity-100 bg-white/10' : 'opacity-50 hover:opacity-80'
               }`}
             >
-              <span className={`text-[10px] uppercase ${
+              <span className={`text-xs md:text-[10px] uppercase ${
                 source === 'radio' ? 'text-white font-bold' : 'text-white/40'
               }`}>
                 Radio
               </span>
-              <div className={`w-1.5 h-1.5 rounded-full ${
+              <div className={`w-2 h-2 rounded-full ${
                 source === 'radio' 
                   ? (isRadioOnline ? 'bg-green-400 animate-pulse' : (RADIO_ENABLED ? 'bg-red-500' : 'bg-white/20')) 
                   : 'bg-white/20'
@@ -223,15 +224,15 @@ export default function LandingAudioPlayer({ isLive }: LandingAudioPlayerProps) 
             </button>
           </div>
 
-          {/* ✅ ENTER ARCHIVE LINK */}
+          {/* ENTER ARCHIVE LINK - RESPONSIVE */}
           <Link 
             href="/home"
             className="block text-center pt-3 group"
           >
-            <div className="flex items-center justify-center gap-2 text-[10px] uppercase tracking-wider text-white/50 hover:text-white transition-all">
+            <div className="flex items-center justify-center gap-2 text-sm md:text-[10px] uppercase tracking-wider text-white/60 hover:text-white transition-all font-bold">
               <span>Enter Archive</span>
               <svg 
-                className="w-3 h-3 transform group-hover:translate-x-1 transition-transform" 
+                className="w-4 h-4 md:w-3 md:h-3 transform group-hover:translate-x-1 transition-transform" 
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24"

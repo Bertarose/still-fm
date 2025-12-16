@@ -119,11 +119,21 @@ export default function LandingPage() {
     };
   }, [scriptLoaded, isLive]);
 
-  // Video open/close
+  // Video open/close with vibration & visual effect
   const openVideo = useCallback(() => {
     if (!twitchRef.current) return;
     twitchRef.current.setMuted(false);
     setWatchMode(true);
+
+    // Vibration mobile
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+    // Petite animation landing
+    const landing = document.querySelector('.landing-page');
+    if (landing) {
+      landing.classList.add('vibe-effect');
+      setTimeout(() => landing.classList.remove('vibe-effect'), 600);
+    }
   }, []);
 
   const closeVideo = useCallback(() => {
@@ -169,7 +179,7 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="relative w-full h-screen bg-black overflow-hidden">
+    <div className="relative w-full h-screen bg-black overflow-hidden landing-page">
 
       {/* Twitch Embed */}
       {isLive && (
@@ -236,6 +246,20 @@ export default function LandingPage() {
           ✕ Close Stream
         </button>
       )}
+
+      {/* Vibe CSS */}
+      <style jsx>{`
+        .vibe-effect {
+          animation: shake 0.6s ease-in-out;
+        }
+        @keyframes shake {
+          0% { transform: translate(0,0); }
+          25% { transform: translate(6px,-6px); }
+          50% { transform: translate(-6px,6px); }
+          75% { transform: translate(6px,6px); }
+          100% { transform: translate(0,0); }
+        }
+      `}</style>
     </div>
   );
 }

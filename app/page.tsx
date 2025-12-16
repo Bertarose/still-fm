@@ -209,22 +209,55 @@ export default function LandingPage() {
     };
   }, []);
 
-  // 🎯 Forcer les contrôles à disparaître périodiquement
+  // 🎯 Forcer les contrôles à disparaître en permanence
   useEffect(() => {
     if (!playerReady || !isLive) return;
     
     const hideControls = () => {
-      const iframe = document.querySelector('#twitch-embed iframe') as HTMLElement;
+      const embedContainer = document.getElementById('twitch-embed');
+      const iframe = embedContainer?.querySelector('iframe') as HTMLElement;
+      
       if (iframe) {
-        const event = new MouseEvent('mouseleave', { bubbles: true });
-        iframe.dispatchEvent(event);
+        // Simuler que la souris n'est PAS sur le player
+        const mouseLeaveEvent = new MouseEvent('mouseleave', { 
+          bubbles: true,
+          cancelable: true,
+          view: window 
+        });
+        
+        // Dispatch sur l'iframe et le container
+        iframe.dispatchEvent(mouseLeaveEvent);
+        embedContainer?.dispatchEvent(mouseLeaveEvent);
+        
+        // Aussi simuler un mouseout
+        const mouseOutEvent = new MouseEvent('mouseout', { 
+          bubbles: true,
+          cancelable: true,
+          view: window 
+        });
+        iframe.dispatchEvent(mouseOutEvent);
       }
     };
     
-    // Répéter toutes les 2 secondes pour garder les contrôles cachés
-    const interval = setInterval(hideControls, 2000);
+    // Premier hide après 500ms
+    const initialTimeout = setTimeout(hideControls, 500);
     
-    return () => clearInterval(interval);
+    // Puis répéter toutes les secondes pour maintenir l'état caché
+    const interval = setInterval(hideControls, 1000);
+    
+    // Aussi cacher quand la souris bouge sur la page
+    const handleMouseMove = () => {
+      // Petit délai avant de re-cacher
+      setTimeout(hideControls, 100);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+      document.removeEventListener('mousemove', handleMouseMove);
+    };
   }, [playerReady, isLive]);
 
   return (
@@ -234,27 +267,12 @@ export default function LandingPage() {
 
       {/* TWITCH EMBED */}
       {isLive && (
-        <div className={`absolute inset-0 ${watchMode ? 'z-30' : 'z-0'}`}>
-          <div 
-            id="twitch-embed" 
-            className={`w-full h-full transition-opacity duration-700 ${
-              watchMode ? 'opacity-100' : 'opacity-70'
-            }`}
-          />
-          
-          {/* Overlay qui force les contrôles à rester cachés en bloquant le hover */}
-          <div 
-            className="absolute inset-0 pointer-events-auto"
-            style={{ 
-              background: 'transparent',
-              zIndex: 1
-            }}
-            onMouseEnter={(e) => {
-              // Empêche le hover sur l'iframe Twitch
-              e.preventDefault();
-            }}
-          />
-        </div>
+        <div 
+          id="twitch-embed" 
+          className={`absolute inset-0 transition-opacity duration-700 ${
+            watchMode ? 'z-30 opacity-100' : 'z-0 opacity-70'
+          }`}
+        />
       )}
 
       {/* FALLBACK VIDEO */}

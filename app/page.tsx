@@ -9,6 +9,7 @@ export default function LandingPage() {
   const [isLive, setIsLive] = useState(false);
   const [watchMode, setWatchMode] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [playerReady, setPlayerReady] = useState(false);
   const twitchRef = useRef<any>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -27,12 +28,8 @@ export default function LandingPage() {
       }
     };
 
-    // Vérification immédiate
     checkTwitchStatus();
-    
-    // Puis vérification toutes les 30 secondes
     const interval = setInterval(checkTwitchStatus, 30000);
-    
     return () => clearInterval(interval);
   }, []);
 
@@ -63,11 +60,13 @@ export default function LandingPage() {
     };
   }, []);
 
-  // 🎥 TWITCH PLAYER INIT
+  // 🎥 TWITCH PLAYER INIT - S'initialise dès que le script est chargé
   useEffect(() => {
     if (!scriptLoaded || !(window as any).Twitch || twitchRef.current) return;
 
     try {
+      console.log('🎥 Initializing Twitch player...');
+      
       const player = new (window as any).Twitch.Player('twitch-embed', {
         channel: 'bertarose',
         width: '100%',
@@ -79,7 +78,12 @@ export default function LandingPage() {
 
       twitchRef.current = player;
 
-      // Événements Twitch supplémentaires
+      // Attendre que le player soit prêt
+      player.addEventListener((window as any).Twitch.Player.READY, () => {
+        console.log('✅ Twitch player ready');
+        setPlayerReady(true);
+      });
+
       player.addEventListener((window as any).Twitch.Player.ONLINE, () => {
         console.log('🔴 Twitch Player Event: ONLINE');
         setIsLive(true);
@@ -90,7 +94,7 @@ export default function LandingPage() {
         setIsLive(false);
       });
     } catch (error) {
-      console.error('Twitch player initialization error:', error);
+      console.error('❌ Twitch player initialization error:', error);
     }
 
     return () => {
@@ -102,16 +106,32 @@ export default function LandingPage() {
   }, [scriptLoaded]);
 
   const openVideo = useCallback(() => {
-    if (!twitchRef.current) return;
+    console.log('🎬 Opening video...', { playerReady, twitchPlayer: !!twitchRef.current });
+    
+    if (!twitchRef.current) {
+      console.error('❌ Twitch player not initialized');
+      return;
+    }
+    
+    // Activer le son et lancer la lecture
     twitchRef.current.setMuted(false);
     twitchRef.current.play();
+    
+    // Passer en mode watch
     setWatchMode(true);
-  }, []);
+    console.log('✅ Watch mode activated');
+  }, [playerReady]);
 
   const closeVideo = useCallback(() => {
+    console.log('🛑 Closing video...');
+    
     if (!twitchRef.current) return;
+    
     twitchRef.current.setMuted(true);
+    twitchRef.current.pause();
     setWatchMode(false);
+    
+    console.log('✅ Watch mode deactivated');
   }, []);
 
   // 🌌 CANVAS
@@ -157,17 +177,13 @@ export default function LandingPage() {
       {/* INSTALL APP BUTTON */}
       <InstallPWA />
 
-      {/* DEBUG - Status indicator (enlever après test) */}
-      <div className="fixed top-20 left-4 z-50 bg-black/80 border border-white/30 px-3 py-2 text-xs text-white font-mono">
-        🔴 Stream: {isLive ? 'ONLINE ✅' : 'OFFLINE ⚫'}
-      </div>
-
-      {/* TWITCH */}
-      {isLive && watchMode && scriptLoaded && (
-        <div className="absolute inset-0 transition-opacity duration-700 opacity-100 z-20">
-          <div id="twitch-embed" className="w-full h-full" />
-        </div>
-      )}
+      {/* TWITCH EMBED - Toujours présent mais caché si pas en watch mode */}
+      <div 
+        id="twitch-embed" 
+        className={`absolute inset-0 transition-opacity duration-700 z-20 ${
+          watchMode ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+      />
 
       {/* FALLBACK VIDEO */}
       {!watchMode && (
@@ -212,19 +228,21 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* CLOSE VIDEO */}
+      {/* CLOSE VIDEO BUTTON */}
       {watchMode && (
         <button
           onClick={closeVideo}
           className="
-            fixed top-4 right-4 z-50
+            fixed top-6 right-6 z-50
+            bg-black/80 backdrop-blur-sm
             border border-white/50
-            px-4 py-2 text-xs uppercase tracking-widest
+            px-6 py-3 text-sm uppercase tracking-widest font-bold
             text-white hover:bg-white hover:text-black
-            transition
+            transition-all
+            shadow-lg
           "
         >
-          Close
+          ✕ Close Stream
         </button>
       )}
     </div>

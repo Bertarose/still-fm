@@ -4,6 +4,13 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { usePlayer } from '../../context/PlayerContext';
 
+const knownResidents = [
+  'ALEX MURPHY', 'ASH-LIN', 'BERTA ROSE', 'CIDOINE', 'COOPER RICHARDSON',
+  'DANTE MAXWELL', 'FANEVA', 'FAZ ONE', 'FLYP', 'ICKY MAGDALA', 'LAURENCE NADEAU',
+  'MARK PM', 'ME FLOAT', 'MUSONI', 'NORA ZION', 'SENZ', 'SK7', 'SKATE',
+  'SVVIMMING', 'TECHNIQUE NADO', 'TIGNASSE', 'VARIOUS'
+];
+
 function ShowsContent() {
   const { playShow } = usePlayer();
   const searchParams = useSearchParams();
@@ -18,13 +25,13 @@ function ShowsContent() {
   const [selectedYear, setSelectedYear] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // ✅ LIRE LE PARAMÈTRE URL ?search=TIGNASSE
+  // Lire le param URL ?search
   useEffect(() => {
     const urlSearch = searchParams.get('search');
     if (urlSearch) setSearchQuery(urlSearch);
   }, [searchParams]);
 
-  // Fetch TOUS les shows (pagination)
+  // Fetch tous les shows
   useEffect(() => {
     const fetchAllShows = async () => {
       try {
@@ -48,19 +55,13 @@ function ShowsContent() {
           }
         }
 
-        // Format shows (resident, style, year)
+        // Format shows
         const formatted = allData.map((show: any) => {
           const title = show.name;
 
           let resident = 'VARIOUS';
           if (show.tags && show.tags.length > 0) {
             const tagNames = show.tags.map((t: any) => t.name.toUpperCase());
-            const knownResidents = [
-              'ALEX MURPHY', 'ASH-LIN', 'BERTA ROSE', 'CIDOINE', 'COOPER RICHARDSON',
-              'DANTE MAXWELL', 'FANEVA', 'FAZ ONE', 'FLYP', 'ICKY MAGDALA', 'LAURENCE NADEAU',
-              'MARK PM', 'ME FLOAT', 'MUSONI', 'NORA ZION', 'SENZ', 'SK7', 'SKATE',
-              'SVVIMMING', 'TECHNIQUE NADO', 'TIGNASSE', 'VARIOUS'
-            ];
             for (const known of knownResidents) {
               if (tagNames.some((tag: string) => tag.includes(known))) {
                 resident = known;
@@ -167,9 +168,9 @@ function ShowsContent() {
     <div className="min-h-screen bg-black text-white font-mono selection:bg-white selection:text-black pb-12">
       <div className="crt-screen" />
 
-      <main className="max-w-full">
+      <main className="max-w-full px-4">
         {/* Header + Search + Filters */}
-        <div className="border-b border-white px-4 py-3 flex flex-col gap-3">
+        <div className="border-b border-white py-3 flex flex-col gap-3">
 
           {/* Titre + Search + Reset */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
@@ -198,7 +199,7 @@ function ShowsContent() {
           </div>
 
           {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-2 mt-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}

@@ -78,7 +78,7 @@ export default function ShowsPage() {
             ];
             
             for (const known of knownResidents) {
-              if (tagNames.some(tag => tag.includes(known))) {
+              if (tagNames.some((tag: string) => tag.includes(known))) {
                 resident = known;
                 break;
               }

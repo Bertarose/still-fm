@@ -9,11 +9,10 @@ export default function LandingPage() {
   const [isLive, setIsLive] = useState(false);
   const [watchMode, setWatchMode] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
-  const [playerReady, setPlayerReady] = useState(false);
   const twitchRef = useRef<any>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // 🔴 Vérification statut Twitch
+  // Vérification statut Twitch
   useEffect(() => {
     const checkTwitchStatus = async () => {
       try {
@@ -23,17 +22,16 @@ export default function LandingPage() {
           !text.toLowerCase().includes('offline') &&
           !text.toLowerCase().includes('error');
         setIsLive(isOnline);
-      } catch (e) {
+      } catch {
         setIsLive(false);
       }
     };
-
     checkTwitchStatus();
     const interval = setInterval(checkTwitchStatus, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  // 🎥 Twitch script
+  // Twitch script
   useEffect(() => {
     if ((window as any).Twitch) {
       setScriptLoaded(true);
@@ -55,7 +53,7 @@ export default function LandingPage() {
     };
   }, []);
 
-  // 🎥 Twitch player init
+  // Twitch player init
   useEffect(() => {
     if (!scriptLoaded || !isLive || !(window as any).Twitch || twitchRef.current)
       return;
@@ -94,7 +92,7 @@ export default function LandingPage() {
 
         player.addEventListener(
           (window as any).Twitch.Player.READY,
-          () => setPlayerReady(true)
+          () => {}
         );
 
         player.addEventListener(
@@ -107,7 +105,7 @@ export default function LandingPage() {
           () => setIsLive(false)
         );
       } catch (error) {
-        console.error('❌ Twitch player init error:', error);
+        console.error('Twitch player init error:', error);
       }
     };
 
@@ -121,7 +119,7 @@ export default function LandingPage() {
     };
   }, [scriptLoaded, isLive]);
 
-  // 📺 Video open/close
+  // Video open/close
   const openVideo = useCallback(() => {
     if (!twitchRef.current) return;
     twitchRef.current.setMuted(false);
@@ -134,7 +132,7 @@ export default function LandingPage() {
     setWatchMode(false);
   }, []);
 
-  // 🌌 Canvas animation
+  // Canvas animation
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -173,7 +171,7 @@ export default function LandingPage() {
   return (
     <div className="relative w-full h-screen bg-black overflow-hidden">
 
-      {/* TWITCH EMBED */}
+      {/* Twitch Embed */}
       {isLive && (
         <div
           id="twitch-embed"
@@ -183,7 +181,7 @@ export default function LandingPage() {
         />
       )}
 
-      {/* FALLBACK VIDEO */}
+      {/* Fallback Video */}
       {!isLive && (
         <video
           src="/video.mov"
@@ -195,7 +193,7 @@ export default function LandingPage() {
         />
       )}
 
-      {/* CANVAS */}
+      {/* Canvas */}
       {!watchMode && (
         <canvas
           ref={canvasRef}
@@ -203,15 +201,9 @@ export default function LandingPage() {
         />
       )}
 
-      {/* LOGO */}
+      {/* Logo */}
       {!watchMode && (
-        <div
-          className="
-            fixed inset-0 z-20 flex flex-col items-center justify-center
-            text-white pointer-events-none
-            -translate-y-28 md:-translate-y-8
-          "
-        >
+        <div className="fixed inset-0 z-20 flex flex-col items-center justify-center text-white pointer-events-none -translate-y-28 md:-translate-y-8">
           <Image
             src="/Stillfm logo-white.png"
             alt="Still FM"
@@ -223,7 +215,7 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* PLAYER AUDIO + INSTALL */}
+      {/* Player + Install */}
       {!watchMode && (
         <div className="fixed bottom-0 left-0 right-0 md:left-4 md:bottom-4 z-50 flex flex-col md:items-start items-center gap-2">
           <LandingAudioPlayer
@@ -231,12 +223,11 @@ export default function LandingPage() {
             onWatchVideo={openVideo}
             onCloseVideo={closeVideo}
           />
-          {/* INSTALL BUTTON sous le player */}
-          <InstallPWA className="w-full md:w-auto" />
+          <InstallPWA />
         </div>
       )}
 
-      {/* CLOSE BUTTON */}
+      {/* Close Stream Button */}
       {watchMode && (
         <button
           onClick={closeVideo}

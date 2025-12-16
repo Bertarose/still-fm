@@ -12,6 +12,30 @@ export default function LandingPage() {
   const twitchRef = useRef<any>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // 🔴 VÉRIFICATION DU STATUT TWITCH VIA API
+  useEffect(() => {
+    const checkTwitchStatus = async () => {
+      try {
+        const res = await fetch('https://decapi.me/twitch/uptime/bertarose');
+        const text = await res.text();
+        const isOnline = !text.toLowerCase().includes('offline') && !text.toLowerCase().includes('error');
+        console.log('🔴 Twitch status:', isOnline ? 'ONLINE ✅' : 'OFFLINE ⚫');
+        setIsLive(isOnline);
+      } catch (e) {
+        console.error('❌ Erreur Twitch API:', e);
+        setIsLive(false);
+      }
+    };
+
+    // Vérification immédiate
+    checkTwitchStatus();
+    
+    // Puis vérification toutes les 30 secondes
+    const interval = setInterval(checkTwitchStatus, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
   // 🎥 TWITCH SCRIPT LOADING
   useEffect(() => {
     if ((window as any).Twitch) {
@@ -55,8 +79,16 @@ export default function LandingPage() {
 
       twitchRef.current = player;
 
-      player.addEventListener((window as any).Twitch.Player.ONLINE, () => setIsLive(true));
-      player.addEventListener((window as any).Twitch.Player.OFFLINE, () => setIsLive(false));
+      // Événements Twitch supplémentaires
+      player.addEventListener((window as any).Twitch.Player.ONLINE, () => {
+        console.log('🔴 Twitch Player Event: ONLINE');
+        setIsLive(true);
+      });
+      
+      player.addEventListener((window as any).Twitch.Player.OFFLINE, () => {
+        console.log('⚫ Twitch Player Event: OFFLINE');
+        setIsLive(false);
+      });
     } catch (error) {
       console.error('Twitch player initialization error:', error);
     }
@@ -124,6 +156,11 @@ export default function LandingPage() {
 
       {/* INSTALL APP BUTTON */}
       <InstallPWA />
+
+      {/* DEBUG - Status indicator (enlever après test) */}
+      <div className="fixed top-20 left-4 z-50 bg-black/80 border border-white/30 px-3 py-2 text-xs text-white font-mono">
+        🔴 Stream: {isLive ? 'ONLINE ✅' : 'OFFLINE ⚫'}
+      </div>
 
       {/* TWITCH */}
       {isLive && watchMode && scriptLoaded && (

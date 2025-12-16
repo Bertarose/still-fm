@@ -1,32 +1,76 @@
 'use client';
 
+import Link from 'next/link';
+
+// 63 VRAIS RESIDENTS extraits depuis Mixcloud API
 const residents = [
-  { name: "DJ POSER", genre: "TECHNO / INDUSTRIAL", image: "https://images.unsplash.com/photo-1571330735066-03aaa9429d89?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/djposer" },
-  { name: "SHADOW BASS", genre: "DRUM & BASS", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/shadowbass" },
-  { name: "NEON PULSE", genre: "ELECTRO / SYNTHWAVE", image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/neonpulse" },
-  { name: "VOID RIDER", genre: "AMBIENT / EXPERIMENTAL", image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/voidrider" },
-  { name: "ECHO DRIFT", genre: "DUB TECHNO", image: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/echodrift" },
-  { name: "PULSE WAVE", genre: "ACID HOUSE", image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/pulsewave" },
-  { name: "DARK MATTER", genre: "INDUSTRIAL TECHNO", image: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/darkmatter" },
-  { name: "COSMIC NOISE", genre: "NOISE / EXPERIMENTAL", image: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/cosmicnoise" },
-  { name: "LUNAR PHASE", genre: "DOWNTEMPO / TRIP HOP", image: "https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/lunarphase" },
-  { name: "STEEL DRUM", genre: "BREAKBEAT / JUNGLE", image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/steeldrum" },
-  { name: "GHOST SIGNAL", genre: "MINIMAL TECHNO", image: "https://images.unsplash.com/photo-1501612780327-45045538702b?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/ghostsignal" },
-  { name: "FREQUENCY X", genre: "ELECTRO / BREAKS", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/frequencyx" },
-  { name: "ACID RAIN", genre: "ACID TECHNO", image: "https://images.unsplash.com/photo-1571330735066-03aaa9429d89?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/acidrain" },
-  { name: "BINARY STAR", genre: "IDM / GLITCH", image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/binarystar" },
-  { name: "VOLTAGE DROP", genre: "ELECTRO HOUSE", image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/voltagedrop" },
-  { name: "SUBSONIC", genre: "DUBSTEP / BASS", image: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/subsonic" },
-  { name: "CIRCUIT BREAKER", genre: "HARDCORE / GABBER", image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/circuitbreaker" },
-  { name: "FROST BYTE", genre: "CHIPTUNE / 8BIT", image: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/frostbyte" },
-  { name: "OBSIDIAN", genre: "DARK AMBIENT", image: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/obsidian" },
-  { name: "REVERB CITY", genre: "TECHNO / HOUSE", image: "https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/reverbcity" },
-  { name: "PLASMA WAVE", genre: "TRANCE / PSY", image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/plasmawave" },
-  { name: "CHROME SOUL", genre: "TECHNO / FUNK", image: "https://images.unsplash.com/photo-1501612780327-45045538702b?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/chromesoul" },
-  { name: "PIXEL DUST", genre: "FUTURE BASS", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/pixeldust" },
-  { name: "NEBULA DRIFT", genre: "SPACE DISCO", image: "https://images.unsplash.com/photo-1571330735066-03aaa9429d89?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/nebuladrift" },
-  { name: "IRON GATE", genre: "EBM / INDUSTRIAL", image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1200&h=1200&fit=crop", social: "https://www.instagram.com/irongate" }
+  { name: "COOPER RICHARDSON", genre: "ELECTRONIC", slug: "cooper-richardson" },
+  { name: "SVVIMMING", genre: "ELECTRONIC", slug: "svvimming" },
+  { name: "FAZ ONE", genre: "ELECTRONIC", slug: "faz-one" },
+  { name: "DANTE MAXWELL", genre: "ELECTRONIC", slug: "dante-maxwell" },
+  { name: "SKATE", genre: "ELECTRONIC", slug: "skate" },
+  { name: "UTSAVA", genre: "ELECTRONIC", slug: "utsava" },
+  { name: "UKG AFFAIR", genre: "UK GARAGE", slug: "ukg-affair" },
+  { name: "SOUND VOYAGE", genre: "ELECTRONIC", slug: "sound-voyage" },
+  { name: "GROOVY & CHILL", genre: "CHILL", slug: "groovy-chill" },
+  { name: "ALEX MURPHY", genre: "ELECTRONIC", slug: "alex-murphy" },
+  { name: "SENZ", genre: "ELECTRONIC", slug: "senz" },
+  { name: "NORA ZION", genre: "ELECTRONIC", slug: "nora-zion" },
+  { name: "MARK PM", genre: "ELECTRONIC", slug: "mark-pm" },
+  { name: "TIGNASSE", genre: "ELECTRONIC", slug: "tignasse" },
+  { name: "ME FLOAT", genre: "ELECTRONIC", slug: "me-float" },
+  { name: "TECHNIQUE NADO", genre: "ELECTRONIC", slug: "technique-nado" },
+  { name: "BREXIT DON'T KILL MY GRIME", genre: "GRIME", slug: "brexit-dont-kill-my-grime" },
+  { name: "VO GUEULE", genre: "ELECTRONIC", slug: "vo-gueule" },
+  { name: "SNOW CHOLO CHRONICLES", genre: "HIP HOP", slug: "snow-cholo-chronicles" },
+  { name: "SECRET SELECTA VOL.1", genre: "ELECTRONIC", slug: "secret-selecta-vol1" },
+  { name: "MAGNETIC SELECTS", genre: "ELECTRONIC", slug: "magnetic-selects" },
+  { name: "CIDOINE", genre: "ELECTRONIC", slug: "cidoine" },
+  { name: "LAURENCE NADEAU", genre: "ELECTRONIC", slug: "laurence-nadeau" },
+  { name: "TÊTE DE VEAU", genre: "ELECTRONIC", slug: "tete-de-veau" },
+  { name: "FANEVA", genre: "ELECTRONIC", slug: "faneva" },
+  { name: "ASH-LIN", genre: "ELECTRONIC", slug: "ashlin" },
+  { name: "MUSONI", genre: "ELECTRONIC", slug: "musoni" },
+  { name: "SK7", genre: "ELECTRONIC", slug: "sk7" },
+  { name: "FLYP", genre: "ELECTRONIC", slug: "flyp" },
+  { name: "ICKY MAGDALA", genre: "ELECTRONIC", slug: "icky-magdala" },
+  { name: "PHAT EST LA SONORITÉ", genre: "HIP HOP", slug: "phat-est-la-sonorite" },
+  { name: "SUMMERCAST VOL.8", genre: "SUMMER MIX", slug: "summercast-vol8" },
+  { name: "SUMMERCAST VOL.7", genre: "SUMMER MIX", slug: "summercast-vol7" },
+  { name: "SUMMERCAST VOL.6", genre: "SUMMER MIX", slug: "summercast-vol6" },
+  { name: "SUMMERCAST VOL.5", genre: "SUMMER MIX", slug: "summercast-vol5" },
+  { name: "SUMMERCAST VOL.4", genre: "SUMMER MIX", slug: "summercast-vol4" },
+  { name: "SUMMERCAST VOL.3", genre: "SUMMER MIX", slug: "summercast-vol3" },
+  { name: "SUMMERCAST VOL.2", genre: "SUMMER MIX", slug: "summercast-vol2" },
+  { name: "SUMMERCAST VOL.1", genre: "SUMMER MIX", slug: "summercast-vol1" },
+  { name: "BAKE LE CAKE", genre: "ELECTRONIC", slug: "bake-le-cake" },
+  { name: "BAD Q!", genre: "ELECTRONIC", slug: "bad-q" },
+  { name: "PAS DE SUCRE PAS DE LAIT", genre: "ELECTRONIC", slug: "pas-de-sucre-pas-de-lait" },
+  { name: "HARD ALBUMS", genre: "ELECTRONIC", slug: "hard-albums" },
+  { name: "RADIO FOUGÈRE", genre: "RADIO SHOW", slug: "radio-fougere" },
+  { name: "BAKED GOODS", genre: "ELECTRONIC", slug: "baked-goods" },
+  { name: "STILL LIVE", genre: "LIVE SET", slug: "still-live" },
+  { name: "WORLD WIDE WEB TRANSMISSION", genre: "ELECTRONIC", slug: "world-wide-web-transmission" },
+  { name: "BRIDGES TO DUB", genre: "DUB", slug: "bridges-to-dub" },
+  { name: "PARADISE ROOM", genre: "HOUSE", slug: "paradise-room" },
+  { name: "TINY SOUNDS", genre: "AMBIENT", slug: "tiny-sounds" },
+  { name: "LE KEYHOLE", genre: "ELECTRONIC", slug: "le-keyhole" },
+  { name: "SOUL KEB @ 7", genre: "SOUL", slug: "soul-keb-7" },
+  { name: "RADIO TO", genre: "RADIO SHOW", slug: "radio-to" },
+  { name: "JET LAG", genre: "ELECTRONIC", slug: "jet-lag" },
+  { name: "WURKIN' & WURKOUT", genre: "ELECTRONIC", slug: "wurkin-wurkout" },
+  { name: "BOOGALOO STORY", genre: "BOOGALOO", slug: "boogaloo-story" },
+  { name: "TERRAIN2ROAM", genre: "ELECTRONIC", slug: "terrain2roam" },
+  { name: "L'HEURE MAUVE", genre: "ELECTRONIC", slug: "lheure-mauve" },
+  { name: "KEYS TO THE SHOP @ 180G", genre: "HIP HOP", slug: "keys-to-the-shop-180g" },
+  { name: "GUEST MIXES", genre: "GUEST MIX", slug: "guest-mixes" },
+  { name: "INVITES ONLY", genre: "GUEST MIX", slug: "invites-only" },
+  { name: "ARYTHMIE", genre: "ELECTRONIC", slug: "arythmie" },
+  { name: "THE DUPPY REMOVER SHOW", genre: "REGGAE / DUB", slug: "the-duppy-remover-show" },
 ];
+
+// Placeholder image - tu peux remplacer par des vraies images plus tard
+const placeholderImage = "https://images.unsplash.com/photo-1571330735066-03aaa9429d89?w=1200&h=1200&fit=crop";
 
 export default function ResidentsPage() {
   return (
@@ -38,21 +82,32 @@ export default function ResidentsPage() {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
           {residents.map((resident, idx) => (
-            <a key={idx} href={resident.social} target="_blank" rel="noopener noreferrer" className="border-b border-r border-white group cursor-pointer">
-              <div className="aspect-square relative overflow-hidden bg-black">
-                <img src={resident.image} alt={resident.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" loading="lazy" />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/70 transition-all flex items-center justify-center">
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity text-center">
-                    <div className="text-xs uppercase tracking-wider mb-2">Follow</div>
-                    <div className="text-2xl">→</div>
+            <div key={idx} className="border-b border-r border-white group relative">
+              {/* Link vers Shows avec filtre resident */}
+              <Link 
+                href={`/shows?search=${encodeURIComponent(resident.name)}`}
+                className="block cursor-pointer"
+              >
+                <div className="aspect-square relative overflow-hidden bg-black">
+                  <img 
+                    src={placeholderImage} 
+                    alt={resident.name} 
+                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" 
+                    loading="lazy" 
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/70 transition-all flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity text-center">
+                      <div className="text-xs uppercase tracking-wider mb-2">View Shows</div>
+                      <div className="text-2xl">→</div>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="p-3">
-                <h3 className="text-xs font-bold uppercase leading-tight mb-1">{resident.name}</h3>
-                <div className="text-[9px] uppercase opacity-50">{resident.genre}</div>
-              </div>
-            </a>
+                <div className="p-3">
+                  <h3 className="text-xs font-bold uppercase leading-tight mb-1">{resident.name}</h3>
+                  <div className="text-[9px] uppercase opacity-50">{resident.genre}</div>
+                </div>
+              </Link>
+            </div>
           ))}
         </div>
       </main>

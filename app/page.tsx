@@ -150,9 +150,9 @@ export default function LandingPage() {
         className="absolute inset-0 z-10 mix-blend-screen opacity-40"
       />
 
-      {/* LOGO */}
+      {/* LOGO - Fixed position */}
       {!watchMode && (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-white">
+        <div className="fixed inset-0 z-20 flex flex-col items-center justify-center text-white pointer-events-none">
           <Image
             src="/Stillfm logo-white.png"
             alt="Still FM"

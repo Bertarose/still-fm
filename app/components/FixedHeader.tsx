@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { usePlayer } from '../context/PlayerContext';
 
 interface FixedHeaderProps {
   currentPage?: string;
@@ -12,6 +13,7 @@ const navItems = ['Shows', 'Schedule', 'Residents', 'About', 'Shop'];
 export default function FixedHeader({ currentPage: propCurrentPage }: FixedHeaderProps) {
   const pathname = usePathname();
   const currentPage = propCurrentPage || (pathname.split('/').filter(Boolean).pop() || 'home').toLowerCase();
+  const { currentShow } = usePlayer();
 
   return (
     <header className="w-full bg-white text-black font-mono border-b border-black">
@@ -27,25 +29,25 @@ export default function FixedHeader({ currentPage: propCurrentPage }: FixedHeade
         
         <div className="flex-1 flex items-center overflow-hidden relative bg-white">
           <div className="animate-marquee whitespace-nowrap absolute text-[9px] md:text-[11px] font-bold uppercase tracking-wide">
-            +++ NOW PLAYING: 2023-07-23 // DANTE MAXWELL // SK7 // COOPER RICHARDSON - LE KEYHOLE EP. 18: 160BPM EDITION (PART 4) +++ LIVE FROM MONTREAL +++
+            {currentShow ? `+++ NOW PLAYING: ${currentShow.title} +++ LIVE FROM MONTREAL +++` : '+++ STILL FM - MONTREAL UNDERGROUND RADIO +++'}
           </div>
         </div>
         
-        {/* Status OFFLINE + Lien Landing */}
+        {/* Lien Landing + Status OFFLINE */}
         <div className="flex items-stretch shrink-0 border-l border-black">
-          <div className="w-28 md:w-32 flex items-center justify-center bg-[#e0e0e0] text-[8px] md:text-[10px] font-bold uppercase tracking-wide">
-            <span className="hidden md:inline">STREAM OFFLINE</span>
-            <span className="md:hidden">OFFLINE</span>
-          </div>
-          
-          {/* Lien vers Landing Page */}
+          {/* Lien vers Landing Page - PLUS GRAND ET À GAUCHE */}
           <Link
             href="/"
-            className="w-8 md:w-10 flex items-center justify-center bg-black text-white hover:bg-gray-800 transition-colors border-l border-white text-lg md:text-xl"
+            className="w-10 md:w-12 flex items-center justify-center bg-black text-white hover:bg-gray-800 transition-colors border-r border-white text-xl md:text-2xl"
             title="Go to Landing Page"
           >
             ⌂
           </Link>
+          
+          <div className="w-28 md:w-32 flex items-center justify-center bg-[#e0e0e0] text-[8px] md:text-[10px] font-bold uppercase tracking-wide">
+            <span className="hidden md:inline">STREAM OFFLINE</span>
+            <span className="md:hidden">OFFLINE</span>
+          </div>
         </div>
       </div>
 

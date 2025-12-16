@@ -17,10 +17,13 @@ export default function LandingAudioPlayer({
   onCloseVideo,
 }: Props) {
   const { isPlaying, togglePlay } = usePlayer();
+
   const [mode, setMode] = useState<Mode>('radio');
   const [isMinimized, setIsMinimized] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
 
-  // 🔁 Synchronisation mode
+  // 🔁 Sync mode → video / radio
   useEffect(() => {
     if (mode === 'video') {
       onWatchVideo();
@@ -29,7 +32,14 @@ export default function LandingAudioPlayer({
     }
   }, [mode, onWatchVideo, onCloseVideo]);
 
-  // Version minimisée (desktop seulement)
+  // 🔊 Stop "connecting…" once audio plays
+  useEffect(() => {
+    if (isPlaying) setIsConnecting(false);
+  }, [isPlaying]);
+
+  // ======================
+  // MINIMIZED (DESKTOP)
+  // ======================
   if (isMinimized) {
     return (
       <div className="hidden md:block w-96 bg-black/95 backdrop-blur-xl border border-white/20 shadow-2xl font-mono">
@@ -67,7 +77,9 @@ export default function LandingAudioPlayer({
     );
   }
 
-  // Version complète
+  // ======================
+  // FULL PLAYER
+  // ======================
   return (
     <div
       className="
@@ -81,7 +93,7 @@ export default function LandingAudioPlayer({
         relative
       "
     >
-      {/* Minimize */}
+      {/* Minimize (desktop only) */}
       <button
         onClick={() => setIsMinimized(true)}
         className="hidden md:block absolute -top-8 right-0 bg-black/90 border border-white/20 px-3 py-1 text-[10px] uppercase tracking-wider text-white/60 hover:text-white hover:border-white/40 transition-all"
@@ -91,7 +103,7 @@ export default function LandingAudioPlayer({
 
       <div className="p-5 md:p-6">
 
-        {/* TITRE */}
+        {/* TITLE */}
         <div className="mb-5 text-center pointer-events-none">
           <div className="text-[9px] md:text-[10px] uppercase tracking-[0.25em] text-white/40 mb-1">
             Still FM
@@ -101,10 +113,17 @@ export default function LandingAudioPlayer({
           </div>
         </div>
 
-        {/* TOGGLE */}
-        <div className="flex items-center justify-between mb-5 px-2">
+        {/* TOGGLE (secondary before interaction) */}
+        <div
+          className={`flex items-center justify-between mb-5 px-2 transition-opacity
+            ${!hasInteracted ? 'opacity-50' : 'opacity-100'}
+          `}
+        >
           <button
-            onClick={() => setMode('video')}
+            onClick={() => {
+              setHasInteracted(true);
+              setMode('video');
+            }}
             className={`text-xs md:text-sm uppercase tracking-wider px-4 py-2 rounded transition
               ${
                 mode === 'video'
@@ -118,7 +137,10 @@ export default function LandingAudioPlayer({
 
           <div
             className="relative w-16 h-8 flex-shrink-0 cursor-pointer"
-            onClick={() => setMode(mode === 'video' ? 'radio' : 'video')}
+            onClick={() => {
+              setHasInteracted(true);
+              setMode(mode === 'video' ? 'radio' : 'video');
+            }}
           >
             <div className="absolute inset-0 bg-white/20 rounded-full" />
             <div
@@ -129,7 +151,10 @@ export default function LandingAudioPlayer({
           </div>
 
           <button
-            onClick={() => setMode('radio')}
+            onClick={() => {
+              setHasInteracted(true);
+              setMode('radio');
+            }}
             className={`text-xs md:text-sm uppercase tracking-wider px-4 py-2 rounded transition
               ${
                 mode === 'radio'
@@ -142,7 +167,7 @@ export default function LandingAudioPlayer({
           </button>
         </div>
 
-        {/* ACTION PRINCIPALE */}
+        {/* PRIMARY ACTION */}
         <div className="mb-4">
           {mode === 'video' ? (
             <button
@@ -160,7 +185,12 @@ export default function LandingAudioPlayer({
             </button>
           ) : (
             <button
-              onClick={togglePlay}
+              onClick={() => {
+                setHasInteracted(true);
+                setIsConnecting(true);
+                if (mode !== 'radio') setMode('radio');
+                togglePlay();
+              }}
               className="
                 w-full py-3 md:py-4 border border-white/50
                 text-xs md:text-sm uppercase tracking-widest font-bold
@@ -169,7 +199,11 @@ export default function LandingAudioPlayer({
                 transition
               "
             >
-              {isPlaying ? 'Pause Radio' : 'Play Live Radio'}
+              {isConnecting
+                ? 'Connecting…'
+                : isPlaying
+                ? 'Pause Radio'
+                : '▶︎ Listen Live'}
             </button>
           )}
         </div>
@@ -178,11 +212,13 @@ export default function LandingAudioPlayer({
         <div className="text-center text-xs md:text-sm text-white/60 mb-5 font-medium">
           {mode === 'video'
             ? isLive
-              ? '🔴 Live Stream Active'
-              : '⚫ Stream Offline'
+              ? '🔴 Live video is on air'
+              : '⚫ Stream currently offline'
+            : isConnecting
+            ? 'Connecting to live stream…'
             : isPlaying
-            ? '📻 Playing Live'
-            : '📻 Radio Ready'}
+            ? '📻 You’re listening live'
+            : 'Tap to start listening'}
         </div>
 
         {/* CTA */}

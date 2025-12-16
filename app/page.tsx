@@ -95,6 +95,7 @@ export default function LandingPage() {
           muted: true,
           autoplay: true,
           parent: [window.location.hostname, 'localhost', '127.0.0.1', 'still-fm.vercel.app', 'www.stillfm.com', 'stillfm.com'],
+          // Pas de layout car on veut garder les contrôles mais les cacher avec CSS
         });
 
         twitchRef.current = player;
@@ -102,6 +103,30 @@ export default function LandingPage() {
         player.addEventListener((window as any).Twitch.Player.READY, () => {
           console.log('✅ Twitch player ready (playing in background)');
           setPlayerReady(true);
+          
+          // Injecter du CSS pour cacher tout sauf le volume
+          const style = document.createElement('style');
+          style.innerHTML = `
+            /* Cacher tous les contrôles Twitch sauf le volume */
+            iframe[src*="twitch.tv"] {
+              pointer-events: auto !important;
+            }
+            
+            /* Essayer de cibler le player Twitch via iframe */
+            .twitch-minimal-controls {
+              position: relative;
+            }
+            
+            /* Alternative: Overlay custom avec seulement volume */
+            .twitch-overlay-controls {
+              position: absolute;
+              bottom: 0;
+              right: 0;
+              z-index: 100;
+              padding: 10px;
+            }
+          `;
+          document.head.appendChild(style);
         });
 
         player.addEventListener((window as any).Twitch.Player.ONLINE, () => {
@@ -196,6 +221,31 @@ export default function LandingPage() {
   return (
     <div className="relative w-full h-screen bg-black overflow-hidden">
 
+      {/* CSS Global pour cacher les contrôles Twitch */}
+      <style jsx global>{`
+        /* Cacher les contrôles Twitch dans l'iframe */
+        #twitch-embed iframe {
+          border: none;
+        }
+        
+        /* Tentative de masquer la barre de contrôle via pointer-events */
+        #twitch-embed.hide-controls {
+          position: relative;
+        }
+        
+        #twitch-embed.hide-controls::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 60px;
+          background: transparent;
+          pointer-events: none;
+          z-index: 10;
+        }
+      `}</style>
+
       {/* INSTALL APP BUTTON */}
       <InstallPWA />
 
@@ -254,22 +304,56 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* CLOSE VIDEO BUTTON - En mode fullscreen */}
+      {/* CLOSE VIDEO BUTTON + VOLUME - En mode fullscreen */}
       {watchMode && (
-        <button
-          onClick={closeVideo}
-          className="
-            fixed top-6 right-6 z-50
-            bg-black/80 backdrop-blur-sm
-            border border-white/50
-            px-6 py-3 text-sm uppercase tracking-widest font-bold
-            text-white hover:bg-white hover:text-black
-            transition-all
-            shadow-lg
-          "
-        >
-          ✕ Close Stream
-        </button>
+        <>
+          <button
+            onClick={closeVideo}
+            className="
+              fixed top-6 right-6 z-50
+              bg-black/80 backdrop-blur-sm
+              border border-white/50
+              px-6 py-3 text-sm uppercase tracking-widest font-bold
+              text-white hover:bg-white hover:text-black
+              transition-all
+              shadow-lg
+            "
+          >
+            ✕ Close Stream
+          </button>
+
+          {/* Volume Control */}
+          <div className="fixed bottom-6 right-6 z-50 bg-black/80 backdrop-blur-sm border border-white/50 p-4 shadow-lg">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  if (twitchRef.current) {
+                    const isMuted = twitchRef.current.getMuted();
+                    twitchRef.current.setMuted(!isMuted);
+                  }
+                }}
+                className="text-white hover:text-gray-300 transition-colors"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                </svg>
+              </button>
+              
+              <input
+                type="range"
+                min="0"
+                max="100"
+                defaultValue="100"
+                onChange={(e) => {
+                  if (twitchRef.current) {
+                    twitchRef.current.setVolume(parseInt(e.target.value) / 100);
+                  }
+                }}
+                className="w-24 accent-white"
+              />
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

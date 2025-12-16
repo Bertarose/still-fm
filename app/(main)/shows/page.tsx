@@ -1,20 +1,31 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { usePlayer } from '../../context/PlayerContext';
 
 export default function ShowsPage() {
   const { playShow } = usePlayer();
+  const searchParams = useSearchParams();
 
   const [allShows, setAllShows] = useState<any[]>([]);
   const [displayedShows, setDisplayedShows] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showCount, setShowCount] = useState(100); // Combien afficher
+  const [showCount, setShowCount] = useState(100);
   
   const [selectedResident, setSelectedResident] = useState<string>('ALL');
   const [selectedStyle, setSelectedStyle] = useState<string>('ALL');
   const [selectedYear, setSelectedYear] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // ✅ LIRE LE PARAMÈTRE URL ?search=TIGNASSE
+  useEffect(() => {
+    const urlSearch = searchParams.get('search');
+    if (urlSearch) {
+      console.log('🔍 URL search param detected:', urlSearch);
+      setSearchQuery(urlSearch);
+    }
+  }, [searchParams]);
 
   // Fetch TOUS les shows (pagination)
   useEffect(() => {
@@ -25,8 +36,7 @@ export default function ShowsPage() {
         const limit = 100;
         let hasMore = true;
 
-        // Fetch par batch de 100 jusqu'à avoir tout
-        while (hasMore && offset < 500) { // Max 500 pour éviter timeout
+        while (hasMore && offset < 500) {
           console.log(`📡 Fetching shows ${offset}-${offset + limit}...`);
           const res = await fetch(
             `https://api.mixcloud.com/StillFM/cloudcasts/?limit=${limit}&offset=${offset}`
@@ -37,7 +47,6 @@ export default function ShowsPage() {
             allData = [...allData, ...data.data];
             offset += limit;
             
-            // Si on a reçu moins que limit, c'est la fin
             if (data.data.length < limit) {
               hasMore = false;
             }
@@ -48,18 +57,60 @@ export default function ShowsPage() {
 
         console.log(`✅ Loaded ${allData.length} shows total`);
 
-        // Formater les shows
+        // ✅ EXTRAIRE LES VRAIS RESIDENTS DEPUIS LES TAGS MIXCLOUD
         const formatted = allData.map((show: any) => {
-          const title = show.name.toLowerCase();
+          const title = show.name;
+          
+          // Extraire resident depuis les tags ou le titre
           let resident = 'VARIOUS';
           
-          if (title.includes('poser')) resident = 'DJ POSER';
-          else if (title.includes('shadow') || title.includes('bass therapy')) resident = 'SHADOW BASS';
-          else if (title.includes('neon') || title.includes('pulse')) resident = 'NEON PULSE';
-          else if (title.includes('void') || title.includes('rider')) resident = 'VOID RIDER';
-          else if (title.includes('echo') || title.includes('drift')) resident = 'ECHO DRIFT';
-          else if (title.includes('dark') || title.includes('matter')) resident = 'DARK MATTER';
-          else if (title.includes('cosmic') || title.includes('noise')) resident = 'COSMIC NOISE';
+          // Chercher dans les tags d'abord
+          if (show.tags && show.tags.length > 0) {
+            const tagNames = show.tags.map((t: any) => t.name.toUpperCase());
+            
+            // Liste des residents connus (peut être étendue)
+            const knownResidents = [
+              'TIGNASSE', 'DANTE MAXWELL', 'COOPER RICHARDSON', 'SK7', 'BERTA ROSE',
+              'MARK PM', 'NORA ZION', 'ME FLOAT', 'MUSONI', 'LAURENCE NADEAU',
+              'CIDOINE', 'ICKY MAGDALA', 'FANEVA', 'SENZ', 'ALEX MURPHY',
+              'FAZ ONE', 'SVVIMMING', 'SKATE', 'UTSAVA', 'TECHNIQUE NADO',
+              'FLYP', 'ASH-LIN', 'UKG AFFAIR', 'SOUND VOYAGE', 'GROOVY & CHILL'
+            ];
+            
+            for (const known of knownResidents) {
+              if (tagNames.some(tag => tag.includes(known))) {
+                resident = known;
+                break;
+              }
+            }
+          }
+          
+          // Si pas trouvé dans tags, chercher dans le titre
+          if (resident === 'VARIOUS') {
+            const titleUpper = title.toUpperCase();
+            if (titleUpper.includes('TIGNASSE')) resident = 'TIGNASSE';
+            else if (titleUpper.includes('DANTE MAXWELL')) resident = 'DANTE MAXWELL';
+            else if (titleUpper.includes('COOPER RICHARDSON')) resident = 'COOPER RICHARDSON';
+            else if (titleUpper.includes('SK7')) resident = 'SK7';
+            else if (titleUpper.includes('BERTA ROSE')) resident = 'BERTA ROSE';
+            else if (titleUpper.includes('MARK PM')) resident = 'MARK PM';
+            else if (titleUpper.includes('NORA ZION')) resident = 'NORA ZION';
+            else if (titleUpper.includes('ME FLOAT')) resident = 'ME FLOAT';
+            else if (titleUpper.includes('MUSONI')) resident = 'MUSONI';
+            else if (titleUpper.includes('LAURENCE NADEAU')) resident = 'LAURENCE NADEAU';
+            else if (titleUpper.includes('CIDOINE')) resident = 'CIDOINE';
+            else if (titleUpper.includes('ICKY MAGDALA')) resident = 'ICKY MAGDALA';
+            else if (titleUpper.includes('FANEVA')) resident = 'FANEVA';
+            else if (titleUpper.includes('SENZ')) resident = 'SENZ';
+            else if (titleUpper.includes('ALEX MURPHY')) resident = 'ALEX MURPHY';
+            else if (titleUpper.includes('FAZ ONE')) resident = 'FAZ ONE';
+            else if (titleUpper.includes('SVVIMMING')) resident = 'SVVIMMING';
+            else if (titleUpper.includes('SKATE')) resident = 'SKATE';
+            else if (titleUpper.includes('UTSAVA')) resident = 'UTSAVA';
+            else if (titleUpper.includes('TECHNIQUE NADO')) resident = 'TECHNIQUE NADO';
+            else if (titleUpper.includes('FLYP')) resident = 'FLYP';
+            else if (titleUpper.includes('ASH-LIN') || titleUpper.includes('ASHLIN')) resident = 'ASH-LIN';
+          }
           
           let style = 'ELECTRONIC';
           if (show.tags && show.tags.length > 0) {
@@ -71,6 +122,9 @@ export default function ShowsPage() {
             else if (tag.includes('industrial')) style = 'INDUSTRIAL';
             else if (tag.includes('electro')) style = 'ELECTRO';
             else if (tag.includes('dubstep')) style = 'DUBSTEP';
+            else if (tag.includes('hip hop') || tag.includes('rap')) style = 'HIP HOP';
+            else if (tag.includes('grime')) style = 'GRIME';
+            else if (tag.includes('footwork') || tag.includes('juke')) style = 'FOOTWORK / JUKE';
             else style = tag.toUpperCase();
           }
           

@@ -22,13 +22,8 @@ export default function LandingPage() {
         const isOnline =
           !text.toLowerCase().includes('offline') &&
           !text.toLowerCase().includes('error');
-        console.log(
-          '🔴 Landing Twitch status:',
-          isOnline ? 'ONLINE ✅' : 'OFFLINE ⚫'
-        );
         setIsLive(isOnline);
       } catch (e) {
-        console.error('❌ Erreur Twitch API:', e);
         setIsLive(false);
       }
     };
@@ -51,10 +46,7 @@ export default function LandingPage() {
     script.id = id;
     script.src = 'https://player.twitch.tv/js/embed/v1.js';
     script.async = true;
-    script.onload = () => {
-      console.log('✅ Twitch script loaded');
-      setScriptLoaded(true);
-    };
+    script.onload = () => setScriptLoaded(true);
     document.body.appendChild(script);
 
     return () => {
@@ -82,7 +74,6 @@ export default function LandingPage() {
       }
 
       try {
-        console.log('🎥 Initializing Twitch player...');
         const player = new (window as any).Twitch.Player('twitch-embed', {
           channel: 'bertarose',
           width: '100%',
@@ -240,7 +231,8 @@ export default function LandingPage() {
             onWatchVideo={openVideo}
             onCloseVideo={closeVideo}
           />
-          <InstallPWA />
+          {/* INSTALL BUTTON sous le player */}
+          <InstallPWA className="w-full md:w-auto" />
         </div>
       )}
 

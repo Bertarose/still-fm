@@ -4,28 +4,25 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
 import LandingAudioPlayer from './components/LandingAudioPlayer';
 import InstallPWA from './components/InstallPWA';
-import { usePlayer } from '@/app/context/PlayerContext';
 
 export default function LandingPage() {
-  const { isPlaying } = usePlayer();
-
   const [isLive, setIsLive] = useState(false);
   const [watchMode, setWatchMode] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
-
+  const [playerReady, setPlayerReady] = useState(false);
   const twitchRef = useRef<any>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // 🔴 TWITCH STATUS
+  // 🔴 Check Twitch Status
   useEffect(() => {
     const checkTwitchStatus = async () => {
       try {
         const res = await fetch('https://decapi.me/twitch/uptime/bertarose');
         const text = await res.text();
-        setIsLive(
+        const isOnline =
           !text.toLowerCase().includes('offline') &&
-          !text.toLowerCase().includes('error')
-        );
+          !text.toLowerCase().includes('error');
+        setIsLive(isOnline);
       } catch {
         setIsLive(false);
       }
@@ -36,47 +33,87 @@ export default function LandingPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // 🎥 LOAD TWITCH SCRIPT
+  // 🎥 Load Twitch Script
   useEffect(() => {
     if ((window as any).Twitch) {
       setScriptLoaded(true);
       return;
     }
 
+    const id = 'twitch-embed-script';
+    if (document.getElementById(id)) return;
+
     const script = document.createElement('script');
+    script.id = id;
     script.src = 'https://player.twitch.tv/js/embed/v1.js';
     script.async = true;
     script.onload = () => setScriptLoaded(true);
+
     document.body.appendChild(script);
+
+    return () => {
+      const existingScript = document.getElementById(id);
+      if (existingScript) document.body.removeChild(existingScript);
+    };
   }, []);
 
-  // 🎥 INIT PLAYER
+  // 🎥 Twitch Player Init
   useEffect(() => {
-    if (!scriptLoaded || !isLive || twitchRef.current) return;
+    if (!scriptLoaded || !isLive || !(window as any).Twitch || twitchRef.current) return;
 
-    const player = new (window as any).Twitch.Player('twitch-embed', {
-      channel: 'bertarose',
-      width: '100%',
-      height: '100%',
-      muted: true,
-      autoplay: true,
-      parent: [window.location.hostname],
-    });
+    const initTwitch = () => {
+      const embedDiv = document.getElementById('twitch-embed');
+      if (!embedDiv) return;
 
-    twitchRef.current = player;
+      try {
+        const player = new (window as any).Twitch.Player('twitch-embed', {
+          channel: 'bertarose',
+          width: '100%',
+          height: '100%',
+          muted: true,
+          autoplay: true,
+          parent: [
+            window.location.hostname,
+            'localhost',
+            '127.0.0.1',
+            'still-fm.vercel.app',
+            'www.stillfm.com',
+            'stillfm.com',
+          ],
+        });
+        twitchRef.current = player;
+
+        player.addEventListener((window as any).Twitch.Player.READY, () => setPlayerReady(true));
+        player.addEventListener((window as any).Twitch.Player.ONLINE, () => setIsLive(true));
+        player.addEventListener((window as any).Twitch.Player.OFFLINE, () => setIsLive(false));
+      } catch (error) {
+        console.error('Twitch init error:', error);
+      }
+    };
+
+    setTimeout(initTwitch, 500);
+
+    return () => {
+      if (twitchRef.current?.destroy) {
+        twitchRef.current.destroy();
+        twitchRef.current = null;
+      }
+    };
   }, [scriptLoaded, isLive]);
 
   const openVideo = useCallback(() => {
-    twitchRef.current?.setMuted(false);
+    if (!twitchRef.current) return;
+    twitchRef.current.setMuted(false);
     setWatchMode(true);
   }, []);
 
   const closeVideo = useCallback(() => {
-    twitchRef.current?.setMuted(true);
+    if (!twitchRef.current) return;
+    twitchRef.current.setMuted(true);
     setWatchMode(false);
   }, []);
 
-  // 🌌 CANVAS
+  // 🌌 Canvas Stars
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -93,6 +130,7 @@ export default function LandingPage() {
       r: Math.random() * 1.5 + 0.5,
     }));
 
+    let animationId: number;
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = 'rgba(255,255,255,0.6)';
@@ -101,10 +139,11 @@ export default function LandingPage() {
         ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
         ctx.fill();
       });
-      requestAnimationFrame(draw);
+      animationId = requestAnimationFrame(draw);
     };
 
     draw();
+    return () => cancelAnimationFrame(animationId);
   }, []);
 
   return (
@@ -139,15 +178,20 @@ export default function LandingPage() {
         />
       )}
 
-      {/* LOGO — disappears once radio plays */}
-      {!watchMode && !isPlaying && (
-        <div className="fixed inset-0 z-20 flex items-center justify-center pointer-events-none">
+      {!watchMode && (
+        <div
+          className="
+            fixed inset-0 z-20 flex flex-col items-center justify-center
+            text-white pointer-events-none
+            -translate-y-20 md:-translate-y-8
+          "
+        >
           <Image
             src="/Stillfm logo-white.png"
             alt="Still FM"
             width={600}
             height={200}
-            className="w-[280px] md:w-[480px]"
+            className="w-[300px] sm:w-[260px] md:w-[500px]"
             priority
           />
         </div>
@@ -166,7 +210,7 @@ export default function LandingPage() {
       {watchMode && (
         <button
           onClick={closeVideo}
-          className="fixed top-6 right-6 z-50 bg-black/80 border border-white/50 px-6 py-3 text-sm uppercase tracking-widest font-bold text-white hover:bg-white hover:text-black transition-all"
+          className="fixed top-6 right-6 z-50 bg-black/80 backdrop-blur-sm border border-white/50 px-6 py-3 text-sm uppercase tracking-widest font-bold text-white hover:bg-white/10 hover:text-white/90 transition-all shadow-lg"
         >
           ✕ Close Stream
         </button>

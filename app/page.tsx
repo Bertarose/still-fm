@@ -309,15 +309,7 @@ export default function LandingPage() {
         <>
           <button
             onClick={closeVideo}
-            className="
-              fixed top-6 right-6 z-50
-              bg-black/80 backdrop-blur-sm
-              border border-white/50
-              px-6 py-3 text-sm uppercase tracking-widest font-bold
-              text-white hover:bg-white hover:text-black
-              transition-all
-              shadow-lg
-            "
+            className="fixed top-6 right-6 z-50 bg-black/80 backdrop-blur-sm border border-white/50 px-6 py-3 text-sm uppercase tracking-widest font-bold text-white hover:bg-white hover:text-black transition-all shadow-lg"
           >
             ✕ Close Stream
           </button>

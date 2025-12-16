@@ -33,19 +33,19 @@ export default function LandingAudioPlayer({
       w-full md:w-96
       bg-black/95 backdrop-blur-xl
       border-t md:border border-white/20
-      md:rounded-xl shadow-2xl
+      shadow-2xl
       font-mono
       select-none
       z-40
     ">
       <div className="p-5 md:p-6">
 
-        {/* TITRE - Textes plus gros */}
+        {/* TITRE - Plus petit */}
         <div className="mb-5 text-center pointer-events-none">
-          <div className="text-[10px] md:text-xs uppercase tracking-[0.25em] text-white/40 mb-1">
+          <div className="text-[9px] md:text-[10px] uppercase tracking-[0.25em] text-white/40 mb-1">
             Still FM
           </div>
-          <div className="text-base md:text-lg font-bold text-white">
+          <div className="text-xs md:text-sm font-bold text-white">
             Montreal Underground Radio
           </div>
         </div>

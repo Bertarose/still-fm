@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { usePlayer } from '../../context/PlayerContext';
 
-export default function ShowsPage() {
+function ShowsContent() {
   const { playShow } = usePlayer();
   const searchParams = useSearchParams();
 
@@ -352,5 +352,21 @@ export default function ShowsPage() {
 
       </main>
     </div>
+  );
+}
+
+export default function ShowsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black text-white font-mono flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-xl uppercase tracking-wider mb-2 animate-pulse">
+            Loading...
+          </div>
+        </div>
+      </div>
+    }>
+      <ShowsContent />
+    </Suspense>
   );
 }

@@ -18,10 +18,10 @@ export default function LandingPage() {
       try {
         const res = await fetch('https://decapi.me/twitch/uptime/bertarose');
         const text = await res.text();
-        const online =
+        const isOnline =
           !text.toLowerCase().includes('offline') &&
           !text.toLowerCase().includes('error');
-        setIsLive(online);
+        setIsLive(isOnline);
       } catch {
         setIsLive(false);
       }
@@ -119,7 +119,7 @@ export default function LandingPage() {
     };
   }, [scriptLoaded, isLive]);
 
-  // Video open/close with vibration & shake effect
+  // Video open/close avec vibration et effet visuel
   const openVideo = useCallback(() => {
     if (!twitchRef.current) return;
     twitchRef.current.setMuted(false);
@@ -128,11 +128,11 @@ export default function LandingPage() {
     // Vibration mobile
     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
-    // Shake effect sur le bouton
-    const btn = document.getElementById('watch-btn');
-    if (btn) {
-      btn.classList.add('vibe-effect');
-      setTimeout(() => btn.classList.remove('vibe-effect'), 600);
+    // Petite animation landing
+    const landing = document.querySelector('.landing-page');
+    if (landing) {
+      landing.classList.add('vibe-effect');
+      setTimeout(() => landing.classList.remove('vibe-effect'), 600);
     }
   }, []);
 
@@ -227,16 +227,11 @@ export default function LandingPage() {
 
       {/* Player + Install */}
       {!watchMode && (
-        <div
-          className={`fixed bottom-0 left-0 right-0 md:left-4 md:bottom-4 z-50 flex flex-col md:items-start items-center gap-2 transition-all ${
-            isLive ? 'footer-glow' : ''
-          }`}
-        >
+        <div className="fixed bottom-0 left-0 right-0 md:left-4 md:bottom-4 z-50 flex flex-col md:items-start items-center gap-2">
           <LandingAudioPlayer
             isLive={isLive}
             onWatchVideo={openVideo}
             onCloseVideo={closeVideo}
-            watchBtnId="watch-btn"
           />
           <InstallPWA />
         </div>
@@ -263,13 +258,6 @@ export default function LandingPage() {
           50% { transform: translate(-6px,6px); }
           75% { transform: translate(6px,6px); }
           100% { transform: translate(0,0); }
-        }
-        .footer-glow {
-          animation: pulse 1s infinite alternate;
-        }
-        @keyframes pulse {
-          0% { box-shadow: 0 0 5px #fff; }
-          100% { box-shadow: 0 0 20px #fff; }
         }
       `}</style>
     </div>

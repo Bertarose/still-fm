@@ -19,8 +19,15 @@ export default function LandingPage() {
       try {
         const res = await fetch('https://decapi.me/twitch/uptime/bertarose');
         const text = await res.text();
-        const isOnline = !text.toLowerCase().includes('offline') && !text.toLowerCase().includes('error');
-        console.log('🔴 Landing Twitch status:', isOnline ? 'ONLINE ✅' : 'OFFLINE ⚫');
+        const isOnline =
+          !text.toLowerCase().includes('offline') &&
+          !text.toLowerCase().includes('error');
+
+        console.log(
+          '🔴 Landing Twitch status:',
+          isOnline ? 'ONLINE ✅' : 'OFFLINE ⚫'
+        );
+
         setIsLive(isOnline);
       } catch (e) {
         console.error('❌ Erreur Twitch API:', e);
@@ -41,9 +48,7 @@ export default function LandingPage() {
     }
 
     const id = 'twitch-embed-script';
-    if (document.getElementById(id)) {
-      return;
-    }
+    if (document.getElementById(id)) return;
 
     const script = document.createElement('script');
     script.id = id;
@@ -53,29 +58,27 @@ export default function LandingPage() {
       console.log('✅ Twitch script loaded');
       setScriptLoaded(true);
     };
+
     document.body.appendChild(script);
 
     return () => {
       const existingScript = document.getElementById(id);
-      if (existingScript) {
-        document.body.removeChild(existingScript);
-      }
+      if (existingScript) document.body.removeChild(existingScript);
     };
   }, []);
 
   // 🎥 TWITCH PLAYER INIT
   useEffect(() => {
-    if (!scriptLoaded || !isLive || !(window as any).Twitch || twitchRef.current) return;
+    if (!scriptLoaded || !isLive || !(window as any).Twitch || twitchRef.current)
+      return;
 
     let retryCount = 0;
     const maxRetries = 10;
 
     const initTwitch = () => {
       const embedDiv = document.getElementById('twitch-embed');
-      
+
       if (!embedDiv) {
-        console.log(`⏳ Waiting for embed div... (attempt ${retryCount + 1}/${maxRetries})`);
-        
         if (retryCount < maxRetries) {
           retryCount++;
           setTimeout(initTwitch, 200);
@@ -85,55 +88,42 @@ export default function LandingPage() {
 
       try {
         console.log('🎥 Initializing Twitch player...');
-        
+
         const player = new (window as any).Twitch.Player('twitch-embed', {
           channel: 'bertarose',
           width: '100%',
           height: '100%',
           muted: true,
           autoplay: true,
-          parent: [window.location.hostname, 'localhost', '127.0.0.1', 'still-fm.vercel.app', 'www.stillfm.com', 'stillfm.com'],
+          parent: [
+            window.location.hostname,
+            'localhost',
+            '127.0.0.1',
+            'still-fm.vercel.app',
+            'www.stillfm.com',
+            'stillfm.com',
+          ],
         });
 
         twitchRef.current = player;
 
-        player.addEventListener((window as any).Twitch.Player.READY, () => {
-          console.log('✅ Twitch player ready');
-          setPlayerReady(true);
-          
-          // 🎯 ASTUCE : Ajouter du CSS pour accélérer la disparition des contrôles
-          const style = document.createElement('style');
-          style.innerHTML = `
-            /* Force les contrôles Twitch à disparaître plus vite */
-            #twitch-embed iframe {
-              pointer-events: auto !important;
-            }
-            
-            /* Cache le curseur après 0.5s au lieu de 3s */
-            #twitch-embed {
-              cursor: none;
-            }
-            
-            #twitch-embed:hover {
-              cursor: none;
-            }
-          `;
-          document.head.appendChild(style);
-          
-          // 🎯 Simuler l'inactivité en enlevant le focus de l'iframe après 500ms
-          setTimeout(() => {
-            const iframe = document.querySelector('#twitch-embed iframe') as HTMLElement;
-            if (iframe) {
-              // Créer un événement mouseleave pour forcer les contrôles à disparaître
-              const event = new MouseEvent('mouseleave', { bubbles: true });
-              iframe.dispatchEvent(event);
-              console.log('👻 Simulating inactivity to hide controls');
-            }
-          }, 500);
-        });
+        player.addEventListener(
+          (window as any).Twitch.Player.READY,
+          () => {
+            console.log('✅ Twitch player ready');
+            setPlayerReady(true);
+          }
+        );
 
-        player.addEventListener((window as any).Twitch.Player.ONLINE, () => setIsLive(true));
-        player.addEventListener((window as any).Twitch.Player.OFFLINE, () => setIsLive(false));
+        player.addEventListener(
+          (window as any).Twitch.Player.ONLINE,
+          () => setIsLive(true)
+        );
+
+        player.addEventListener(
+          (window as any).Twitch.Player.OFFLINE,
+          () => setIsLive(false)
+        );
       } catch (error) {
         console.error('❌ Twitch player init error:', error);
       }
@@ -150,23 +140,12 @@ export default function LandingPage() {
   }, [scriptLoaded, isLive]);
 
   const openVideo = useCallback(() => {
-    console.log('🎬 Opening fullscreen video...');
     if (!twitchRef.current) return;
     twitchRef.current.setMuted(false);
     setWatchMode(true);
-    
-    // Re-simuler l'inactivité après ouverture fullscreen
-    setTimeout(() => {
-      const iframe = document.querySelector('#twitch-embed iframe') as HTMLElement;
-      if (iframe) {
-        const event = new MouseEvent('mouseleave', { bubbles: true });
-        iframe.dispatchEvent(event);
-      }
-    }, 500);
   }, []);
 
   const closeVideo = useCallback(() => {
-    console.log('🛑 Closing fullscreen...');
     if (!twitchRef.current) return;
     twitchRef.current.setMuted(true);
     setWatchMode(false);
@@ -176,6 +155,7 @@ export default function LandingPage() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
@@ -189,6 +169,7 @@ export default function LandingPage() {
     }));
 
     let animationId: number;
+
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = 'rgba(255,255,255,0.6)';
@@ -203,62 +184,9 @@ export default function LandingPage() {
     draw();
 
     return () => {
-      if (animationId) {
-        cancelAnimationFrame(animationId);
-      }
+      if (animationId) cancelAnimationFrame(animationId);
     };
   }, []);
-
-  // 🎯 Forcer les contrôles à disparaître en permanence
-  useEffect(() => {
-    if (!playerReady || !isLive) return;
-    
-    const hideControls = () => {
-      const embedContainer = document.getElementById('twitch-embed');
-      const iframe = embedContainer?.querySelector('iframe') as HTMLElement;
-      
-      if (iframe) {
-        // Simuler que la souris n'est PAS sur le player
-        const mouseLeaveEvent = new MouseEvent('mouseleave', { 
-          bubbles: true,
-          cancelable: true,
-          view: window 
-        });
-        
-        // Dispatch sur l'iframe et le container
-        iframe.dispatchEvent(mouseLeaveEvent);
-        embedContainer?.dispatchEvent(mouseLeaveEvent);
-        
-        // Aussi simuler un mouseout
-        const mouseOutEvent = new MouseEvent('mouseout', { 
-          bubbles: true,
-          cancelable: true,
-          view: window 
-        });
-        iframe.dispatchEvent(mouseOutEvent);
-      }
-    };
-    
-    // Premier hide après 500ms
-    const initialTimeout = setTimeout(hideControls, 500);
-    
-    // Puis répéter toutes les secondes pour maintenir l'état caché
-    const interval = setInterval(hideControls, 1000);
-    
-    // Aussi cacher quand la souris bouge sur la page
-    const handleMouseMove = () => {
-      // Petit délai avant de re-cacher
-      setTimeout(hideControls, 100);
-    };
-    
-    document.addEventListener('mousemove', handleMouseMove);
-    
-    return () => {
-      clearTimeout(initialTimeout);
-      clearInterval(interval);
-      document.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, [playerReady, isLive]);
 
   return (
     <div className="relative w-full h-screen bg-black overflow-hidden">
@@ -267,8 +195,8 @@ export default function LandingPage() {
 
       {/* TWITCH EMBED */}
       {isLive && (
-        <div 
-          id="twitch-embed" 
+        <div
+          id="twitch-embed"
           className={`absolute inset-0 transition-opacity duration-700 ${
             watchMode ? 'z-30 opacity-100' : 'z-0 opacity-70'
           }`}
@@ -295,21 +223,27 @@ export default function LandingPage() {
         />
       )}
 
-      {/* LOGO */}
+      {/* LOGO — PLUS GROS ET PLUS HAUT SUR MOBILE */}
       {!watchMode && (
-        <div className="fixed inset-0 z-20 flex flex-col items-center justify-center text-white pointer-events-none -translate-y-12 md:-translate-y-8">
+        <div
+          className="
+            fixed inset-0 z-20 flex flex-col items-center justify-center
+            text-white pointer-events-none
+            -translate-y-20 md:-translate-y-8
+          "
+        >
           <Image
             src="/Stillfm logo-white.png"
             alt="Still FM"
             width={600}
             height={200}
-            className="w-[220px] md:w-[500px]"
+            className="w-[300px] sm:w-[260px] md:w-[500px]"
             priority
           />
         </div>
       )}
 
-      {/* PLAYER */}
+      {/* PLAYER AUDIO */}
       {!watchMode && (
         <div className="fixed bottom-0 left-0 right-0 md:left-4 md:bottom-4 z-50">
           <LandingAudioPlayer

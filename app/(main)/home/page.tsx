@@ -229,7 +229,7 @@ export default function Home() {
                 <img
                   src={featuredShow.img}
                   alt="Hero"
-                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                  className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
                   <div className="bg-white text-black px-4 py-2 text-sm font-bold uppercase">▶ Play Now</div>

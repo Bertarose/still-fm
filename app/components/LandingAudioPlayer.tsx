@@ -39,16 +39,22 @@ export default function LandingAudioPlayer({
               <span className="text-white text-xs font-bold">SF</span>
             </div>
             <div>
-              <div className="text-[9px] text-white/40 uppercase tracking-wider">Still FM</div>
-              <div className="text-xs text-white font-medium">Montreal Radio</div>
+              <div className="text-[9px] text-white/40 uppercase tracking-wider">
+                Still FM
+              </div>
+              <div className="text-xs text-white font-medium">
+                Montreal Radio
+              </div>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
-            {/* Status indicator */}
-            <div className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
-            
-            {/* Expand button */}
+            <div
+              className={`w-2 h-2 rounded-full ${
+                isPlaying ? 'bg-green-400 animate-pulse' : 'bg-gray-600'
+              }`}
+            />
+
             <button
               onClick={() => setIsMinimized(false)}
               className="border border-white/30 px-3 py-1.5 text-[10px] uppercase tracking-wider text-white/70 hover:text-white hover:bg-white/5 hover:border-white/40 transition-all"
@@ -63,17 +69,19 @@ export default function LandingAudioPlayer({
 
   // Version complète
   return (
-    <div className="
-      w-full md:w-96
-      bg-black/95 backdrop-blur-xl
-      border-t md:border border-white/20
-      shadow-2xl
-      font-mono
-      select-none
-      z-40
-      relative
-    ">
-      {/* Bouton Minimize - Desktop seulement */}
+    <div
+      className="
+        w-full md:w-96
+        bg-black/95 backdrop-blur-xl
+        border-t md:border border-white/20
+        shadow-2xl
+        font-mono
+        select-none
+        z-40
+        relative
+      "
+    >
+      {/* Minimize */}
       <button
         onClick={() => setIsMinimized(true)}
         className="hidden md:block absolute -top-8 right-0 bg-black/90 border border-white/20 px-3 py-1 text-[10px] uppercase tracking-wider text-white/60 hover:text-white hover:border-white/40 transition-all"
@@ -83,7 +91,7 @@ export default function LandingAudioPlayer({
 
       <div className="p-5 md:p-6">
 
-        {/* TITRE - Plus petit */}
+        {/* TITRE */}
         <div className="mb-5 text-center pointer-events-none">
           <div className="text-[9px] md:text-[10px] uppercase tracking-[0.25em] text-white/40 mb-1">
             Still FM
@@ -98,15 +106,16 @@ export default function LandingAudioPlayer({
           <button
             onClick={() => setMode('video')}
             className={`text-xs md:text-sm uppercase tracking-wider px-4 py-2 rounded transition
-              ${mode === 'video'
-                ? 'bg-white text-black font-bold'
-                : 'text-white/50 hover:text-white'}
+              ${
+                mode === 'video'
+                  ? 'bg-white text-black font-bold'
+                  : 'text-white/50 hover:text-white'
+              }
             `}
           >
             Live Video
           </button>
 
-          {/* SWITCH */}
           <div
             className="relative w-16 h-8 flex-shrink-0 cursor-pointer"
             onClick={() => setMode(mode === 'video' ? 'radio' : 'video')}
@@ -122,9 +131,11 @@ export default function LandingAudioPlayer({
           <button
             onClick={() => setMode('radio')}
             className={`text-xs md:text-sm uppercase tracking-wider px-4 py-2 rounded transition
-              ${mode === 'radio'
-                ? 'bg-white text-black font-bold'
-                : 'text-white/50 hover:text-white'}
+              ${
+                mode === 'radio'
+                  ? 'bg-white text-black font-bold'
+                  : 'text-white/50 hover:text-white'
+              }
             `}
           >
             Radio
@@ -140,6 +151,7 @@ export default function LandingAudioPlayer({
               className="
                 w-full py-3 md:py-4 border border-white/50
                 text-xs md:text-sm uppercase tracking-widest font-bold
+                text-white [-webkit-text-fill-color:white]
                 hover:bg-white hover:text-black
                 transition disabled:opacity-30 disabled:cursor-not-allowed
               "
@@ -152,6 +164,7 @@ export default function LandingAudioPlayer({
               className="
                 w-full py-3 md:py-4 border border-white/50
                 text-xs md:text-sm uppercase tracking-widest font-bold
+                text-white [-webkit-text-fill-color:white]
                 hover:bg-white hover:text-black
                 transition
               "
@@ -161,14 +174,18 @@ export default function LandingAudioPlayer({
           )}
         </div>
 
-        {/* STATUS - Plus visible */}
+        {/* STATUS */}
         <div className="text-center text-xs md:text-sm text-white/60 mb-5 font-medium">
           {mode === 'video'
-            ? isLive ? '🔴 Live Stream Active' : '⚫ Stream Offline'
-            : isPlaying ? '📻 Playing Live' : '📻 Radio Ready'}
+            ? isLive
+              ? '🔴 Live Stream Active'
+              : '⚫ Stream Offline'
+            : isPlaying
+            ? '📻 Playing Live'
+            : '📻 Radio Ready'}
         </div>
 
-        {/* CTA ENTER - Texte amélioré */}
+        {/* CTA */}
         <a
           href="/home"
           className="

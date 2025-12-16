@@ -84,7 +84,7 @@ export default function LandingPage() {
       }
 
       try {
-        console.log('🎥 Initializing Twitch player (background)...');
+        console.log('🎥 Initializing Twitch player...');
         
         const player = new (window as any).Twitch.Player('twitch-embed', {
           channel: 'bertarose',
@@ -100,6 +100,36 @@ export default function LandingPage() {
         player.addEventListener((window as any).Twitch.Player.READY, () => {
           console.log('✅ Twitch player ready');
           setPlayerReady(true);
+          
+          // 🎯 ASTUCE : Ajouter du CSS pour accélérer la disparition des contrôles
+          const style = document.createElement('style');
+          style.innerHTML = `
+            /* Force les contrôles Twitch à disparaître plus vite */
+            #twitch-embed iframe {
+              pointer-events: auto !important;
+            }
+            
+            /* Cache le curseur après 0.5s au lieu de 3s */
+            #twitch-embed {
+              cursor: none;
+            }
+            
+            #twitch-embed:hover {
+              cursor: none;
+            }
+          `;
+          document.head.appendChild(style);
+          
+          // 🎯 Simuler l'inactivité en enlevant le focus de l'iframe après 500ms
+          setTimeout(() => {
+            const iframe = document.querySelector('#twitch-embed iframe') as HTMLElement;
+            if (iframe) {
+              // Créer un événement mouseleave pour forcer les contrôles à disparaître
+              const event = new MouseEvent('mouseleave', { bubbles: true });
+              iframe.dispatchEvent(event);
+              console.log('👻 Simulating inactivity to hide controls');
+            }
+          }, 500);
         });
 
         player.addEventListener((window as any).Twitch.Player.ONLINE, () => setIsLive(true));
@@ -124,6 +154,15 @@ export default function LandingPage() {
     if (!twitchRef.current) return;
     twitchRef.current.setMuted(false);
     setWatchMode(true);
+    
+    // Re-simuler l'inactivité après ouverture fullscreen
+    setTimeout(() => {
+      const iframe = document.querySelector('#twitch-embed iframe') as HTMLElement;
+      if (iframe) {
+        const event = new MouseEvent('mouseleave', { bubbles: true });
+        iframe.dispatchEvent(event);
+      }
+    }, 500);
   }, []);
 
   const closeVideo = useCallback(() => {
@@ -170,37 +209,37 @@ export default function LandingPage() {
     };
   }, []);
 
+  // 🎯 Forcer les contrôles à disparaître périodiquement
+  useEffect(() => {
+    if (!playerReady || !isLive) return;
+    
+    const hideControls = () => {
+      const iframe = document.querySelector('#twitch-embed iframe') as HTMLElement;
+      if (iframe) {
+        const event = new MouseEvent('mouseleave', { bubbles: true });
+        iframe.dispatchEvent(event);
+      }
+    };
+    
+    // Répéter toutes les 2 secondes pour garder les contrôles cachés
+    const interval = setInterval(hideControls, 2000);
+    
+    return () => clearInterval(interval);
+  }, [playerReady, isLive]);
+
   return (
     <div className="relative w-full h-screen bg-black overflow-hidden">
 
       <InstallPWA />
 
-      {/* TWITCH EMBED avec CADRE NOIR qui cache les contrôles */}
+      {/* TWITCH EMBED */}
       {isLive && (
-        <div className={`absolute inset-0 ${watchMode ? 'z-30' : 'z-0'}`}>
-          {/* Container qui agrandi le player pour qu'on puisse le recadrer */}
-          <div className="absolute" style={{
-            top: '-60px',
-            left: '-40px',
-            right: '-40px',
-            bottom: '-80px',
-          }}>
-            <div id="twitch-embed" className="w-full h-full" />
-          </div>
-
-          {/* CADRE NOIR - Cache les bords avec les contrôles Twitch */}
-          {/* Haut - cache le logo Twitch */}
-          <div className="absolute top-0 left-0 right-0 h-16 bg-black z-10" />
-          
-          {/* Bas - cache les contrôles */}
-          <div className="absolute bottom-0 left-0 right-0 h-20 bg-black z-10" />
-          
-          {/* Gauche */}
-          <div className="absolute top-0 left-0 bottom-0 w-10 bg-black z-10" />
-          
-          {/* Droite */}
-          <div className="absolute top-0 right-0 bottom-0 w-10 bg-black z-10" />
-        </div>
+        <div 
+          id="twitch-embed" 
+          className={`absolute inset-0 transition-opacity duration-700 ${
+            watchMode ? 'z-30 opacity-100' : 'z-0 opacity-70'
+          }`}
+        />
       )}
 
       {/* FALLBACK VIDEO */}

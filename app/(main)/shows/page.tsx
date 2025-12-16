@@ -363,6 +363,7 @@ function ShowsContent() {
             >
               Reset Filters
             </button>
+          </div>
         )}
 
       </main>

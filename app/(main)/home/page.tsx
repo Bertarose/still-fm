@@ -44,11 +44,22 @@ export default function Home() {
     // Ne pas initialiser si pas live ou déjà initialisé
     if (!isLive || playerInitialized.current) return;
 
+    let retryCount = 0;
+    const maxRetries = 10;
+
     const initTwitch = () => {
       const embedDiv = document.getElementById('twitch-embed-home');
       
       if (!(window as any).Twitch || !embedDiv) {
-        console.log('⏳ Waiting for Twitch script or embed div...');
+        console.log(`⏳ Waiting for Twitch script or embed div... (attempt ${retryCount + 1}/${maxRetries})`);
+        
+        // Retry après un délai
+        if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(initTwitch, 200); // Essayer toutes les 200ms
+        } else {
+          console.error('❌ Failed to initialize Twitch player after max retries');
+        }
         return;
       }
 
@@ -95,13 +106,13 @@ export default function Home() {
       script.async = true;
       script.onload = () => {
         console.log('✅ Twitch script loaded');
-        // Attendre un peu que le DOM soit prêt
-        setTimeout(initTwitch, 500);
+        // Attendre que React crée le div
+        setTimeout(initTwitch, 1000);
       };
       document.body.appendChild(script);
     } else {
-      // Attendre un peu que le DOM soit prêt
-      setTimeout(initTwitch, 500);
+      // Attendre que React crée le div
+      setTimeout(initTwitch, 1000);
     }
 
     return () => {

@@ -31,7 +31,7 @@ export default function LandingPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Twitch script
+  // Chargement du script Twitch
   useEffect(() => {
     if ((window as any).Twitch) {
       setScriptLoaded(true);
@@ -53,10 +53,9 @@ export default function LandingPage() {
     };
   }, []);
 
-  // Twitch player init
+  // Initialisation du player Twitch
   useEffect(() => {
-    if (!scriptLoaded || !isLive || !(window as any).Twitch || twitchRef.current)
-      return;
+    if (!scriptLoaded || !isLive || twitchRef.current) return;
 
     let retryCount = 0;
     const maxRetries = 10;
@@ -119,7 +118,7 @@ export default function LandingPage() {
     };
   }, [scriptLoaded, isLive]);
 
-  // Video open/close avec vibration et effet visuel
+  // Fonction pour ouvrir la vidéo
   const openVideo = useCallback(() => {
     if (!twitchRef.current) return;
     twitchRef.current.setMuted(false);
@@ -136,6 +135,7 @@ export default function LandingPage() {
     }
   }, []);
 
+  // Fonction pour fermer la vidéo
   const closeVideo = useCallback(() => {
     if (!twitchRef.current) return;
     twitchRef.current.setMuted(true);

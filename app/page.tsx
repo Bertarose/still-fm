@@ -234,12 +234,27 @@ export default function LandingPage() {
 
       {/* TWITCH EMBED */}
       {isLive && (
-        <div 
-          id="twitch-embed" 
-          className={`absolute inset-0 transition-opacity duration-700 ${
-            watchMode ? 'z-30 opacity-100' : 'z-0 opacity-70'
-          }`}
-        />
+        <div className={`absolute inset-0 ${watchMode ? 'z-30' : 'z-0'}`}>
+          <div 
+            id="twitch-embed" 
+            className={`w-full h-full transition-opacity duration-700 ${
+              watchMode ? 'opacity-100' : 'opacity-70'
+            }`}
+          />
+          
+          {/* Overlay qui force les contrôles à rester cachés en bloquant le hover */}
+          <div 
+            className="absolute inset-0 pointer-events-auto"
+            style={{ 
+              background: 'transparent',
+              zIndex: 1
+            }}
+            onMouseEnter={(e) => {
+              // Empêche le hover sur l'iframe Twitch
+              e.preventDefault();
+            }}
+          />
+        </div>
       )}
 
       {/* FALLBACK VIDEO */}

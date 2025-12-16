@@ -18,6 +18,7 @@ export default function LandingAudioPlayer({
 }: Props) {
   const { isPlaying, togglePlay } = usePlayer();
   const [mode, setMode] = useState<Mode>('radio');
+  const [isMinimized, setIsMinimized] = useState(false);
 
   // 🔁 Synchronisation mode
   useEffect(() => {
@@ -28,6 +29,39 @@ export default function LandingAudioPlayer({
     }
   }, [mode, onWatchVideo, onCloseVideo]);
 
+  // Version minimisée (desktop seulement)
+  if (isMinimized) {
+    return (
+      <div className="hidden md:block w-96 bg-black/95 backdrop-blur-xl border border-white/20 shadow-2xl font-mono">
+        <div className="p-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/10 flex items-center justify-center border border-white/20">
+              <span className="text-white text-xs font-bold">SF</span>
+            </div>
+            <div>
+              <div className="text-[9px] text-white/40 uppercase tracking-wider">Still FM</div>
+              <div className="text-xs text-white font-medium">Montreal Radio</div>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {/* Status indicator */}
+            <div className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
+            
+            {/* Expand button */}
+            <button
+              onClick={() => setIsMinimized(false)}
+              className="border border-white/30 px-3 py-1.5 text-[10px] uppercase tracking-wider text-white/70 hover:text-white hover:bg-white/5 hover:border-white/40 transition-all"
+            >
+              Expand ↑
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Version complète
   return (
     <div className="
       w-full md:w-96
@@ -37,7 +71,16 @@ export default function LandingAudioPlayer({
       font-mono
       select-none
       z-40
+      relative
     ">
+      {/* Bouton Minimize - Desktop seulement */}
+      <button
+        onClick={() => setIsMinimized(true)}
+        className="hidden md:block absolute -top-8 right-0 bg-black/90 border border-white/20 px-3 py-1 text-[10px] uppercase tracking-wider text-white/60 hover:text-white hover:border-white/40 transition-all"
+      >
+        Minimize ↓
+      </button>
+
       <div className="p-5 md:p-6">
 
         {/* TITRE - Plus petit */}

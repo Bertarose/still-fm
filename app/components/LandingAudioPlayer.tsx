@@ -10,6 +10,7 @@ interface LandingAudioPlayerProps {
 }
 
 const LAST_MIXCLOUD_KEY = '/StillFM/2023-07-23-dante-maxwell-sk7-cooper-richardson-le-keyhole-ep-18-160bpm-edition-part-4/';
+const RADIO_STREAM_URL = 'http://radio.stillfm.com:8000/stream';
 
 const useMixcloudScript = (onScriptLoad: () => void) => {
   useEffect(() => {
@@ -33,11 +34,41 @@ const useMixcloudScript = (onScriptLoad: () => void) => {
 export default function LandingAudioPlayer({ isLive, onWatchVideo, onCloseVideo }: LandingAudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isReady, setIsReady] = useState(false);
-  const [currentTitle, setCurrentTitle] = useState('Loading...');
+  const [useRadio, setUseRadio] = useState(false);
+  const [isRadioOnline, setIsRadioOnline] = useState(false);
+  const [isCheckingRadio, setIsCheckingRadio] = useState(true);
   
   const widgetRef = useRef<any>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const radioRef = useRef<HTMLAudioElement>(null);
 
+  // Vérifier si la radio est en ligne
+  useEffect(() => {
+    const checkRadio = async () => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch(RADIO_STREAM_URL, { 
+          method: 'HEAD',
+          signal: controller.signal 
+        });
+        
+        clearTimeout(timeoutId);
+        setIsRadioOnline(response.ok);
+      } catch (error) {
+        setIsRadioOnline(false);
+      } finally {
+        setIsCheckingRadio(false);
+      }
+    };
+
+    checkRadio();
+    const interval = setInterval(checkRadio, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Initialiser le widget Mixcloud
   const initWidget = useCallback(() => {
     if (!iframeRef.current || widgetRef.current || !(window as any).Mixcloud) return;
 
@@ -55,18 +86,61 @@ export default function LandingAudioPlayer({ isLive, onWatchVideo, onCloseVideo 
 
   useMixcloudScript(initWidget);
 
+  // Toggle Play/Pause
   const handleTogglePlay = () => {
-    if (!widgetRef.current || !isReady) return;
-    
-    if (isPlaying) {
-      widgetRef.current.pause();
-    } else {
-      widgetRef.current.play();
+    if (useRadio && radioRef.current) {
+      if (isPlaying) {
+        radioRef.current.pause();
+      } else {
+        radioRef.current.play().catch(console.error);
+      }
+      setIsPlaying(!isPlaying);
+    } else if (!useRadio && widgetRef.current && isReady) {
+      if (isPlaying) {
+        widgetRef.current.pause();
+      } else {
+        widgetRef.current.play();
+      }
     }
   };
 
+  // Switch Radio/Mixcloud
+  const handleSwitch = (toRadio: boolean) => {
+    setUseRadio(toRadio);
+
+    if (toRadio) {
+      if (isRadioOnline && radioRef.current) {
+        if (widgetRef.current && isReady) {
+          widgetRef.current.pause();
+        }
+        radioRef.current.play().catch(console.error);
+        setIsPlaying(true);
+      }
+    } else {
+      if (radioRef.current) {
+        radioRef.current.pause();
+      }
+      if (widgetRef.current && isReady) {
+        widgetRef.current.load(LAST_MIXCLOUD_KEY, true);
+        setIsPlaying(true);
+      }
+    }
+  };
+
+  const currentTitle = useRadio 
+    ? (isRadioOnline ? 'Still FM Radio - Live Stream' : 'Radio Offline')
+    : 'Latest Mixcloud Show';
+
   return (
     <>
+      {/* Audio Element pour Radio */}
+      <audio
+        ref={radioRef}
+        src={RADIO_STREAM_URL}
+        preload="none"
+        className="hidden"
+      />
+
       {/* Widget Mixcloud invisible */}
       <iframe
         ref={iframeRef}
@@ -76,16 +150,16 @@ export default function LandingAudioPlayer({ isLive, onWatchVideo, onCloseVideo 
       />
 
       {/* UI Player */}
-      <div className="w-full md:w-auto backdrop-blur-md bg-black/90 border border-white/20 hover:border-white/40 transition-all duration-300 font-mono">
+      <div className="w-full md:w-96 backdrop-blur-md bg-black/90 border border-white/20 hover:border-white/40 transition-all duration-300 font-mono">
         <div className="p-4 md:p-6">
           
           {/* Titre */}
           <div className="mb-4">
             <div className="text-[9px] text-white/50 uppercase tracking-[0.15em] mb-2">
-              Latest Mixcloud Show
+              Now Playing
             </div>
             <div className="text-xs md:text-sm text-white leading-tight">
-              Dante Maxwell, SK7, Cooper Richardson @ Le Keyhole
+              {currentTitle}
             </div>
           </div>
 
@@ -95,7 +169,7 @@ export default function LandingAudioPlayer({ isLive, onWatchVideo, onCloseVideo 
             {/* Play/Pause */}
             <button
               onClick={handleTogglePlay}
-              disabled={!isReady}
+              disabled={(useRadio && !isRadioOnline) || (!useRadio && !isReady)}
               className="w-12 h-12 md:w-14 md:h-14 border-2 border-white/40 hover:border-white hover:bg-white/10 transition-all flex items-center justify-center shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
             >
               {isPlaying ? (
@@ -110,18 +184,62 @@ export default function LandingAudioPlayer({ isLive, onWatchVideo, onCloseVideo 
 
             {/* Status */}
             <div className="flex-1 text-[10px] text-white/50 uppercase tracking-wider">
-              {isReady ? '● Mixcloud Ready' : 'Loading...'}
+              {useRadio ? (
+                isCheckingRadio ? 'Checking...' : isRadioOnline ? '● Live Radio' : '⚠ Offline'
+              ) : (
+                isReady ? '● Mixcloud' : 'Loading...'
+              )}
+            </div>
+          </div>
+
+          {/* Switch Radio / Mixcloud */}
+          <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/10">
+            
+            {/* Label Mixcloud */}
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full transition-all ${
+                !useRadio ? 'bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.8)]' : 'bg-white/20'
+              }`} />
+              <span className={`text-[10px] uppercase tracking-wider transition-colors ${
+                !useRadio ? 'text-white font-bold' : 'text-white/40'
+              }`}>
+                Mixcloud
+              </span>
+            </div>
+
+            {/* Toggle Switch */}
+            <label className="relative inline-flex items-center cursor-pointer mx-4">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={useRadio}
+                onChange={(e) => handleSwitch(e.target.checked)}
+              />
+              <div className="w-14 h-7 bg-white/20 peer-focus:outline-none rounded-full peer transition-all duration-300 peer-checked:bg-white/30"></div>
+              <span className="absolute left-1 top-1 w-5 h-5 bg-white rounded-full shadow-lg transform transition-transform duration-300 peer-checked:translate-x-7"></span>
+            </label>
+
+            {/* Label Radio */}
+            <div className="flex items-center gap-2">
+              <span className={`text-[10px] uppercase tracking-wider transition-colors ${
+                useRadio ? 'text-white font-bold' : 'text-white/40'
+              }`}>
+                Radio
+              </span>
+              <div className={`w-2 h-2 rounded-full transition-all ${
+                useRadio ? (isRadioOnline ? 'bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.8)]' : 'bg-red-500') : 'bg-white/20'
+              }`} />
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex flex-col gap-2">
             
             {/* Watch Live (si disponible) */}
             {isLive && (
               <button
                 onClick={onWatchVideo}
-                className="flex-1 bg-green-600 hover:bg-green-500 text-white px-4 py-2 text-xs uppercase tracking-wider font-bold transition-all flex items-center justify-center gap-2"
+                className="w-full bg-green-600 hover:bg-green-500 text-white px-4 py-2.5 text-xs uppercase tracking-wider font-bold transition-all flex items-center justify-center gap-2"
               >
                 <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
                 Watch Live Stream
@@ -131,12 +249,18 @@ export default function LandingAudioPlayer({ isLive, onWatchVideo, onCloseVideo 
             {/* Enter Site */}
             <Link
               href="/home"
-              className="flex-1 bg-white hover:bg-gray-200 text-black px-4 py-2 text-xs uppercase tracking-wider font-bold transition-all text-center"
+              className="w-full bg-white hover:bg-gray-200 text-black px-4 py-2.5 text-xs uppercase tracking-wider font-bold transition-all text-center"
             >
               Enter Site →
             </Link>
           </div>
 
+          {/* Messages d'erreur */}
+          {useRadio && !isRadioOnline && (
+            <div className="mt-3 text-[8px] text-red-400/70 uppercase tracking-wider text-center">
+              ⚠ Radio stream unavailable
+            </div>
+          )}
         </div>
       </div>
     </>

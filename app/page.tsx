@@ -13,7 +13,7 @@ export default function LandingPage() {
   const twitchRef = useRef<any>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // 🔴 Check Twitch Status
+  // 🔴 VÉRIFICATION DU STATUT TWITCH VIA API
   useEffect(() => {
     const checkTwitchStatus = async () => {
       try {
@@ -22,8 +22,15 @@ export default function LandingPage() {
         const isOnline =
           !text.toLowerCase().includes('offline') &&
           !text.toLowerCase().includes('error');
+
+        console.log(
+          '🔴 Landing Twitch status:',
+          isOnline ? 'ONLINE ✅' : 'OFFLINE ⚫'
+        );
+
         setIsLive(isOnline);
-      } catch {
+      } catch (e) {
+        console.error('❌ Erreur Twitch API:', e);
         setIsLive(false);
       }
     };
@@ -33,7 +40,7 @@ export default function LandingPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // 🎥 Load Twitch Script
+  // 🎥 TWITCH SCRIPT LOADING
   useEffect(() => {
     if ((window as any).Twitch) {
       setScriptLoaded(true);
@@ -47,7 +54,10 @@ export default function LandingPage() {
     script.id = id;
     script.src = 'https://player.twitch.tv/js/embed/v1.js';
     script.async = true;
-    script.onload = () => setScriptLoaded(true);
+    script.onload = () => {
+      console.log('✅ Twitch script loaded');
+      setScriptLoaded(true);
+    };
 
     document.body.appendChild(script);
 
@@ -57,15 +67,28 @@ export default function LandingPage() {
     };
   }, []);
 
-  // 🎥 Twitch Player Init
+  // 🎥 TWITCH PLAYER INIT
   useEffect(() => {
-    if (!scriptLoaded || !isLive || !(window as any).Twitch || twitchRef.current) return;
+    if (!scriptLoaded || !isLive || !(window as any).Twitch || twitchRef.current)
+      return;
+
+    let retryCount = 0;
+    const maxRetries = 10;
 
     const initTwitch = () => {
       const embedDiv = document.getElementById('twitch-embed');
-      if (!embedDiv) return;
+
+      if (!embedDiv) {
+        if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(initTwitch, 200);
+        }
+        return;
+      }
 
       try {
+        console.log('🎥 Initializing Twitch player...');
+
         const player = new (window as any).Twitch.Player('twitch-embed', {
           channel: 'bertarose',
           width: '100%',
@@ -81,13 +104,28 @@ export default function LandingPage() {
             'stillfm.com',
           ],
         });
+
         twitchRef.current = player;
 
-        player.addEventListener((window as any).Twitch.Player.READY, () => setPlayerReady(true));
-        player.addEventListener((window as any).Twitch.Player.ONLINE, () => setIsLive(true));
-        player.addEventListener((window as any).Twitch.Player.OFFLINE, () => setIsLive(false));
+        player.addEventListener(
+          (window as any).Twitch.Player.READY,
+          () => {
+            console.log('✅ Twitch player ready');
+            setPlayerReady(true);
+          }
+        );
+
+        player.addEventListener(
+          (window as any).Twitch.Player.ONLINE,
+          () => setIsLive(true)
+        );
+
+        player.addEventListener(
+          (window as any).Twitch.Player.OFFLINE,
+          () => setIsLive(false)
+        );
       } catch (error) {
-        console.error('Twitch init error:', error);
+        console.error('❌ Twitch player init error:', error);
       }
     };
 
@@ -113,7 +151,7 @@ export default function LandingPage() {
     setWatchMode(false);
   }, []);
 
-  // 🌌 Canvas Stars
+  // 🌌 CANVAS
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -131,6 +169,7 @@ export default function LandingPage() {
     }));
 
     let animationId: number;
+
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = 'rgba(255,255,255,0.6)';
@@ -143,14 +182,15 @@ export default function LandingPage() {
     };
 
     draw();
-    return () => cancelAnimationFrame(animationId);
+
+    return () => {
+      if (animationId) cancelAnimationFrame(animationId);
+    };
   }, []);
 
   return (
     <div className="relative w-full h-screen bg-black overflow-hidden">
-
-      <InstallPWA />
-
+      {/* TWITCH EMBED */}
       {isLive && (
         <div
           id="twitch-embed"
@@ -160,6 +200,7 @@ export default function LandingPage() {
         />
       )}
 
+      {/* FALLBACK VIDEO */}
       {!isLive && (
         <video
           src="/video.mov"
@@ -171,6 +212,7 @@ export default function LandingPage() {
         />
       )}
 
+      {/* CANVAS */}
       {!watchMode && (
         <canvas
           ref={canvasRef}
@@ -178,6 +220,7 @@ export default function LandingPage() {
         />
       )}
 
+      {/* LOGO */}
       {!watchMode && (
         <div
           className="
@@ -197,20 +240,23 @@ export default function LandingPage() {
         </div>
       )}
 
+      {/* PLAYER AUDIO + INSTALL */}
       {!watchMode && (
-        <div className="fixed bottom-0 left-0 right-0 md:left-4 md:bottom-4 z-50">
+        <div className="fixed bottom-0 left-0 right-0 md:left-4 md:bottom-4 z-50 flex flex-col items-center gap-2">
           <LandingAudioPlayer
             isLive={isLive}
             onWatchVideo={openVideo}
             onCloseVideo={closeVideo}
           />
+          <InstallPWA />
         </div>
       )}
 
+      {/* CLOSE BUTTON */}
       {watchMode && (
         <button
           onClick={closeVideo}
-          className="fixed top-6 right-6 z-50 bg-black/80 backdrop-blur-sm border border-white/50 px-6 py-3 text-sm uppercase tracking-widest font-bold text-white hover:bg-white/10 hover:text-white/90 transition-all shadow-lg"
+          className="fixed top-6 right-6 z-50 bg-black/80 backdrop-blur-sm border border-white/50 px-6 py-3 text-sm uppercase tracking-widest font-bold text-white hover:bg-white hover:text-black transition-all shadow-lg"
         >
           ✕ Close Stream
         </button>

@@ -1,156 +1,265 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { usePlayer } from '@/app/context/PlayerContext';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import Image from 'next/image';
+import LandingAudioPlayer from './components/LandingAudioPlayer';
+import InstallPWA from './components/InstallPWA';
 
-type Mode = 'video' | 'radio';
+export default function LandingPage() {
+  const [isLive, setIsLive] = useState(false);
+  const [watchMode, setWatchMode] = useState(false);
+  const [scriptLoaded, setScriptLoaded] = useState(false);
+  const twitchRef = useRef<any>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-interface Props {
-  isLive: boolean;
-  onWatchVideo: () => void;
-  onCloseVideo: () => void;
-}
-
-export default function LandingAudioPlayer({
-  isLive,
-  onWatchVideo,
-  onCloseVideo,
-}: Props) {
-  const { isPlaying, togglePlay } = usePlayer();
-  const [mode, setMode] = useState<Mode>('radio');
-
-  // 🔁 Synchronisation mode
+  // Vérification statut Twitch
   useEffect(() => {
-    if (mode === 'video') {
-      onWatchVideo();
-    } else {
-      onCloseVideo();
+    const checkTwitchStatus = async () => {
+      try {
+        const res = await fetch('https://decapi.me/twitch/uptime/bertarose');
+        const text = await res.text();
+        const isOnline =
+          !text.toLowerCase().includes('offline') &&
+          !text.toLowerCase().includes('error');
+        setIsLive(isOnline);
+      } catch {
+        setIsLive(false);
+      }
+    };
+    checkTwitchStatus();
+    const interval = setInterval(checkTwitchStatus, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Twitch script
+  useEffect(() => {
+    if ((window as any).Twitch) {
+      setScriptLoaded(true);
+      return;
     }
-  }, [mode, onWatchVideo, onCloseVideo]);
+    const id = 'twitch-embed-script';
+    if (document.getElementById(id)) return;
+
+    const script = document.createElement('script');
+    script.id = id;
+    script.src = 'https://player.twitch.tv/js/embed/v1.js';
+    script.async = true;
+    script.onload = () => setScriptLoaded(true);
+    document.body.appendChild(script);
+
+    return () => {
+      const existingScript = document.getElementById(id);
+      if (existingScript) document.body.removeChild(existingScript);
+    };
+  }, []);
+
+  // Twitch player init
+  useEffect(() => {
+    if (!scriptLoaded || !isLive || !(window as any).Twitch || twitchRef.current)
+      return;
+
+    let retryCount = 0;
+    const maxRetries = 10;
+
+    const initTwitch = () => {
+      const embedDiv = document.getElementById('twitch-embed');
+      if (!embedDiv) {
+        if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(initTwitch, 200);
+        }
+        return;
+      }
+
+      try {
+        const player = new (window as any).Twitch.Player('twitch-embed', {
+          channel: 'bertarose',
+          width: '100%',
+          height: '100%',
+          muted: true,
+          autoplay: true,
+          parent: [
+            window.location.hostname,
+            'localhost',
+            '127.0.0.1',
+            'still-fm.vercel.app',
+            'www.stillfm.com',
+            'stillfm.com',
+          ],
+        });
+
+        twitchRef.current = player;
+
+        player.addEventListener(
+          (window as any).Twitch.Player.READY,
+          () => {}
+        );
+
+        player.addEventListener(
+          (window as any).Twitch.Player.ONLINE,
+          () => setIsLive(true)
+        );
+
+        player.addEventListener(
+          (window as any).Twitch.Player.OFFLINE,
+          () => setIsLive(false)
+        );
+      } catch (error) {
+        console.error('Twitch player init error:', error);
+      }
+    };
+
+    setTimeout(initTwitch, 500);
+
+    return () => {
+      if (twitchRef.current?.destroy) {
+        twitchRef.current.destroy();
+        twitchRef.current = null;
+      }
+    };
+  }, [scriptLoaded, isLive]);
+
+  // Video open/close with vibration & visual effect
+  const openVideo = useCallback(() => {
+    if (!twitchRef.current) return;
+    twitchRef.current.setMuted(false);
+    setWatchMode(true);
+
+    // Vibration mobile
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+    // Petite animation landing
+    const landing = document.querySelector('.landing-page');
+    if (landing) {
+      landing.classList.add('vibe-effect');
+      setTimeout(() => landing.classList.remove('vibe-effect'), 600);
+    }
+  }, []);
+
+  const closeVideo = useCallback(() => {
+    if (!twitchRef.current) return;
+    twitchRef.current.setMuted(true);
+    setWatchMode(false);
+  }, []);
+
+  // Canvas animation
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const stars = Array.from({ length: 120 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 1.5 + 0.5,
+    }));
+
+    let animationId: number;
+
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      stars.forEach(s => {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      animationId = requestAnimationFrame(draw);
+    };
+
+    draw();
+
+    return () => {
+      if (animationId) cancelAnimationFrame(animationId);
+    };
+  }, []);
 
   return (
-    <div
-      className="
-        w-full md:w-96
-        bg-black/95 backdrop-blur-xl
-        border-t md:border border-white/20
-        shadow-2xl
-        font-mono
-        select-none
-        z-40
-        relative
-      "
-    >
-      <div className="p-5 md:p-6">
+    <div className="relative w-full h-screen bg-black overflow-hidden landing-page">
 
-        {/* TITRE */}
-        <div className="mb-5 text-center pointer-events-none">
-          <div className="text-[9px] md:text-[10px] uppercase tracking-[0.25em] text-white/40 mb-1">
-            Still FM
-          </div>
-          <div className="text-xs md:text-sm font-bold text-white">
-            Montreal Underground Radio
-          </div>
+      {/* Twitch Embed */}
+      {isLive && (
+        <div
+          id="twitch-embed"
+          className={`absolute inset-0 transition-opacity duration-700 ${
+            watchMode ? 'z-30 opacity-100' : 'z-0 opacity-70'
+          }`}
+        />
+      )}
+
+      {/* Fallback Video */}
+      {!isLive && (
+        <video
+          src="/video.mov"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover z-0"
+        />
+      )}
+
+      {/* Canvas */}
+      {!watchMode && (
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 z-10 mix-blend-screen opacity-40"
+        />
+      )}
+
+      {/* Logo */}
+      {!watchMode && (
+        <div className="fixed inset-0 z-20 flex flex-col items-center justify-center text-white pointer-events-none -translate-y-28 md:-translate-y-8">
+          <Image
+            src="/Stillfm logo-white.png"
+            alt="Still FM"
+            width={600}
+            height={200}
+            className="w-[300px] sm:w-[260px] md:w-[500px]"
+            priority
+          />
         </div>
+      )}
 
-        {/* TOGGLE */}
-        <div className="flex items-center justify-between mb-5 px-2">
-          <button
-            onClick={() => setMode('video')}
-            className={`text-xs md:text-sm uppercase tracking-wider px-4 py-2 rounded transition
-              ${
-                mode === 'video'
-                  ? 'bg-white text-black font-bold'
-                  : 'text-white/50 hover:text-white/90 hover:bg-white/10'
-              }
-            `}
-          >
-            Live Video
-          </button>
-
-          <div
-            className="relative w-16 h-8 flex-shrink-0 cursor-pointer"
-            onClick={() => setMode(mode === 'video' ? 'radio' : 'video')}
-          >
-            <div className="absolute inset-0 bg-white/20 rounded-full" />
-            <div
-              className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-transform shadow-lg
-                ${mode === 'radio' ? 'translate-x-8' : 'translate-x-1'}
-              `}
-            />
-          </div>
-
-          <button
-            onClick={() => setMode('radio')}
-            className={`text-xs md:text-sm uppercase tracking-wider px-4 py-2 rounded transition
-              ${
-                mode === 'radio'
-                  ? 'bg-white text-black font-bold'
-                  : 'text-white/50 hover:text-white/90 hover:bg-white/10'
-              }
-            `}
-          >
-            Radio
-          </button>
+      {/* Player + Install */}
+      {!watchMode && (
+        <div className="fixed bottom-0 left-0 right-0 md:left-4 md:bottom-4 z-50 flex flex-col md:items-start items-center gap-2">
+          <LandingAudioPlayer
+            isLive={isLive}
+            onWatchVideo={openVideo}
+            onCloseVideo={closeVideo}
+          />
+          <InstallPWA />
         </div>
+      )}
 
-        {/* ACTION PRINCIPALE */}
-        <div className="mb-4">
-          {mode === 'video' ? (
-            <button
-              onClick={onWatchVideo}
-              disabled={!isLive}
-              className="
-                w-full py-3 md:py-4 border border-white/50
-                text-xs md:text-sm uppercase tracking-widest font-bold
-                text-white
-                hover:bg-white/10 hover:text-white/90
-                transition disabled:opacity-30 disabled:cursor-not-allowed
-              "
-            >
-              {isLive ? 'Watch Live Stream' : 'Stream Offline'}
-            </button>
-          ) : (
-            <button
-              onClick={togglePlay}
-              className="
-                w-full py-3 md:py-4 border border-white/50
-                text-xs md:text-sm uppercase tracking-widest font-bold
-                text-white
-                hover:bg-white/10 hover:text-white/90
-                transition
-              "
-            >
-              {isPlaying ? 'Pause Radio' : 'Play Live Radio'}
-            </button>
-          )}
-        </div>
-
-        {/* STATUS */}
-        <div className="text-center text-xs md:text-sm text-white/60 mb-5 font-medium">
-          {mode === 'video'
-            ? isLive
-              ? '🔴 Live Stream Active'
-              : '⚫ Stream Offline'
-            : isPlaying
-            ? '📻 Playing Live'
-            : '📻 Radio Ready'}
-        </div>
-
-        {/* CTA */}
-        <a
-          href="/home"
-          className="
-            block w-full text-center
-            py-3 md:py-4 border border-white/30
-            text-xs md:text-sm uppercase tracking-[0.25em] font-bold
-            text-white/70 hover:bg-white/10 hover:text-white/90
-            transition
-          "
+      {/* Close Stream Button */}
+      {watchMode && (
+        <button
+          onClick={closeVideo}
+          className="fixed top-6 right-6 z-50 bg-black/80 backdrop-blur-sm border border-white/50 px-6 py-3 text-sm uppercase tracking-widest font-bold text-white hover:bg-white hover:text-black transition-all shadow-lg"
         >
-          {isLive ? 'Explore Shows & Archive →' : 'Browse Shows & Archive →'}
-        </a>
-      </div>
+          ✕ Close Stream
+        </button>
+      )}
+
+      {/* Vibe CSS */}
+      <style jsx>{`
+        .vibe-effect {
+          animation: shake 0.6s ease-in-out;
+        }
+        @keyframes shake {
+          0% { transform: translate(0,0); }
+          25% { transform: translate(6px,-6px); }
+          50% { transform: translate(-6px,6px); }
+          75% { transform: translate(6px,6px); }
+          100% { transform: translate(0,0); }
+        }
+      `}</style>
     </div>
   );
 }

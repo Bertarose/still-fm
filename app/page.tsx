@@ -9,7 +9,6 @@ export default function LandingPage() {
   const [isLive, setIsLive] = useState(false);
   const [watchMode, setWatchMode] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
-  const [playerMinimized, setPlayerMinimized] = useState(false);
   const twitchRef = useRef<any>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -165,52 +164,14 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* PLAYER - Avec bouton minimize */}
+      {/* PLAYER - Avec minimize intégré */}
       {!watchMode && (
-        <div className={`fixed left-0 right-0 md:left-4 z-50 transition-all duration-300 ${
-          playerMinimized 
-            ? 'bottom-0 md:bottom-4' 
-            : 'bottom-0 md:bottom-4'
-        }`}>
-          
-          {/* Bouton Minimize - Desktop seulement */}
-          {!playerMinimized && (
-            <button
-              onClick={() => setPlayerMinimized(true)}
-              className="hidden md:block absolute -top-8 right-4 bg-black/90 border border-white/20 px-3 py-1 text-[10px] uppercase tracking-wider text-white/70 hover:text-white hover:border-white/40 transition-all"
-            >
-              Minimize ↓
-            </button>
-          )}
-
-          {/* Player minimisé */}
-          {playerMinimized ? (
-            <div className="hidden md:block w-96 bg-black/95 backdrop-blur-xl border border-white/20 p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/10 flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">SF</span>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-white/50 uppercase tracking-wider">Still FM</div>
-                    <div className="text-xs text-white font-bold">Montreal Radio</div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setPlayerMinimized(false)}
-                  className="border border-white/30 px-3 py-1 text-[10px] uppercase tracking-wider text-white/70 hover:text-white hover:border-white/40 transition-all"
-                >
-                  Expand ↑
-                </button>
-              </div>
-            </div>
-          ) : (
-            <LandingAudioPlayer
-              isLive={isLive}
-              onWatchVideo={openVideo}
-              onCloseVideo={closeVideo}
-            />
-          )}
+        <div className="fixed bottom-0 left-0 right-0 md:left-4 md:bottom-4 z-50">
+          <LandingAudioPlayer
+            isLive={isLive}
+            onWatchVideo={openVideo}
+            onCloseVideo={closeVideo}
+          />
         </div>
       )}
 

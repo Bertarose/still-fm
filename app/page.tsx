@@ -4,33 +4,29 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
 import LandingAudioPlayer from './components/LandingAudioPlayer';
 import InstallPWA from './components/InstallPWA';
+import { usePlayer } from '@/app/context/PlayerContext';
 
 export default function LandingPage() {
+  const { isPlaying } = usePlayer();
+
   const [isLive, setIsLive] = useState(false);
   const [watchMode, setWatchMode] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
-  const [playerReady, setPlayerReady] = useState(false);
+
   const twitchRef = useRef<any>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // 🔴 VÉRIFICATION DU STATUT TWITCH VIA API
+  // 🔴 TWITCH STATUS
   useEffect(() => {
     const checkTwitchStatus = async () => {
       try {
         const res = await fetch('https://decapi.me/twitch/uptime/bertarose');
         const text = await res.text();
-        const isOnline =
+        setIsLive(
           !text.toLowerCase().includes('offline') &&
-          !text.toLowerCase().includes('error');
-
-        console.log(
-          '🔴 Landing Twitch status:',
-          isOnline ? 'ONLINE ✅' : 'OFFLINE ⚫'
+          !text.toLowerCase().includes('error')
         );
-
-        setIsLive(isOnline);
-      } catch (e) {
-        console.error('❌ Erreur Twitch API:', e);
+      } catch {
         setIsLive(false);
       }
     };
@@ -40,114 +36,43 @@ export default function LandingPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // 🎥 TWITCH SCRIPT LOADING
+  // 🎥 LOAD TWITCH SCRIPT
   useEffect(() => {
     if ((window as any).Twitch) {
       setScriptLoaded(true);
       return;
     }
 
-    const id = 'twitch-embed-script';
-    if (document.getElementById(id)) return;
-
     const script = document.createElement('script');
-    script.id = id;
     script.src = 'https://player.twitch.tv/js/embed/v1.js';
     script.async = true;
-    script.onload = () => {
-      console.log('✅ Twitch script loaded');
-      setScriptLoaded(true);
-    };
-
+    script.onload = () => setScriptLoaded(true);
     document.body.appendChild(script);
-
-    return () => {
-      const existingScript = document.getElementById(id);
-      if (existingScript) document.body.removeChild(existingScript);
-    };
   }, []);
 
-  // 🎥 TWITCH PLAYER INIT
+  // 🎥 INIT PLAYER
   useEffect(() => {
-    if (!scriptLoaded || !isLive || !(window as any).Twitch || twitchRef.current)
-      return;
+    if (!scriptLoaded || !isLive || twitchRef.current) return;
 
-    let retryCount = 0;
-    const maxRetries = 10;
+    const player = new (window as any).Twitch.Player('twitch-embed', {
+      channel: 'bertarose',
+      width: '100%',
+      height: '100%',
+      muted: true,
+      autoplay: true,
+      parent: [window.location.hostname],
+    });
 
-    const initTwitch = () => {
-      const embedDiv = document.getElementById('twitch-embed');
-
-      if (!embedDiv) {
-        if (retryCount < maxRetries) {
-          retryCount++;
-          setTimeout(initTwitch, 200);
-        }
-        return;
-      }
-
-      try {
-        console.log('🎥 Initializing Twitch player...');
-
-        const player = new (window as any).Twitch.Player('twitch-embed', {
-          channel: 'bertarose',
-          width: '100%',
-          height: '100%',
-          muted: true,
-          autoplay: true,
-          parent: [
-            window.location.hostname,
-            'localhost',
-            '127.0.0.1',
-            'still-fm.vercel.app',
-            'www.stillfm.com',
-            'stillfm.com',
-          ],
-        });
-
-        twitchRef.current = player;
-
-        player.addEventListener(
-          (window as any).Twitch.Player.READY,
-          () => {
-            console.log('✅ Twitch player ready');
-            setPlayerReady(true);
-          }
-        );
-
-        player.addEventListener(
-          (window as any).Twitch.Player.ONLINE,
-          () => setIsLive(true)
-        );
-
-        player.addEventListener(
-          (window as any).Twitch.Player.OFFLINE,
-          () => setIsLive(false)
-        );
-      } catch (error) {
-        console.error('❌ Twitch player init error:', error);
-      }
-    };
-
-    setTimeout(initTwitch, 500);
-
-    return () => {
-      if (twitchRef.current?.destroy) {
-        twitchRef.current.destroy();
-        twitchRef.current = null;
-      }
-    };
+    twitchRef.current = player;
   }, [scriptLoaded, isLive]);
 
   const openVideo = useCallback(() => {
-    if (!twitchRef.current) return;
-    twitchRef.current.setMuted(false);
+    twitchRef.current?.setMuted(false);
     setWatchMode(true);
   }, []);
 
   const closeVideo = useCallback(() => {
-    if (!twitchRef.current) return;
-    twitchRef.current.setMuted(true);
+    twitchRef.current?.setMuted(true);
     setWatchMode(false);
   }, []);
 
@@ -168,8 +93,6 @@ export default function LandingPage() {
       r: Math.random() * 1.5 + 0.5,
     }));
 
-    let animationId: number;
-
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = 'rgba(255,255,255,0.6)';
@@ -178,14 +101,10 @@ export default function LandingPage() {
         ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
         ctx.fill();
       });
-      animationId = requestAnimationFrame(draw);
+      requestAnimationFrame(draw);
     };
 
     draw();
-
-    return () => {
-      if (animationId) cancelAnimationFrame(animationId);
-    };
   }, []);
 
   return (
@@ -193,7 +112,6 @@ export default function LandingPage() {
 
       <InstallPWA />
 
-      {/* TWITCH EMBED */}
       {isLive && (
         <div
           id="twitch-embed"
@@ -203,7 +121,6 @@ export default function LandingPage() {
         />
       )}
 
-      {/* FALLBACK VIDEO */}
       {!isLive && (
         <video
           src="/video.mov"
@@ -215,7 +132,6 @@ export default function LandingPage() {
         />
       )}
 
-      {/* CANVAS */}
       {!watchMode && (
         <canvas
           ref={canvasRef}
@@ -223,27 +139,20 @@ export default function LandingPage() {
         />
       )}
 
-      {/* LOGO — PLUS GROS ET PLUS HAUT SUR MOBILE */}
-      {!watchMode && (
-        <div
-          className="
-            fixed inset-0 z-20 flex flex-col items-center justify-center
-            text-white pointer-events-none
-            -translate-y-20 md:-translate-y-8
-          "
-        >
+      {/* LOGO — disappears once radio plays */}
+      {!watchMode && !isPlaying && (
+        <div className="fixed inset-0 z-20 flex items-center justify-center pointer-events-none">
           <Image
             src="/Stillfm logo-white.png"
             alt="Still FM"
             width={600}
             height={200}
-            className="w-[300px] sm:w-[260px] md:w-[500px]"
+            className="w-[280px] md:w-[480px]"
             priority
           />
         </div>
       )}
 
-      {/* PLAYER AUDIO */}
       {!watchMode && (
         <div className="fixed bottom-0 left-0 right-0 md:left-4 md:bottom-4 z-50">
           <LandingAudioPlayer
@@ -254,11 +163,10 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* CLOSE BUTTON */}
       {watchMode && (
         <button
           onClick={closeVideo}
-          className="fixed top-6 right-6 z-50 bg-black/80 backdrop-blur-sm border border-white/50 px-6 py-3 text-sm uppercase tracking-widest font-bold text-white hover:bg-white hover:text-black transition-all shadow-lg"
+          className="fixed top-6 right-6 z-50 bg-black/80 border border-white/50 px-6 py-3 text-sm uppercase tracking-widest font-bold text-white hover:bg-white hover:text-black transition-all"
         >
           ✕ Close Stream
         </button>

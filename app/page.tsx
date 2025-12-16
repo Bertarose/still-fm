@@ -20,7 +20,7 @@ export default function LandingPage() {
         const res = await fetch('https://decapi.me/twitch/uptime/bertarose');
         const text = await res.text();
         const isOnline = !text.toLowerCase().includes('offline') && !text.toLowerCase().includes('error');
-        console.log('🔴 Twitch status:', isOnline ? 'ONLINE ✅' : 'OFFLINE ⚫');
+        console.log('🔴 Landing Twitch status:', isOnline ? 'ONLINE ✅' : 'OFFLINE ⚫');
         setIsLive(isOnline);
       } catch (e) {
         console.error('❌ Erreur Twitch API:', e);
@@ -49,7 +49,10 @@ export default function LandingPage() {
     script.id = id;
     script.src = 'https://player.twitch.tv/js/embed/v1.js';
     script.async = true;
-    script.onload = () => setScriptLoaded(true);
+    script.onload = () => {
+      console.log('✅ Twitch script loaded');
+      setScriptLoaded(true);
+    };
     document.body.appendChild(script);
 
     return () => {
@@ -60,42 +63,63 @@ export default function LandingPage() {
     };
   }, []);
 
-  // 🎥 TWITCH PLAYER INIT - S'initialise dès que le script est chargé
+  // 🎥 TWITCH PLAYER INIT - Dès que live ET script chargé
   useEffect(() => {
-    if (!scriptLoaded || !(window as any).Twitch || twitchRef.current) return;
+    if (!scriptLoaded || !isLive || !(window as any).Twitch || twitchRef.current) return;
 
-    try {
-      console.log('🎥 Initializing Twitch player...');
+    let retryCount = 0;
+    const maxRetries = 10;
+
+    const initTwitch = () => {
+      const embedDiv = document.getElementById('twitch-embed');
       
-      const player = new (window as any).Twitch.Player('twitch-embed', {
-        channel: 'bertarose',
-        width: '100%',
-        height: '100%',
-        muted: true,
-        autoplay: false,
-        parent: [window.location.hostname, 'localhost', '127.0.0.1', 'still-fm.vercel.app', 'www.stillfm.com', 'stillfm.com'],
-      });
+      if (!embedDiv) {
+        console.log(`⏳ Waiting for embed div... (attempt ${retryCount + 1}/${maxRetries})`);
+        
+        if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(initTwitch, 200);
+        } else {
+          console.error('❌ Failed to find twitch-embed div');
+        }
+        return;
+      }
 
-      twitchRef.current = player;
+      try {
+        console.log('🎥 Initializing Twitch player (background)...');
+        
+        const player = new (window as any).Twitch.Player('twitch-embed', {
+          channel: 'bertarose',
+          width: '100%',
+          height: '100%',
+          muted: true,
+          autoplay: true,
+          parent: [window.location.hostname, 'localhost', '127.0.0.1', 'still-fm.vercel.app', 'www.stillfm.com', 'stillfm.com'],
+        });
 
-      // Attendre que le player soit prêt
-      player.addEventListener((window as any).Twitch.Player.READY, () => {
-        console.log('✅ Twitch player ready');
-        setPlayerReady(true);
-      });
+        twitchRef.current = player;
 
-      player.addEventListener((window as any).Twitch.Player.ONLINE, () => {
-        console.log('🔴 Twitch Player Event: ONLINE');
-        setIsLive(true);
-      });
-      
-      player.addEventListener((window as any).Twitch.Player.OFFLINE, () => {
-        console.log('⚫ Twitch Player Event: OFFLINE');
-        setIsLive(false);
-      });
-    } catch (error) {
-      console.error('❌ Twitch player initialization error:', error);
-    }
+        player.addEventListener((window as any).Twitch.Player.READY, () => {
+          console.log('✅ Twitch player ready (playing in background)');
+          setPlayerReady(true);
+        });
+
+        player.addEventListener((window as any).Twitch.Player.ONLINE, () => {
+          console.log('🔴 Twitch: ONLINE');
+          setIsLive(true);
+        });
+        
+        player.addEventListener((window as any).Twitch.Player.OFFLINE, () => {
+          console.log('⚫ Twitch: OFFLINE');
+          setIsLive(false);
+        });
+      } catch (error) {
+        console.error('❌ Twitch player initialization error:', error);
+      }
+    };
+
+    // Attendre que le DOM soit prêt
+    setTimeout(initTwitch, 500);
 
     return () => {
       if (twitchRef.current?.destroy) {
@@ -103,35 +127,33 @@ export default function LandingPage() {
         twitchRef.current = null;
       }
     };
-  }, [scriptLoaded]);
+  }, [scriptLoaded, isLive]);
 
   const openVideo = useCallback(() => {
-    console.log('🎬 Opening video...', { playerReady, twitchPlayer: !!twitchRef.current });
+    console.log('🎬 Opening fullscreen video with sound...');
     
     if (!twitchRef.current) {
       console.error('❌ Twitch player not initialized');
       return;
     }
     
-    // Activer le son et lancer la lecture
+    // Activer le son et passer en mode fullscreen
     twitchRef.current.setMuted(false);
-    twitchRef.current.play();
-    
-    // Passer en mode watch
     setWatchMode(true);
-    console.log('✅ Watch mode activated');
-  }, [playerReady]);
+    
+    console.log('✅ Fullscreen mode activated');
+  }, []);
 
   const closeVideo = useCallback(() => {
-    console.log('🛑 Closing video...');
+    console.log('🛑 Closing fullscreen (stream continues muted in background)...');
     
     if (!twitchRef.current) return;
     
+    // Couper le son mais continuer à jouer en background
     twitchRef.current.setMuted(true);
-    twitchRef.current.pause();
     setWatchMode(false);
     
-    console.log('✅ Watch mode deactivated');
+    console.log('✅ Back to background mode (muted)');
   }, []);
 
   // 🌌 CANVAS
@@ -177,16 +199,18 @@ export default function LandingPage() {
       {/* INSTALL APP BUTTON */}
       <InstallPWA />
 
-      {/* TWITCH EMBED - Toujours présent mais caché si pas en watch mode */}
-      <div 
-        id="twitch-embed" 
-        className={`absolute inset-0 transition-opacity duration-700 z-20 ${
-          watchMode ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
-      />
+      {/* TWITCH EMBED - Toujours présent en background si live, opacity selon mode */}
+      {isLive && (
+        <div 
+          id="twitch-embed" 
+          className={`absolute inset-0 transition-opacity duration-700 ${
+            watchMode ? 'z-30 opacity-100' : 'z-0 opacity-70'
+          }`}
+        />
+      )}
 
-      {/* FALLBACK VIDEO */}
-      {!watchMode && (
+      {/* FALLBACK VIDEO - Seulement si pas live */}
+      {!isLive && (
         <video
           src="/video.mov"
           autoPlay
@@ -197,11 +221,13 @@ export default function LandingPage() {
         />
       )}
 
-      {/* CANVAS */}
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 z-10 mix-blend-screen opacity-40"
-      />
+      {/* CANVAS - Par-dessus la video/stream en background, mais sous le fullscreen */}
+      {!watchMode && (
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 z-10 mix-blend-screen opacity-40"
+        />
+      )}
 
       {/* LOGO - Plus haut et plus petit sur mobile */}
       {!watchMode && (
@@ -228,7 +254,7 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* CLOSE VIDEO BUTTON */}
+      {/* CLOSE VIDEO BUTTON - En mode fullscreen */}
       {watchMode && (
         <button
           onClick={closeVideo}

@@ -51,7 +51,7 @@ export default function ResidentsPage() {
                   <img 
                     src={placeholderImage} 
                     alt={resident.name} 
-                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" 
+                    className="w-full h-full object-cover" 
                     loading="lazy" 
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/70 transition-all flex items-center justify-center">

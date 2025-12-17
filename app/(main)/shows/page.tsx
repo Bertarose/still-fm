@@ -247,7 +247,7 @@ function ShowsContent() {
                 <img
                   src={show.img}
                   alt={show.name}
-                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                  className="w-full h-full object-cover"
                   loading="lazy"
                 />
 

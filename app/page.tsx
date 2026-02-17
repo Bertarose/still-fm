@@ -199,7 +199,7 @@ export default function LandingPage() {
           loop
           muted
           playsInline
-          className="absolute inset-0 w-full h-full object-cover z-0"
+          className="absolute inset-0 w-full h-full object-cover z-[5]"
         />
       )}
 
@@ -207,7 +207,7 @@ export default function LandingPage() {
       {!watchMode && (
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 z-10 mix-blend-screen opacity-40"
+          className="absolute inset-0 z-[1] mix-blend-screen opacity-40"
         />
       )}
 
